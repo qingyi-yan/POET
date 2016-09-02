@@ -1,0 +1,1 @@
+MAP{a=>IntType;b=>IntType;c=>IntType;Bop#(+,3,5)=>IntType;Bop#(+,Bop#(+,3,5),b)=>IntType;}

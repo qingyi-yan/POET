@@ -1,0 +1,32 @@
+include opt.pi
+
+<code pattern />
+
+<parameter in message="input file name" />
+<parameter out message="output file name" />
+
+<parameter var type=0|1 default=0 message="whether to profile values of interesting varialbes"/>
+<parameter branch type=0|1 default=0 message="whether to profile if taken rate"/>
+<parameter nest type=0|1 default=0 message="whether to profile nest index info"/>
+<parameter fpdiv type=0|1 default=0 message="whether to profile float point division"/>
+<parameter fpara type=0|1 default=0 message="whether to profile function parameters"/>
+<parameter unroll_branch type=0|1 default=0 message="wheter to profile loop unroll for branch"/>
+
+<trace target />
+
+<input to=target syntax="pattern.code" annot=0 from=in />
+
+<trace _decl1="" />
+<trace _decl2="" />
+
+<define TRACE_DECL _decl1 />
+<define TRACE_DECL_EXTERN _decl2 />
+<define TRACE_TARGET target />
+
+<eval
+    res = BuildList(_decl1, target);
+    res = BuildList(res, _decl2);
+    ModifyTraceHandle(target, res);
+/>
+
+<output from=target syntax="pattern.code" to=out />

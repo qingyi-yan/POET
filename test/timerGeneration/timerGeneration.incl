@@ -1,0 +1,46 @@
+include specification.incl
+<******** required for generating driver in the target language *>
+<code TimerBaseType pars=(type) />
+<code TimerRandomVal/>
+<code TimerRoutineReturnVar/>
+<code CheckpointReturnVar/>
+<code TimerParameterInit pars=(mt,initseq)/>
+
+<code TimerVariableDecl pars=(type, name) />
+<code TimerBufferDecl pars=(type,name)/>
+<code TimerStaticBufferDecl pars=(type,name,size)/>
+<code TimerStatic2DBufferDecl pars=(type,name,size,size2)/>
+<code TimerBufferSizeDecl pars=(name,nrep)/>
+<code Timer2DBufferSizeDecl pars=(name,nrep)/>
+
+<code TimerAssign pars=(lhs,rhs)/>
+<code TimerBufferAllocate pars=(type, name, size,align, nrep)/>
+<code Timer2DBufferAllocate pars=(type,name,size,size2,align,nrep)/>
+<code StaticBufferAllocate pars=(type,name,size,align,nrep)/>
+<code Static2DBufferAllocate pars=(type,name,size,size2,align,nrep)/>
+<code TimerBufferInitialize pars=(name, nrep, value, valueIncr)/>
+<code Timer2DBufferInitialize pars=(name, nrep, value, valueIncr)/>
+<code TimerBufferIncrement pars=(name)/>
+
+<code TimerIncludes pars=(useCheckPoint, useWallTime, arch, mhz, cacheKB, nrep, mt, randseed, fun)/>
+<code DeclForTimerVars pars=(useWallTime, nrep, mt, paramDecl,flop_exp)/>
+<code BeginTimerCall pars=(useWallTime,mt)/>
+<code EndTimerCall pars=(useWallTime, mt)/>
+
+<code ComputeTimerDiff pars=(mt,nrep)/>
+<code ComputeFlops pars=(flops_exp,nrep)/>
+<code ComputeMFLOPS pars=(useWallTime,mt)/>
+<code OutputTiming pars=(useWallTime, mt,flops_exp)/>
+<code TimingLoop pars=(call, update)/>
+<code MultiTimingLoop pars=(body)/>
+<code MultiTimeMinAndAvg pars=(mt)/>
+<code MultiTimeMedian pars=(mt)/>
+
+<code TimerIncrementVar pars=(var,incr)/>
+<code TimerMacroVal pars=(name,val)/>
+<code TimerFunCall pars=(funDecl, params)/>
+<code TimerCheckpointCall pars=(cpfile,mt)/>
+<code TimerFlushCacheCode/>
+<code TimerFlushCacheAlloc/>
+<code TimerFlushCacheX86Code pars=(ptr,size)/>
+<code TimerMainCode pars=(mt,nrep,body)/>

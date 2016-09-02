@@ -1,0 +1,203 @@
+include utils.incl
+include auto_tune.code
+
+<code PoetOptFile pars=(defined_parameters:LIST(CODE.DefinedParameter, "\n"), tracing_handles:CODE.TracingHandles, target_tracing_handles:CODE.TargetTracingHandles, handles:CODE.Handles, traceDecl : CODE.TraceDecl, definitions:CODE.Definitions, transformations:CODE.TransformationList) >
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+@defined_parameters@
+@handles@
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+@target_tracing_handles@
+@tracing_handles@
+
+@traceDecl@
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+@Definitions#definitions@
+
+<eval @transformations@; />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 
+</code>
+
+<code FunctionCall pars=(function,args)>
+FunctionCall#("@function@",@args@)
+</code>
+
+<code Handles pars=(nests:CODE.SpecifiedNests, stmts:CODE.SpecifiedStmts, funcs:CODE.SpecifiedFuncs) >
+<trace inputCode />
+@((nests != "") ? nests : "")@
+@((stmts != "") ? stmts : "")@
+@((funcs != "") ? funcs : "")@
+</code>
+
+<code TraceDeclReal pars=(name:ID,target:ID)>
+<trace @name@="" />
+<eval @target@_decl=@target@;
+      if (@target@ : CODE.FunctionDecl) 
+          @target@_decl=@target@[FunctionDecl.body][StmtBlock.stmts];
+      else @target@_decl = @target@;
+      EraseTraceHandle[repl=(@name@ @target@_decl)](@target@_decl, inputCode); />
+<define TRACE_DECL @name@ />
+</code>
+
+<code TraceDecl pars=(name:ID,target:ID)>
+@((target != "") ? CODE.TraceDeclReal#(name, target) : "")@
+</code>
+
+<code SpecifiedNests pars=(nests:LIST(ID, ","))>
+<trace @nests@ />
+</code>
+
+<code SpecifiedStmts pars=(stmts:LIST(ID, ",")) >
+<trace @stmts@ />
+</code>
+
+<code SpecifiedFuncs pars=(funcs:LIST(ID, ",")) >
+<trace @funcs@ />
+</code>
+
+<code Definitions parse=LIST(CODE.Definition, "\n")/>
+
+<code Definition pars=(name:ID, value:LIST(CODE.InputExp, " "))>
+<define @name@ (@value@) />
+</code>
+
+<code List parse=LIST(CODE.ParenValue," ") />
+
+<code ParenValue pars=(value : LIST(ID|INT|List," "))>
+(@( (value : ID|INT)? value : List#value)@)
+</code>
+
+<code StringValue pars=(value : LIST(ID|INT," "))>
+@if (value : (first second)) { ("(" List#value ")") } else {@"@value@"@} @
+</code>
+
+<code TargetTracingHandles pars=(target_tracing_handles: LIST(CODE.TargetTracingHandle, "\n"))>
+@target_tracing_handles@
+</code>
+
+<code TargetTracingHandle pars=(name:CODE.NestWithGroup, value:CODE.NestWithGroup|ID)>
+<trace @name@ = (@value@) />
+</code>
+
+<code NestWithGroup pars=(nest, group)>
+@nest@_@group@
+</code>
+
+<code TracingHandles pars=(tracing_handles: LIST(CODE.TracingHandle|CODE.TracingHandleSingle, "\n"))>
+@tracing_handles@
+</code>
+
+<code TracingHandle pars=(name:CODE.TracingHandleName, val:CODE.VarList) >
+<trace @name@ = (@val@) />
+</code>
+
+<code TracingHandleName pars=(id, target, xform, param) >
+@target@_@xform@_@param@_th@id@
+</code>
+
+<code Var pars=(content)>
+@(content : ID)? ("\"" content "\"") : content@
+</code>
+
+<code VarList pars=(variables:LIST(CODE.Var, " ")) >
+@(if (variables!=NULL&&(cdr(variables)!=NULL)) { "(" }) 
+  variables 
+ (if (variables!=NULL&&(cdr(variables)!=NULL)) { ")" })
+@
+</code>
+
+<code TracingHandleSingle pars=(name:CODE.TracingHandleName, val:CODE.VarListSingle) >
+<trace @name@ = ((@val@)) />
+</code>
+
+<code VarListSingle pars=(variables:ID) >
+"@variables@"
+</code>
+
+<code CodeTemplate pars=(name, value)>
+(@name@#(@value@))
+</code>
+
+
+<code DefinedParameter parse=CODE.NumOfThreads|CODE.ParBlockFactor />
+
+<code DefinedParameterName pars=(id, target, xform, param)>
+@target@_@xform@_@param@_p@id@
+</code>
+
+<code TuningParameterName pars=(id) > tp@id@ </code>
+
+<code TransformationList parse=LIST(CODE.Transformation|_, ";\n\t")/>
+<code ConfigList parse=LIST(CODE.Parameter, ";") />
+
+<code PList parse=LIST(CODE.Name,"\" \"") />
+
+<code Parameter pars=(name:ID, value:CODE.VarList)>
+@switch(name) { case "fp_division" | "appendix" | "else_branch": name@=@value; default: name@=@((cdr(value)!=NULL)?"((\"":"")PList#value((cdr(value)!=NULL)?"\"))":""); }@
+</code>
+
+<code Transformation pars=(name, nests:LIST(CODE.HandleList|EXP,","), params:LIST(CODE.Parameter, ";")) >
+@name ((params:NULL|"")?"" : ("[" (ConfigList#params) "]"))@(@nests@)
+</code>
+
+<code HandleList pars=(nests: LIST(ID, " "))>
+(@nests@)
+</code>
+
+<code Bop pars=(op, opd1:CODE.InputExp, opd2 : CODE.InputExp)
+    output=((op == ".") ? CODE.ObjAccess#(opd1,opd2) : CODE.Bop#(op,opd1,opd2)) >
+CODE.Bop#("@op@", @opd1@, @opd2@)
+</code>
+
+<code Uop pars=(op, opd:CODE.InputExp)
+    output=((opd : INT) ? (op opd) : CODE.Uop#(op, opd))>
+CODE.Uop#("@op@", @opd@)
+</code>
+
+<code ArrayAccess pars=(array:CODE.InputExp, subscript:LIST(ID|INT,""))>
+@
+ac = "";
+for (plist = subscript; plist != NULL; plist = cdr(plist)) {
+    tsub = car(plist);
+    arr = (array : ID) ? (@"@array@"@) : array;
+    tb = (tsub : ID) ? (@"@tsub@"@) : tsub;
+    if (ac == "")
+      ac = "CODE.ArrayAccess#("arr","tb")";
+    else
+      ac = "CODE.ArrayAccess#("ac","tb")";
+}
+ac
+@
+</code>
+
+<code ObjAccess pars=(type:CODE.InputExp, field:CODE.InputExp)>
+CODE.ObjAccess#(@type@,@field@)
+</code>
+
+<code FloatType pars=(name:"float"|"double")> 
+CODE.FloatType#("@name@")
+</code>
+
+<code AddrOf pars=(content:CODE.ArrayAccess)>
+CODE.Uop#("&",@content@)
+</code>
+
+<code PtrDeref pars=(ptr:ID)>
+CODE.Uop#("*","@ptr@")
+</code>
+
+<code InputExp pars=(content) >
+@if (content : ID) {@"@content@"@ } else { content }@
+</code>
+
+<code HandleAccess pars=(array, access) >
+@array@[@access@]
+</code>
+
+<code FieldAccess pars=(type,fd)> @type@.@fd@ </code>

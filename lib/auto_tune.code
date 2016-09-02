@@ -1,0 +1,74 @@
+include ExpStmt.incl
+
+<define PARSE CODE.CommandList/>
+<define EXP_BASE INT|ID|String />
+<define BACKTRACK TRUE/>
+
+<code CommandList parse=LIST(CODE.ParamDecl|CODE.ThrowAway, "\n") />
+
+<code Extra pars=(content:(~("/")...))> @content@ </code>
+<code ParamDecl pars=(param:CODE.NumOfThreads|CODE.OMPScheduleDefault
+                  |CODE.ParBlockFactor
+                  |CODE.BlockFactor|CODE.UnrollJamFactor|CODE.UnrollFactor
+                  |CODE.CopyArrayConfig|CODE.ScalarReplConfig,
+                  extra: Extra|"")>
+<parameter @param@ @extra@/>
+</code>
+
+<code MacroVal pars=(val: "MACRO"|INT) output=((val=="MACRO")? "\"MACRO\"" : val) > 
+@val@ </code>
+
+<code NumOfThreads pars=(parName:Name, loopNest:Name|"", defval:CODE.MacroVal)>
+@parName@ type=1.._ default=@defval@ message="number of threads to parallelize loop @loopNest@"
+</code>
+
+<code OMPScheduleDefault pars=(parName:Name) >
+@parName@ parse=CODE.OMPSchedule default="" 
+</code>
+
+<code SkewFactor pars=(parName:Name, loopNest:Name, defval:CODE.MacroVal)>
+@parName@ type=1.._ default=@defval@ message="number of times to skew loop @loopNest@"
+</code>
+
+<code ParBlockFactor pars=(parName:Name, loopNest:Name, defval:MacroVal)>
+@parName@ type=1.._ default=@defval@ message="number of loop iterations to run by different threads for @loopNest@"
+</code>
+
+<code BlockDimList pars=(spec:LIST("INT"," "),more : ("." "." ".")|"" ) rebuild=((spec:STRING)?1:LEN(spec))> 
+(@spec@)@more@ </code> 
+
+<code BlockValList pars=(spec:LIST(MacroVal," ")) rebuild=spec> 
+(@spec@)::NULL  </code>
+
+<code IntValList pars=(spec:LIST(MacroVal," ")) rebuild=spec> (@spec@) </code>
+
+
+<code BlockFactor pars=(parName:Name, loopNest:Name|"", dim:BlockDimList|"INT", 
+                        defval:(BlockValList|IntValList))
+      output=((defval=="MACRO") ?
+         parName " type=" dim " default=\"MACRO\" message=\"Blocking factor for loop nest " loopNest "\"" :
+         parName " type=" dim " default=" defval " message=\"Blocking factor for loop nest " loopNest "\"") >
+@parName@ type=@dim@ default=@defval@ message="Blocking factor for loop nest @loopNest@"
+</code>
+
+<code UnrollJamFactor pars=(parName:Name, loopNest:Name|"", dim:BlockDimList|"INT", defval:(BlockValList|IntValList))>
+@parName@ type=@dim@ default=@defval@ message="Unroll and Jam factor for loop nest @loopNest@"
+</code>
+
+<code UnrollFactor pars=(parName:Name, loopNest:Name|"", defval:LIST(CODE.MacroVal," "))>
+@parName@ type=1.._ default=@defval@ message="Unroll factor for loop @loopNest@"
+</code>
+
+<code CopyArrayConfig pars=(parName:Name, loopNest:Name|"", arrayName:(~"at")|"", defval:INT, extra:~"\""...)>
+@parName@ type=0..2 default=@defval@ message="configuration for copy array @arrayName@ at loop @loopNest@ @extra@"
+</code>
+
+<code ScalarReplConfig pars=(parName:Name, loopNest:Name, arrayName:Name, defval:INT)>
+@parName@ type=0..2 default=@defval@ message="configuration for scalarRepl array @arrayName@ at loop @loopNest@: 0-no opt; 1-scalarRepl; 2-strength reduction."
+</code>
+
+<code SkipExp pars=(content : CODE.InsideLP) rebuild=content> 
+(@content@) </code>
+<code InsideLP parse=LIST(SkipExp | CODE.NoLRP,"") />
+<code NoLRP parse=(~("("|")")...) />
+ 

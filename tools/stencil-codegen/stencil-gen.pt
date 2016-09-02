@@ -1,0 +1,17 @@
+
+<parameter dim default=2 type=INT message="dimension of stencil"/>
+<parameter time default=1 type=INT message="timesteps of stencil"/>
+<parameter elem default="float" type="float"|"double"|"int" 
+                message="element type of stencil"/>
+<parameter old_array default="A" type=ID 
+                     message="array being read in stencil"/>
+<parameter new_array default="B" type=ID 
+                     message="array being modified in stencil"/>
+<parameter points default=(dim*2+1) type=INT message="number of points involved in the computation per iteration"/>
+<parameter out message="output file name"/>
+
+<eval
+  target=CODE.stencil_main#(elem,old_array, new_array, dim, time,points) 
+/>
+
+<output from=(target) syntax="stencil-output.code" to=out/>

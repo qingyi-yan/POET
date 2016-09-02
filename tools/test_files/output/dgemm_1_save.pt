@@ -1,0 +1,60 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default="MACRO" message="number of threads to parallelize loop Nest2" />
+<parameter tp2 type=1.._ default=(256) message="number of loop iterations to run by different threads for Nest2" />
+<parameter tp3 type=INT default=(32) message="Blocking factor for loop nest Nest2" />
+<parameter tp4 type=INT default=((4)) message="Unroll and Jam factor for loop nest Nest2" />
+<parameter tp5 type=1.._ default=((4)) message="Unroll factor for loop Nest3" />
+<trace inputCode />
+<trace Nest1,Nest2,Nest3,Nest4 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest4_group1 = (Nest4) />
+<trace Nest3_group1 = (Nest3) />
+<trace Nest3_group2 = (Nest3_group1) />
+<trace Nest2_group1 = (Nest2) />
+<trace Nest2_group2 = (Nest2_group1) />
+<trace Nest2_cleanup = (Nest2_group2) />
+<trace Nest2_group3 = (Nest2_cleanup) />
+<trace Nest2_FuseLoops_index_start_th5 = () />
+<trace Nest4_FuseLoops_index_start_th4 = () />
+<trace Nest2_ParallelizeLoop_private_th3 = (("j" "i" "k")) />
+<trace Nest4_ScalarRepl_aref_th2 = (CODE.ArrayAccess#("c",CODE.Bop#("+", CODE.Bop#("*", "j", "n"), "i"))) />
+<trace Nest3_ScalarRepl_aref_th1 = (CODE.ArrayAccess#("a",CODE.Bop#("+", CODE.Bop#("*", "k", "n"), "i"))) />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_VARS (Nest2_ParallelizeLoop_private_th3) />
+<define TRACE_EXP (Nest2_FuseLoops_index_start_th5 Nest4_FuseLoops_index_start_th4 Nest4_ScalarRepl_aref_th2 Nest3_ScalarRepl_aref_th1) />
+
+<eval EraseTraceHandle[repl=Nest4_group1](Nest4,inputCode);
+	EraseTraceHandle[repl=Nest3_group2](Nest3,inputCode);
+	EraseTraceHandle[repl=Nest2_group3](Nest2,inputCode);
+	PermuteLoops[order=((3) (1) (2))](Nest3[Nest.body],Nest2);
+	FuseLoops((Nest1),Nest2);
+	FuseLoops((Nest1),Nest4);
+	BlockLoops[factor=tp2](Nest2_group3[Nest.body],Nest2_group3);
+	ParallelizeLoop[private=Nest2_ParallelizeLoop_private_th3;factor=tp2;threads=tp1](Nest2_group3);
+	TraceNestedLoops(Nest2_group2,Nest2_group3[Nest.body]);
+	TraceNestedLoops(Nest2_cleanup,Nest2_group3[Nest.body]);
+	BlockLoops[factor=tp3;trace_ivars=Nest2_ParallelizeLoop_private_th3](Nest3_group2[Nest.body],Nest2_group2);
+	TraceNestedLoops[orig_nested=1;report_err=0]((Nest2_group1 Nest3_group1 Nest4_group1),Nest3_group2[Nest.body]);
+	UnrollJam[factor=tp4;cleanup=0](Nest3_group1,Nest2_group1);
+	ScalarRepl[data_type="double";init=1;save=1](Nest4_ScalarRepl_aref_th2,(Nest2_group1 Nest4_group1),Nest4_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0](Nest3_ScalarRepl_aref_th1,(Nest4_group1 Nest3_group1),Nest3_group1[Nest.body]);
+	UnrollLoop[factor=tp5;cleanup=0](Nest3_group1);
+	CleanupBlockedNests(Nest2_cleanup); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

@@ -1,0 +1,16 @@
+include opt.pi
+
+<parameter outfile default="" message="output file location" />
+<parameter ic parse=LIST(INT," ") default=(1 2) message="Permutation index for nest1"/>
+<parameter ur parse=INT default=2 message="Unroll factor for nest3"/>
+
+<trace inputCode,nest1,nest3/>
+<input from="dgemm_test.C" syntax="Cfront.code" to=inputCode/>
+
+<eval PermuteLoops[order=ic;trace=inputCode](nest3[Nest.body],nest1);
+      UnrollLoops[factor=ur;trace=inputCode](nest3[Nest.body],nest3); 
+/>
+
+<output to=outfile syntax="Cfront.code" from=(inputCode)/>
+
+

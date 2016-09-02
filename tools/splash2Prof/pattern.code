@@ -1,0 +1,335 @@
+include Cfront.code
+
+<define PARSE LIST(CODE.Pattern|CODE.UnknownUntilEOL, "\n") />
+
+<define BACKTRACK TRUE />
+
+<define PROFILE_LENGTH 100 />
+
+<define If_Index 0 />
+
+<define Var_Array_Map MAP(_,_) />
+<define Var_Array_Index 0 />
+
+<define Nest_Index_Array_Map MAP(_,_) />
+<define Nest_Index_Array_Index 0 />
+
+<define FpDiv_Array_Map MAP(_,_) />
+<define FpDiv_Array_Index 0 />
+
+<define Fpara_List NULL />
+
+<define Unrollbranch_List NULL />
+
+<code Pattern pars=(content:ExpStmt|Nest|FunctionDecl) rebuild=(XFORM.RecognizePatterns(content))>
+@content@
+</code>
+
+<code ProfileVarValue pars=(var:ID, array:ID, index:ID)>
+{
+    unsigned long _index;
+    for (_index = 0; _index < @index@; _index++) {
+        if (@array@[_index] == @var@)
+            break;
+    }
+    if (_index == @index@) {
+        @array@[@index@] = @var@;
+        @index@++;
+        if (@index@ > @PROFILE_LENGTH@)
+            printf("[Profile Error] Array Overflow: @array@\n");
+    }
+}
+</code>
+
+<code ProfileFpDiv pars=(lhs:ID, opd1:ID|FunctionCall, opd2:ID|ObjAccess)>
+{
+    if (@opd1@ != @lhs@ * @opd2@) {
+        printf("[Profile Conflict] Fp Var: @lhs@ fail the test\n");
+        exit(-1);
+    }
+}
+</code>
+
+<code ProfileFpara pars=(a1:ID, a1_d1:ID, a1_d2:ID, a2:ID, a2_d1:ID, a2_d2:ID)>
+{
+    if ((&@a1@[0][0] >= &@a2@[0][0] && &@a1@[0][0] <= &@a2@[@a2_d1@][@a2_d2@]) ||
+        (&@a1@[@a1_d1@][@a1_d2@] >= &@a2@[0][0] && &@a1@[@a1_d1@][@a1_d2@] <= &@a2@[@a2_d1@][@a2_d2@]) ||
+        (&@a2@[0][0] >= &@a1@[0][0] && &@a2@[0][0] <= &@a1@[@a1_d1@][@a1_d2@]) ||
+        (&@a2@[@a2_d1@][@a2_d2@] >= &@a1@[0][0] && &@a2@[@a2_d1@][@a2_d2@] <= &@a1@[@a2_d1@][@a2_d2@])) {
+        printf("[Profile Conflict] Array Overlap. Array1: @a1@, Array2: @a2@\n");
+        exit(-1);
+    }
+}
+</code>
+
+<code ProfileUnrollBranch pars=(op1:STRING, op2:STRING, op2_d1:ID, op2_d2:ID, op1_d2:ID)>
+{
+    if (((@op2_d1@ @op2@ @op2_d2@) @op1@ @op1_d2@) == 
+        (((@op2_d1@+1) @op2@ @op2_d2@) @op1@ @op1_d2@)) {
+        printf("[Profile Conflict] Unroll branch with factor 2 for @op2_d1@\n");
+        exit(-1);
+    }
+}
+</code>
+
+<code PrintVarArray pars=(var:ID, array:ID, index:ID)>
+{
+    unsigned long _index;
+    printf("[Var Value] Var: @var@, Value: ");
+    for (_index = 0; _index < @index@; _index++) {
+        printf("%ld  ", @array@[_index]);
+    }
+    printf("\n");
+}
+</code>
+
+<code PrintFpDiv pars=(fp:ID)>
+printf("[Fp Div] Fp Var: @fp@ pass the test\n");
+</code>
+
+<code PrintNestIndexArray pars=(var:ID, array:ID, index:ID)>
+{
+    unsigned long _index;
+    printf("[Nest Index Value] Index: @var@, Value: ");
+    for (_index = 0; _index < @index@; _index++) {
+        printf("%ld  ", @array@[_index]);
+    }
+    printf("\n");
+}
+</code>
+
+<code PrintIfRate pars=(index:INT, counter0:ID, counter1:ID)>
+printf("[If Taken Rate] Index: @index@, Rate: %f%%\n", ((double)@counter1@)/((double)@counter0@)*100);
+</code>
+
+<code PrintFpara pars=(fname:ID, array1:ID, array2:ID)>
+printf("[Func Para] No overlap between two arrays @array1@ and @array2@ in function @fname@\n");
+</code>
+
+<code PrintUnrollBranch pars=(index:ID)>
+printf("[Unroll Branch] The loop can be unrolled to eliminate branch: @index@\n");
+</code>
+
+<code PrintHead>
+printf("\n\n=============================================\n\n");
+printf("Profiling Information:\n\n");
+</code>
+
+<code PrintTail>
+printf("\n=============================================\n\n\n");
+</code>
+
+
+<code CounterPlusOne pars=(counter:ID)>
+@counter@++;
+</code>
+
+<xform CheckMapTable pars=(content, table, length)>
+    for (i = 0; i < length; i += 1) {
+        if (table[i] == content)
+            RETURN (i+1);
+    }
+    RETURN FALSE;
+</xform>
+
+<xform AddVarDecl pars=(type, var) init="" trace1=GLOBAL.TRACE_DECL trace2=GLOBAL.TRACE_DECL_EXTERN>
+    if (init != "")
+        decl = DeclStmt#(TypeInfo#(type, var, VarInit#init));
+    else
+        decl = DeclStmt#(TypeInfo#(type, var, ""));
+    res = BuildList(decl, trace1);
+    ModifyTraceHandle(trace1, res);
+    edecl = ExternDecl#(DeclStmt#(TypeInfo#(type, var, "")));
+    eres = BuildList(edecl, trace2);
+    ModifyTraceHandle(trace2, eres);
+</xform>
+
+<xform HandleList pars=(input)>
+    newbody = "";
+    for (pbody = input; pbody != NULL; pbody = cdr(pbody)) {
+        cbody = car(pbody);
+        nbody = XFORM.RecognizePatterns (cbody);
+        newbody = BuildList(newbody, nbody);
+    }
+    newbody
+</xform>
+
+<xform do_var_profile pars=(var)>
+    i = CheckMapTable(var, Var_Array_Map, Var_Array_Index);
+    if (i == FALSE) {
+        array = Name#"_var_array_"Var_Array_Index;
+        index = Name#"_var_index_"Var_Array_Index;
+        Var_Array_Map[Var_Array_Index] = var;
+        Var_Array_Index = Var_Array_Index + 1;
+        AddVarDecl(ArrayType#(IntType#"unsigned long", ArrayDim#PROFILE_LENGTH), array);
+        AddVarDecl[init=0]("unsigned long", index);
+    } else {
+        im1 = i - 1;
+        array = Name#"_var_array_"im1;
+        index = Name#"_var_index_"im1;
+    }
+    ProfileVarValue#(var, array, index)
+</xform>
+
+<xform do_fpdiv_profile pars=(lhs, opd1, opd2)>
+    FpDiv_Array_Map[FpDiv_Array_Index] = lhs;
+    FpDiv_Array_Index = FpDiv_Array_Index + 1;
+    ProfileFpDiv#(lhs, opd1, opd2);
+</xform>
+
+<xform do_nest_index_profile pars=(in)>
+    i = CheckMapTable(in, Nest_Index_Array_Map, Nest_Index_Array_Index);
+    if (i == FALSE) {
+        array = Name#"_nest_index_array_"Nest_Index_Array_Index;
+        index = Name#"_nest_index_index_"Nest_Index_Array_Index;
+        Nest_Index_Array_Map[Nest_Index_Array_Index] = in;
+        Nest_Index_Array_Index = Nest_Index_Array_Index + 1;
+        AddVarDecl(ArrayType#(IntType#"unsigned long", ArrayDim#PROFILE_LENGTH), array);
+        AddVarDecl[init=0]("unsigned long", index);
+    } else {
+        im1 = i - 1;
+        array = Name#"_nest_index_array_"im1;
+        index = Name#"_nest_index_index_"im1;
+    }
+    ProfileVarValue#(in, array, index)
+</xform>
+
+<xform do_unrollbranch_profile pars=(op1, op2, op2_d1, op2_d2, op1_d2)>
+    Unrollbranch_List = BuildList(Unrollbranch_List, op2_d1);
+    ProfileUnrollBranch#(op1, op2, op2_d1, op2_d2, op1_d2)
+</xform>
+
+<xform prof_is_enable>
+    RETURN (GLOBAL.var || GLOBAL.branch || GLOBAL.nest ||
+            GLOBAL.fpdiv || GLOBAL.fpara || GLOBAL.unroll_branch);
+</xform>
+
+<xform RecognizePatterns pars=(input)>
+    res = input;
+    switch (res) {
+        case ExpStmt#(Assign#(CLEAR lhs, CLEAR rhs)):
+            switch (rhs) {
+                case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2):
+                    if (GLOBAL.var == 1 && op == "%") {
+                        res = do_var_profile(opd2) :: res;
+                    }
+                    if (GLOBAL.fpdiv == 1 && op == "/") {
+                        res = res :: do_fpdiv_profile(lhs, opd1, opd2);
+                    }
+                case FunctionCall#(CLEAR func, para):
+                    if (GLOBAL.var == 1 && func: Uop#("*",_)|PtrAccess#(_)) {
+                        res = do_var_profile(func) :: res;
+                    }
+                default: ;
+            }
+        case Nest#(CLEAR ctrl, CLEAR body):
+            newbody = HandleList(body);
+            res = "";
+            switch (ctrl) {
+                case If: 
+                    if (GLOBAL.branch == 1) {
+                        counter0 = Name#"_if_"If_Index"_0";
+                        counter1 = Name#"_if_"If_Index"_1";
+                        AddVarDecl[init=0]("unsigned long", counter0);
+                        AddVarDecl[init=0]("unsigned long", counter1);
+                        If_Index = If_Index + 1;
+                        newbody = CounterPlusOne#(counter1) :: newbody;
+                        res = CounterPlusOne#(counter0);
+                    }
+                case Loop#(CLEAR index, CLEAR outer_start, CLEAR outer_end, CLEAR step):
+                    if (GLOBAL.nest == 1) {
+                        for (pbody = body; pbody != NULL; pbody = cdr(pbody)) {
+                            cbody = car(pbody);
+                            if (cbody : Nest#(Loop#(_, inner_start, inner_end, _), _)) {
+                                res = do_nest_index_profile(outer_start) :: res;
+                                res = do_nest_index_profile(outer_end) :: res;
+                                res = do_nest_index_profile(inner_start) :: res;
+                                res = do_nest_index_profile(inner_end) :: res;
+                            }
+                        }
+                    }
+                    if (GLOBAL.unroll_branch == 1) {
+                        for (pbody = body; pbody != NULL; pbody = cdr(pbody)) {
+                            cbody = car(pbody);
+                            if (!(cbody : Nest#(If#(CLEAR iop), CLEAR ibody)))
+                                continue;
+                            if (!(iop : Bop#(CLEAR op1, CLEAR op1_d1, CLEAR op1_d2)))
+                                continue;
+                            if (!(op1_d1 : Bop#(CLEAR op2, CLEAR op2_d1, CLEAR op2_d2)))
+                                continue;
+                            if (op2_d1 == index) {
+                                newbody = do_unrollbranch_profile(op1, op2, op2_d1, op2_d2, op1_d2) :: newbody;
+                            }
+                        }
+                    }
+                default: ;
+            }
+            res = res :: Nest#(ctrl, newbody);
+        case StmtBlock#(CLEAR body):
+            newbody = HandleList(body);
+            res = StmtBlock#(newbody);
+        case FunctionDecl#(CLEAR name, CLEAR para, CLEAR type, CLEAR body):
+            newbody = HandleList(body);
+            res = "";
+            StmtBlock#(newbody) = newbody;
+            if (name != "main" && GLOBAL.fpara == 1) {
+                array1 = ""; array1_dim1 = ""; array1_dim2 = "";
+                array2 = ""; arary2_dim1 = ""; array2_dim2 = "";
+                for (ppara = para; ppara != NULL; ppara = cdr(ppara)) {
+                    cpara = car(ppara);
+                    if (cpara : TypeInfo#(ArrayType#(_, CLEAR dims), CLEAR array, _)) {
+                        if (array1 == "") {
+                            array1 = array;
+                            ArrayDim#(CLEAR array1_dim1) = car(dims);
+                            ArrayDim#(CLEAR array1_dim2) = car(cdr(dims));
+                        } else if (array2 == "") {
+                            array2 = array;
+                            ArrayDim#(CLEAR array2_dim1) = car(dims);
+                            ArrayDim#(CLEAR array2_dim2) = car(cdr(dims));
+                        }else
+                            ERROR("[RecognizePatterns] Two many array parameters.\n");
+                    }
+                }
+                Fpara_List = BuildList(Fpara_List, (name, array1, array2));
+                newbody = BuildList(ProfileFpara#(array1, array1_dim1, array1_dim2, array2, array2_dim1, array2_dim2), newbody);
+            }
+            if (name == "main" && prof_is_enable()) {
+                newbody = BuildList(newbody, PrintHead);
+                for (i = 0; i < Var_Array_Index; i += 1) {
+                    var = Var_Array_Map[i];
+                    array = Name#"_var_array_"i;
+                    index = Name#"_var_index_"i;
+                    newbody = BuildList(newbody, PrintVarArray#(var, array, index));
+                }
+                for (i = 0; i < FpDiv_Array_Index; i += 1) {
+                    fp = FpDiv_Array_Map[i];
+                    newbody = BuildList(newbody, PrintFpDiv#(fp));
+                }
+                for (i = 0; i < Nest_Index_Array_Index; i += 1) {
+                    in = Nest_Index_Array_Map[i];
+                    array = Name#"_nest_index_array_"i;
+                    index = Name#"_nest_index_index_"i;
+                    newbody = BuildList(newbody, PrintNestIndexArray#(in, array, index));
+                }
+                for (i = 0; i < If_Index; i += 1) {
+                    newbody = BuildList(newbody, PrintIfRate#(i, Name#"_if_"i"_0", Name#"_if_"i"_1"));
+                }
+                for (pList = Fpara_List; pList != NULL; pList = cdr(pList)) {
+                    cList = car(pList);
+                    func_name = cList[0];
+                    array1 = cList[1];
+                    array2 = cList[2];
+                    newbody = BuildList(newbody, PrintFpara#(func_name, array1, array2));
+                }
+                for (pList = Unrollbranch_List; pList != NULL; pList = cdr(pList)) {
+                    cList = car(pList);
+                    newbody = BuildList(newbody, PrintUnrollBranch#(cList));
+                }
+                newbody = BuildList(newbody, PrintTail);
+            }
+            newbody = StmtBlock#(newbody);
+            res = FunctionDecl#(name, para, type, newbody);
+        default:;
+    }
+    res
+</xform>

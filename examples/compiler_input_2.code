@@ -1,0 +1,49 @@
+<define PARSE CODE.Block/>
+<define TOKEN (("+" "+") ("-" "-")) />
+<define KEYWORDS ("for" "int" "float")/>
+
+<******************************************************************>
+<* enumeration of different types, each a subtype of Type *>
+<******************************************************************>
+<code IntType match=CODE.Type/> 
+<code FloatType match=CODE.Type/>
+<code TypeError match=CODE.Type/>
+
+<* PtrType is a struct with a single member variable: elemtype*>
+<code PtrType pars=(elemtype) match=CODE.Type/>
+
+<******************************************************************>
+<* Parsing and Translation schemes for type checking  *>
+<******************************************************************>
+<code Block parse=LIST(CODE.For | (CODE.Exp ";") | CODE.Decl, "\n") />
+<code For parse=("for" "(" (id=ID) "=" (e1=CODE.Exp) ";" ID "<" (e2=CODE.Exp) ";" CODE.Exp ")" 
+                 "{" eval(push_scope()) CODE.Block eval(pop_scope()) "}"
+                 eval(t1=LookupVariable(id); 
+                 if (t1=="") print("Line " LINE_NO ": Undefined variable:" id); 
+                 if (t1 != IntType || t1 != e1 || t1 != e2) 
+                   print("Line " LINE_NO ": type mismatch:" id "vs." e1 "vs." e2);) )/> 
+<code Exp parse=(CODE.Factor (e1=CODE.Exp1) eval(return(e1)))/>
+<code Exp1 parse=(("+" (e1=CODE.Factor) 
+              eval(if (INHERIT==IntType && e1==IntType) { IntType }
+                  else if (INHERIT==FloatType && e1==FloatType) { FloatType }
+                  else { print("Line " LINE_NO ": mismatching type: " INHERIT "vs." e1); CODE.TypeError})
+         (e2=CODE.Exp1) eval(return(e2))) 
+      |  ("[" (sub=CODE.Exp) "]" 
+         eval(if (sub!=IntType) print("Line " LINE_NO ": array subscript must be an integer: " sub);
+              if (!(INHERIT : PtrType#(t1))) { t1=TypeError; 
+                 print("Line " LINE_NO ": expecting an array type but get:" INHERIT); }
+         t1) (e1=CODE.Exp1) eval(return(e1)))
+      |  ("=" (e1=CODE.Exp) 
+         eval(if (INHERIT!=e1) print("Line " LINE_NO ": mismatching type:" INHERIT "vs." e1); return(INHERIT))) 
+      |  ("++" eval(if (INHERIT!=IntType) 
+            print("Line " LINE_NO ": cannot apply ++ to " INHERIT); return IntType; ))
+      |  ("" eval(return(INHERIT)))) />
+<code Factor parse=((id=ID) eval(t=LookupVariable(id); 
+       if (t=="") print("Line " LINE_NO ": undefined variable:" id); return(t)))
+     | (INT eval(return IntType)) 
+     | (FLOAT eval(return FloatType)) />
+<code Decl parse=((t=CODE.Type) (id=ID) ";" 
+                  eval(if (LookupVariable(id)) ERROR("Variable already defined:" id); insert_entry(id, t);)) />
+<code Type parse=( ("int" eval(return IntType))
+               |   ("float" eval(return FloatType))
+               |   ("[" (t=Type) "]" eval(return(PtrType#(t)))))/>

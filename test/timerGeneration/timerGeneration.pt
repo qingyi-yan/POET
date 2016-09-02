@@ -1,0 +1,219 @@
+include utils.incl
+include timerGeneration.incl
+
+<parameter infile message="input file name"/>
+<parameter outputLang default="Cfront.code" 
+             message="file name for output language syntax" />
+<parameter outfile  message="output file name"/>
+
+<parameter CacheKB type=INT default=1000 message="The cache size in KB"/>
+<parameter UseWallTime type=0..1 default=1 
+                  message="Whether to use wall clock time" /> 
+<parameter NREP type=1.._ default=50 
+                  message="Number of repetitions for clock resolution" /> 
+<parameter Verbose type=0..1 default=0 
+                  message="Whether to generate verbose output" /> 
+<parameter ISA type=_ default="generic" 
+                  message="Instruction Set Architecture" /> 
+<parameter MHZ type=0.._ default=0 message="Clock rate of the processor (must be set if not using generic timers)" /> 
+<parameter CacheFlushMethod type="generic"|"x86" default="generic" 
+                  message="What code to use to flush the cache" /> 
+<parameter MT type=1.._ default=3 
+                  message="Number of times to time the function" /> 
+
+<parameter RANDSEED type=1.._ default=1
+                  message="Value to seed the random number generator" /> 
+
+<xform GenAllocate pars=(type,name,size,size2,init,spec) 
+                   NREP=GLOBAL.NREP output=(r_decl,r_alloc,r_init, r_incr)>
+     align=0;
+     foreach(spec:Align#byte:TRUE) { align=byte; BREAK; }
+     valueIncr="";
+     switch (init) {
+        case INT:  value=init;
+        case CODE.Random:  value=CODE.TimerRandomVal;
+        case Increment#(begin,incr): value=begin; valueIncr=incr;
+        default:  ERROR("Init not handled:" init);
+     }
+     if (size2 == 0) {
+	    ((TimerBufferDecl#(type, name) TimerBufferSizeDecl#(name,NREP)),
+	      TimerBufferAllocate#(type, name, size, align, NREP),
+	      TimerBufferInitialize#(name, NREP,value,valueIncr),
+	      TimerBufferIncrement#(name))
+     }else {
+	    ((TimerBufferDecl#(type"*", name) Timer2DBufferSizeDecl#(name,NREP)),
+	      Timer2DBufferAllocate#(type, name, size, size2, align, NREP),
+	      Timer2DBufferInitialize#(name, NREP,value,valueIncr),
+	      TimerBufferIncrement#(name))
+     }
+</xform>
+
+<xform GenStatic pars=(type,name,size,size2,init,spec) 
+                   NREP=GLOBAL.NREP output=(r_decl,r_alloc,r_init,r_incr)>
+     align=0;
+     foreach(spec:Align#byte:TRUE) { align=byte; BREAK; }
+     valueIncr="";
+     switch (init) {
+        case INT:  value=init;
+        case CODE.Random:  value=CODE.TimerRandomVal;
+        default:  ERROR("Init not handled:" init);
+     }
+     if (size2 == 0) {
+	    ((TimerStaticBufferDecl#(type, name, size) TimerBufferSizeDecl#(name,NREP)),
+	      StaticBufferAllocate#(type, name, size, align, NREP),
+	      TimerBufferInitialize#(name, NREP,value,valueIncr),
+	      "")
+     }else {
+	    ((TimerStatic2DBufferDecl#(type,name,size,size2) Timer2DBufferSizeDecl#(name,NREP)),
+	      Static2DBufferAllocate#(type, name, size, size2, align, NREP),
+	      Timer2DBufferInitialize#(name, NREP,value,valueIncr),
+	      "")
+     }
+</xform>
+
+<xform MergeFlush pars=(flush1, flush2) >
+(flush1[1]=="")? flush2
+:(flush2[1]=="")? flush1
+:(flush1[1] : TimerFlushCacheCode)? flush1
+:(flush1[1] : TimerFlushX86Code)? ("",flush1[1]::flush2[1])
+: (ERROR("unrecognized flushing code template: " flush1))
+</xform>
+
+<xform GenFlush pars=(spec,name,type,size) 
+               flushMethod=GLOBAL.CacheFlushMethod cacheKB=GLOBAL.CacheKB
+               output=(r_alloc,r_code) >
+    foreach (spec : Flush: TRUE) {
+       switch (flushMethod)
+       {
+        case "generic": RETURN (TimerFlushCacheAlloc, TimerFlushCacheCode);
+        case "x86": RETURN ("", TimerFlushCacheX86Code#(name,size));
+        default: Error("unrecognized flush method:" flushMethod);
+       }
+    }
+    RETURN ("","");
+</xform>
+
+<* generate stmt based on the input specification. *>
+<xform GenStmt pars=(input) output=(r_decl,r_allocate,r_init,r_flush,r_update) >
+  switch (input) {
+  case (head tail) : 
+       (decl1,alloc1, init1,flush1,update1) = GenStmt(head);
+       (decl2,alloc2, init2,flush2,update2) = GenStmt(tail);
+       (BuildList(decl1,decl2),BuildList(alloc1,alloc2), BuildList(init1,init2), MergeFlush(flush1,flush2), BuildList(update1,update2))
+  case ParameterInitialization#(name, init): 
+      switch(init) {
+      case Increment#(begin, incr):  
+           ("",TimerAssign#(name, begin), "", ("",""), TimerIncrementVar#(name,incr))
+      case Random: ("",TimerAssign#(name,TimerRandomVal),"", ("",""), TimerAssign#(name,TimerRandomVal))
+      case MacroVal#(macroName,val):
+           ("",TimerAssign#(name, macroName), "", ("",""), "")
+      default: ("",TimerAssign#(name,init), "", ("",""),"")
+      }
+  case AllocateVector#(name, type, size, init, spec):
+      (decl,alloc,init,incr) = GenAllocate(type,name,size,0,init,spec);
+      (decl,alloc,init, GenFlush(spec,name,type,size), incr)
+  case AllocateMatrix#(name,type, row,col,init,spec):
+      (decl,alloc,init,incr) = GenAllocate(type,name,row*col,0,init,spec);
+      (decl,alloc,init, GenFlush(spec,name,type,row*col), incr)
+  case AllocateArray2D#(name,type,row,col,init,spec):
+      (decl,alloc,init,incr) = GenAllocate(type,name,row,col,init,spec);
+      (decl,alloc,init, GenFlush(spec,name,type,row*col), incr)
+  case StaticVector#(name,type,size,init,spec):
+      (decl,alloc,init,incr) = GenStatic(type,name,size,0,init,spec);
+      (decl,alloc,init, GenFlush(spec,name,type,size), incr)
+  case StaticMatrix#(name,type,row,col,init,spec):
+      (decl,alloc,init,incr) = GenStatic(type,name,row,col,init,spec);
+      (decl,alloc,init, GenFlush(spec,name,type,row*col), incr)
+  case "": ("","","",("",""),"")
+  default: ERROR("Unrecognized input:" input);
+}
+</xform>
+
+
+<* this transformation will create the code for the timer*>
+<xform TransformCode pars=(inputSpec) 
+     mhz=GLOBAL.MHZ useWallTime=GLOBAL.UseWallTime mt=GLOBAL.MT 
+     randseed=GLOBAL.RANDSEED
+     verbose=GLOBAL.Verbose cacheKB=GLOBAL.CacheKB
+     nrep=GLOBAL.NREP arch=GLOBAL.ISA>
+    if (arch!="generic" && mhz == 0) ERROR("MHZ must be set!");
+    TopSpecification#(incl,routine,checkpoint,routineInit, _, flops_exp) = inputSpec;
+    FunctionDecl#(name,params,returnType,body)=routine;
+    if (!(body : CODE.EmptyStmt|"")) routine=FunctionDecl#(name,params,returnType,CODE.EmptyStmt);
+    macroDecl = "";
+    foreach_r (routineInit : MacroVal#(CLEAR name,CLEAR val): TRUE)
+       macroDecl=BuildList(TimerMacroVal#(name,val),macroDecl);
+       timerIncl = TimerIncludes#((checkpoint) ? 1 : 0, useWallTime,arch,mhz,cacheKB,
+      			    nrep, mt, randseed, BuildList(routine,macroDecl));
+
+    <* generate all variable decls for the timer *>
+    declseq = "";
+    <* type declarations for the parameters of routine *>
+    paramNames = ""; <<* extract out a list of parameter names
+    if(!checkpoint) {
+	    foreach_r (routine[FunctionDecl.params] : 
+		    (curDecl = TypeInfo#(CLEAR type,CLEAR name,_)) : TRUE) 
+	    {
+		declseq = BuildList(TimerVariableDecl#(CODE.TimerBaseType#type, name),declseq);
+		paramNames=BuildList(name, paramNames);
+	    }
+	    returnType = routine[FunctionDecl.ret];
+	    if (! (returnType : CODE.VoidType )) {
+		returnDecl = TimerVariableDecl#(returnType, CODE.TimerRoutineReturnVar);
+		declseq = declseq:: returnDecl;
+	    }
+    
+	    <* generate initialization of routine parameters *>
+	    (initdecl,alloc,init,(flushAlloc,flushCode), update) = GenStmt(routineInit);
+	     
+	    mainBody = DeclForTimerVars#(useWallTime, nrep, mt, BuildList(declseq,initdecl),
+					 flops_exp) 
+		       ::TimerParameterInit#(mt,BuildList(alloc,flushAlloc));
+
+	    <* Generate the timing code *>
+	    timerCall=TimerFunCall#(routine,paramNames);
+	    if (nrep > 1)
+		timerCall = TimingLoop#(timerCall,update);
+	    timerCall = BuildList(init,flushCode):: BeginTimerCall#(useWallTime,mt) 
+		  :: timerCall :: EndTimerCall#(useWallTime,mt) :: ComputeTimerDiff#(mt,nrep);
+	    if (mt > 1)
+		timerCall=MultiTimingLoop#(timerCall); 
+	    if (flops_exp != "")
+		timerCall=timerCall::ComputeFlops#(flops_exp,nrep);
+	    mainBody=mainBody::timerCall;
+	    if (mt > 1) 
+	       mainBody= mainBody :: (useWallTime? MultiTimeMinAndAvg#mt : MultiTimeMedian#mt);
+	     <* output the recorded times *>
+	     mainBody=mainBody::OutputTiming#(useWallTime,mt,flops_exp);
+
+	     if (verbose)
+		mainBody=mainBody::OutputMultiTiming(useWallTime, mt);
+
+	     timerIncl :: BuildList(incl, TimerMainCode#(mt,nrep,mainBody))
+     }else {
+	     declseq = TimerVariableDecl#("double", CODE.CheckpointReturnVar);
+	    (initdecl,alloc,init,(flushAlloc,flushCode), update) = GenStmt(routineInit);
+	    mainBody = DeclForTimerVars#(useWallTime, nrep, mt, BuildList(declseq,initdecl),
+					 flops_exp) 
+		       ::TimerParameterInit#(BuildList(alloc,flushAlloc));
+	    checkpointCall=TimerCheckpointCall#(checkpoint,mt);
+
+	    if (mt > 1)
+		checkpointCall=MultiTimingLoop#(checkpointCall); 
+	    	    
+	    mainBody=mainBody::checkpointCall;
+
+	    if (mt > 1) 
+	       mainBody= mainBody :: (useWallTime? MultiTimeMinAndAvg#mt : MultiTimeMedian#mt);
+	    mainBody=mainBody::OutputTiming#(useWallTime,mt,flops_exp);
+	    timerIncl :: BuildList(incl, TimerMainCode#(mt,nrep,mainBody))
+     }
+</xform>
+
+<input from=(infile) syntax=(outputLang "specification.code") to=inputCode/>
+
+<eval resultCode= XFORM.TransformCode(inputCode);  />
+
+<output to=(outfile) syntax=(outputLang "timerCodeTemplates.code") from=resultCode/>
+
+<output cond=(ISA=="x86" || ISA=="x86_64") to="GetCycleCount.S" syntax="timerCodeTemplates.code" from=(GetCycleCountCode#(ISA))/>

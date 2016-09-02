@@ -1,0 +1,32 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest1,Nest2,Nest3,Nest4,Nest5,Nest6,Nest7,Nest8 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+<trace Nest1_FuseLoops_index_start_th2 = (("oddistart" CODE.Bop#("+", CODE.Bop#("%", CODE.Bop#("+", "i", 1), 2), 1))) />
+<trace Nest5_FuseLoops_index_start_th1 = (("oddistart" CODE.Bop#("+", CODE.Bop#("%", "i", 2), 1))) />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Nest1_FuseLoops_index_start_th2 Nest5_FuseLoops_index_start_th1) />
+
+<eval ;
+	FuseLoops[index_start=Nest1_FuseLoops_index_start_th2]((Nest3),Nest1);
+	FuseLoops[index_start=Nest5_FuseLoops_index_start_th1]((Nest7),Nest5); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

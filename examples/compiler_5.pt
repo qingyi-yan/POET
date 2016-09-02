@@ -1,0 +1,141 @@
+<parameter infile message="input file name"/>
+<parameter outfile message="output file name"/>
+
+<*========== reading the input code ============*>
+<* parse the in File using syntax defined in file "compiler_input_4.code"; 
+   save the parsing result (the abstract syntax tree) to ast variable *>
+<input from=(infile) syntax="compiler_input_4.code" to=ast/>
+
+<*============== three-address code management =====*>
+<define ir_3addr NULL/> <* resulting the 3-address IR generated *>
+<define localOffset 16/> <* beginning offset of local variables *>
+<define reg_index 0/>  <* index of new registers created *>
+<define label_index 0/> <* index of new labels created *>
+
+<* a function that returns a new register *>
+<xform new_register > GLOBAL.reg_index=GLOBAL.reg_index+1; "r_"^reg_index </xform>
+
+<* a function that returns a new label *>
+<xform new_label > GLOBAL.label_index=GLOBAL.label_index+1; "L_"^label_index </xform>
+
+<* 3-address IR date structure *>
+<code ThreeAddress pars=(label, op, opd1, opd2, opd3)>
+@label@: @op@ @opd1@ @opd2@ @opd3@
+</code>
+
+<code InstrList pars=(content)>
+@((TAIL(content) : NULL)? "" : InstrList#(TAIL(content)))
+HEAD(content)@
+
+</code>
+
+
+<* a function for appending a new 3-address instruction*>
+<xform Append_instr pars=(label, op, opd1, opd2, opd3)> 
+GLOBAL.ir_3addr = ThreeAddress#(label, op, opd1, opd2, opd3) :: GLOBAL.ir_3addr;
+</xform>
+
+<*=============== translation schemes for 3-addr code generation =========*>
+<* implement translation scheme for all productions of non-terminal Goal *>
+<xform Gen3Address_Goal pars=(input, begin)>
+  CODE.Goal#(program)=input;
+  for (p=program; p != NULL; p = cdr(p)) {
+    switch (cur=car(p)) {
+      case CODE.For : begin=XFORM.Gen3Address_For(cur,begin); 
+      case CODE.Decl : XFORM.Gen3Address_Decl(cur,begin); begin="";
+      case CODE.ExpStmt#(CLEAR e,CLEAR t) : 
+                  XFORM.Gen3Address_Exp(e,t,begin); begin="";
+    }
+  }
+  begin
+</xform>
+
+<* implement translation scheme for all productions of non-terminal Decl *>
+<xform Gen3Address_Decl pars=(input,begin)>
+  Decl#(type,name) = input;
+  switch (type) {
+  case CODE.IntType: 
+     XFORM.insert_entry(name,GLOBAL.localOffset);
+     localOffset = localOffset + 2;
+  case CODE.FloatType | CODE.PtrType:
+     XFORM.insert_entry(name,GLOBAL.localOffset);
+     localOffset = localOffset + 4;
+  }
+  begin
+</xform>
+
+<* implement translation scheme for all productions of non-terminal For *>
+<xform Gen3Address_For pars=(input,begin)>
+  For#(var,lb,ub,incr,body) = input;
+  r_var = new_register();
+  offset = XFORM.LookupVariable(var);
+  if (offset == "") ERROR("undefined variable:" var);
+  r_exp1 = XFORM.Gen3Address_Exp(lb,CODE.IntType,begin);
+  Append_instr("", "store", r_exp1, "rarp", offset);
+  test_label = new_label();
+  body_label = new_label();
+  exit_label = new_label();
+  r_exp2 = XFORM.Gen3Address_Exp(ub,CODE.IntType,test_label);
+  Append_instr("", "loadAI", "rarp", offset, r_var);
+  Append_instr("", "if<", r_var, r_exp2, body_label); 
+  Append_instr("", "goto", "", "", exit_label); 
+  body_end_label = XFORM.Gen3Address_Goal(body,body_label);
+  XFORM.Gen3Address_Exp(incr, CODE.IntType, body_end_label);
+  Append_instr("", "goto", "", "", test_label); 
+  exit_label
+</xform>
+
+<code LHSType pars=(basetype) />
+<* implement translation scheme for all productions of non-terminal Exp *>
+<xform Gen3Address_Exp pars=(exp, type, begin) >
+  switch(exp)
+  {
+    case CODE.Bop#("+", exp1, exp2):
+          t1 = Gen3Address_Exp(exp1,type,begin);
+          t2 = Gen3Address_Exp(exp2,type,"");
+          t3 = new_register();
+          Append_instr("", "add", t1, t2, t3);
+          t3
+    case CODE.Bop#("[]", exp1, exp2):
+          t2 = Gen3Address_Exp(exp2,CODE.IntType,"");
+          if (!(type : LHSType#(elemtype))) elemtype=type;
+          t3 = new_register();
+          Append_instr("", "multi", t2, ((elemtype==IntType)?2:4), t3);
+          (t1,s1) = Gen3Address_Exp(exp1,LHSType#elemtype,begin);
+          Append_instr("", "add", t1, t3, t3);
+          if (!(type : CODE.LHSType)) { Append_instr(begin, "loadAI", t3, s1, t3); t3}
+          else  { (t3, s1) }
+    case CODE.Bop#("=", var, exp2):
+          t2 = Gen3Address_Exp(exp2,type,begin);
+          (base,offset) = Gen3Address_Exp(var,LHSType#type,"");
+          Append_instr("","storeAI",t2,base,offset);
+          t2
+     case ID:  
+         offset=LookupVariable(exp);
+         if (!(type : LHSType)) {
+            t1 = new_register();
+            Append_instr(begin, "loadAI", "rarp", offset, t1);
+            t1
+         }
+         else { ("rarp",offset) }
+     case CODE.Uop#("++",var):
+         t1 = new_register(); offset=LookupVariable(var);
+         Append_instr(begin, "loadAI", "rarp", offset, t1);
+         Append_instr("", "addi", t1, 1, t1);
+         Append_instr("", "storeAI",t1, "rarp", offset);
+         t1
+     case INT | FLOAT:  
+         t1 = new_register(); 
+         Append_instr(begin, "loadi", exp, "", t1);
+         t1
+  }
+</xform>
+
+<*===================== driver code ===================*>
+<* start evaluation *>
+<eval last = Gen3Address_Goal(ast, "");
+      if (last != "") Append_instr(last, "", "", "", ""); <* generate the last label *> 
+/>
+
+<* write the 3-address ir to the given output file*>
+<output from=(InstrList#ir_3addr) to=outfile />

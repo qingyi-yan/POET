@@ -1,0 +1,9 @@
+<parameter infile message="input file name"/>
+
+<define symTable ""/>
+
+<* parse the in File using syntax defined in file "compiler_input_4.code"; 
+   save the parsing result (the abstract syntax tree) to ast variable *>
+<input from=(infile) syntax="compiler_input_4.code" to=ast />
+
+<output from=(ast) syntax="compiler_input_4.code" />

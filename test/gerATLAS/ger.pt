@@ -1,0 +1,361 @@
+include opt.pi
+
+<parameter orig default=0 type=0|1 message="whether to output orig code"/>
+<parameter rA default=1 type=0|1 message="whether to do scalarRepl for A"/>
+<parameter pre type="s"|"d"|"z"|"c" default="d" 
+                  message="compute at single- or double- precision" /> 
+<parameter ker type=1|2 default=1 
+                  message="compute the ger1 or ger2 kernel " /> 
+<parameter yu type=1.._ default=4 
+          message="Unroll factors for loops that iterate over vectors y and x"/>
+<parameter xu type=1.._ default=2 
+          message="Unroll factors for loops that iterate over vectors y and x"/>
+<parameter SSELEN type=8|16 default=8 
+         message="The length of SSE registers. Should be 8 for 32 bit machines and 16 for 64 bit machines" /> 
+
+<parameter SSENO type=0|8|16 default=8 
+                  message="The number of SSE registers. Should be 8 for 32 bit Intel machines and 16 for 64 bit Intel machines" /> 
+
+<parameter align type=0|1 
+                  default=1 
+                  message="Whether to align loops before SSE vectorization" /> 
+
+<parameter PF type=0..4 
+                  default=1 
+                  message="Whether and how to apply prefetching optimization. 0: no prefetching; 1: prefetch A at next iteration of loop J; 2: prefetch Y at next iteration of loop I; 3: prefetch A at next iteration of loop I; 4: prefetch both X and A at iteration of loopI." /> 
+
+
+
+<parameter permuteReg type=(INT,INT,INT,INT) 
+                  parse=TUPLE("("INT","INT","INT","INT")")
+                  default=(1,2,3,4)
+                  message="permutation of integers (1,2,3,4) to control the ordering of scalar repl (for A,X,Y) and unrollJam (register level blocking); The original ordering is UnrollJam->X_scalar->Y_scalar->A_scalar" />
+
+
+
+<parameter permuteUnroll type=(INT,INT) 
+                  parse=TUPLE("("INT","INT")")
+                  default=(1,2)
+                  message="permutation of integers (1,2) to control the ordering of FiniteDifferencing and loop unrolling. The original ordering is FiniteDiff -> Unroll" />
+
+
+
+<parameter threeAddress type=0..1 
+                  default=1 
+                  message="whether or not translate to three-address code" /> 
+
+<parameter addressTranslate type=0..1 
+		  default=0 
+		  message="Turn on three address and two address translate" />
+
+
+<eval ftype=(pre : "d"|"z")? "double" 
+          : (pre:"s"|"c")? "float"
+          : (ERROR("Unknown precision: " pre));
+      fnum=(pre : "z"|"c")? 2 
+          : (pre : "d"|"s")? 1
+          : (ERROR("Unknown precision: " pre));
+      alpha=0; />
+
+
+
+<trace gerdef,ger,gerDecl,gerBody, nest2,loopJ,nest1,loopI/>
+
+
+<code FunctionDecl/>
+<input cond=(pre:"d"|"s" && ker == 1) to=gerdef syntax="Cfront.code">
+//@; BEGIN(ger=FunctionDecl) 
+void ATL_/*@@*/__pre/*@@*/ger1_a1_x1_yX(const int M, const int N, 
+          const SCALAR alpha, const E_TYPE *X, const int incX, 
+          const E_TYPE *Y, const int incY, 
+          E_TYPE* A, const int lda) 			
+{ 							
+
+   int i, j;     		     //@=>gerDecl=Stmt 
+
+   for (j = 0; j < N; j += 1)	     //@=>loopJ=Loop BEGIN(nest2=Nest) BEGIN(gerBody=Nest) 
+   {                                                    
+     for (i = 0; i < M; i += 1)     //@=>loopI=Loop BEGIN(nest1=Nest)
+      { 						
+         A[j*lda+i] = A[j*lda+i] + X[i] * Y[j*incY]; 
+      }      						
+
+   } 							
+}  							
+</input>
+
+<input cond=(pre:"d"|"s" && ker == 2) to=gerdef syntax="Cfront.code">
+//@; BEGIN(ger=FunctionDecl) 
+void ATL_/*@@*/__pre/*@@*/ger2_a1_x1_yX(const int M, const int N, 
+          const SCALAR alpha, const E_TYPE *X, const int incX, 
+          const E_TYPE *Y, const int incY, const SCALAR beta,
+          const E_TYPE *W, int incW, const E_TYPE *Z, int incZ,
+          E_TYPE* A, const int lda) 			
+{ 							
+
+   int i, j;     		     //@=>gerDecl=Stmt 
+
+   for (j = 0; j < N; j += 1)	     //@=>loopJ=Loop BEGIN(nest2=Nest) BEGIN(gerBody=Nest) 
+   {                                                    
+     for (i = 0; i < M; i += 1)     //@=>loopI=Loop BEGIN(nest1=Nest)
+      { 						
+         A[j*lda+i] = A[j*lda+i] + X[i] * Y[j*incY] + W[i] * Z[j*incZ]; 
+      }      						
+
+   } 							
+}  							
+</input>
+
+<input cond=(pre:"z"|"c" && ker == 2) to=gerdef syntax="Cfront.code">
+//@; BEGIN(ger=FunctionDecl) 
+void ATL_/*@@*/__pre/*@@*/ger2_a1_x1_yX(const int M, const int N, 
+          const SCALAR alpha, const E_TYPE *X, const int incX, 
+          const E_TYPE *Y, const int incY, const SCALAR beta,
+          const E_TYPE *W, int incW, const E_TYPE *Z, int incZ,
+          E_TYPE* A, const int lda) 			
+{ 							
+
+   int i, j;     		     //@=>gerDecl=Stmt 
+
+   for (j = 0; j < 2*N; j += 2)	     //@=>loopJ=Loop BEGIN(nest2=Nest) BEGIN(gerBody=Nest) 
+   {                                                    
+     for (i = 0; i < 2*M; i += 2)     //@=>loopI=Loop BEGIN(nest1=Nest)
+      { 						
+        A[j*lda+i] = A[j*lda+i]+X[i]*Y[j*incY]+W[i]*Z[j*incZ]-X[i+1]*Y[j*incY+1]-W[i+1]*Z[j*incZ+1];
+        A[j*lda+i+1] = A[j*lda+i+1]+X[i]*Y[j*incY+1]+W[i]*Z[j*incZ+1]+X[i+1]*Y[j*incY]+W[i+1]*Z[j*incZ];
+      }      						
+   } 							
+}  							
+</input>
+
+<input cond=(pre:"z"|"c" && ker == 1) to=gerdef syntax="Cfront.code">
+//@; BEGIN(ger=FunctionDecl) 
+void ATL_/*@@*/__pre/*@@*/ger1_a1_x1_yX(const int M, const int N, 
+          const SCALAR alpha, const E_TYPE *X, const int incX, 
+          const E_TYPE *Y, const int incY, 
+          E_TYPE* A, const int lda) 			
+{ 							
+
+   int i, j;     		     //@=>gerDecl=Stmt 
+
+   for (j = 0; j < 2*N; j += 2)	     //@=>loopJ=Loop BEGIN(nest2=Nest) BEGIN(gerBody=Nest) 
+   {                                                    
+     for (i = 0; i < 2*M; i += 2)     //@=>loopI=Loop BEGIN(nest1=Nest)
+      { 						
+        A[j*lda+i] = A[j*lda+i]+X[i]*Y[j*incY]-X[i+1]*Y[j*incY+1];
+        A[j*lda+i+1] = A[j*lda+i+1]+X[i]*Y[j*incY+1]+X[i+1]*Y[j*incY];
+      }      						
+
+   } 							
+}  							
+</input>
+
+<eval lda="lda";
+      aj=Bop#("*","j",lda);
+      aij=Bop#("+",aj,"i");
+      yj=Bop#("*","j","incY");
+      zj=Bop#("*","j","incZ");
+      if (fnum > 1) { yj=yj+"k"; zj=zj+"k"; }
+/>
+
+<eval specialize=DELAY {
+   REPLACE("__pre", pre, gerdef);
+
+   if (pre == "s") {
+      REPLACE("SCALAR", "float", gerdef);
+      REPLACE("E_TYPE", "float", gerdef);
+   }
+   else if (pre == "d") {
+      REPLACE("SCALAR", "double", gerdef);
+      REPLACE("E_TYPE", "double", gerdef);
+   }
+   else if (pre == "z") {
+      REPLACE("SCALAR", "double*", gerdef);
+      REPLACE("E_TYPE", "double", gerdef);
+   }
+   else if (pre == "c") {
+      REPLACE("SCALAR", "float*", gerdef);
+      REPLACE("E_TYPE", "float", gerdef);
+   }
+   else ERROR("Unrecognized precision specification: " pre);
+}/>
+
+
+<eval ger_UnrollJam= DELAY {<* APPLY nest2_UnrollJam; *>
+        if (Yrepl != "") 
+          PRINT ("Unroll-Jam is disabled because of Y_ScalarRepl");
+      else { 
+    	  if (yu > 1)
+            UnrollJam[factor=yu; cleanup=1; trace=gerBody ](nest1,nest2);
+     	} }
+/>
+
+<eval 
+    ger_ScalarRepl= DELAY { <* APPLY A_ScalarRepl; *>
+        if (rA) 
+         TRACE(Arepl,
+               ScalarRepl[prefix="a_buf";trace_vars=Arepl; trace_decl=gerDecl; data_type=ftype;
+                          init_loc=nest1[Nest.body]; 
+                          save_loc=nest1[Nest.body]; trace=nest1]
+             (ArrayAccess#("A", aij), 
+                             (CopyDim#("j","j",loopJ[Loop.step],lda) 
+                              CopyDim#("i","i",loopI[Loop.step],1)), 
+              nest1[Nest.body]));
+	   };
+    ger_ScalarRepl = DELAY { <* APPLY Y_ScalarRepl; *>
+           copyDim=CopyDim#("j","j",loopJ[Loop.step],"incY");
+           if (fnum > 1)
+              copyDim=(copyDim CopyDim#("k",0,fnum,1));
+   	   TRACE(Yrepl,
+               ScalarRepl[prefix="y_buf";trace_vars=Yrepl; init_loc=nest2[Nest.body]; 
+                          trace_decl=gerDecl; data_type=ftype; trace=nest2]
+          ( ArrayAccess#("Y", yj), copyDim, nest2[Nest.body]));
+            } :: ger_ScalarRepl;
+    ger_ScalarRepl= DELAY {<* APPLY X_ScalarRepl; *>
+           copyDim=CopyDim#("i","i",loopI[Loop.step],1);
+	   TRACE(Xrepl,
+               ScalarRepl[prefix="x_buf";trace_vars=Xrepl; trace_decl=gerDecl; data_type=ftype;
+                          init_loc=nest1[Nest.body]; trace=nest1]
+                (ArrayAccess#("X","i"),copyDim, nest1[Nest.body]));
+            } :: ger_ScalarRepl;
+    if (ker==2)  {
+       ger_ScalarRepl = DELAY { <* APPLY Z_ScalarRepl; *>
+           copyDim=CopyDim#("j","j",loopJ[Loop.step],"incZ");
+           if (fnum > 1)
+              copyDim=(copyDim CopyDim#("k",0,fnum,1));
+   	   TRACE(Zrepl,
+               ScalarRepl[prefix="z_buf";trace_vars=Zrepl; init_loc=nest2[Nest.body]; 
+                          trace_decl=gerDecl; data_type=ftype; trace=nest2]
+          ( ArrayAccess#("Z", zj), copyDim, nest2[Nest.body]));
+            } :: ger_ScalarRepl;
+       ger_ScalarRepl= DELAY {<* APPLY W_ScalarRepl; *>
+           copyDim=CopyDim#("i","i",loopI[Loop.step],1);
+	   TRACE(Wrepl,
+               ScalarRepl[prefix="w_buf";trace_vars=Wrepl; trace_decl=gerDecl; data_type=ftype;
+                          init_loc=nest1[Nest.body]; trace=nest1]
+                (ArrayAccess#("W","i"),copyDim, nest1[Nest.body]));
+            } :: ger_ScalarRepl;
+      }
+/>
+
+<eval optimize  =
+   DELAY { Xrepl = Yrepl = Arepl = Wrepl = Zrepl = ""; }
+   ((ker==1)? PERMUTE(permuteReg, BuildList(ger_UnrollJam, ger_ScalarRepl))
+           : BuildList(ger_UnrollJam, ger_ScalarRepl))
+   DELAY { <* APPLY array_ToPtrRef; Abuf_SplitStmt; SSE Vectorization*>
+
+         if (threeAddress != 0)  {
+            ArrayAccess2PtrRef(nest2);
+         }
+
+         if (ker==2 && Wrepl) {<* APPLY Xbuf_SplitStmt; *>
+             nvars="";
+PRINT(Wrepl);
+             TRACE(nvars,
+                  SplitStmt[iReuse=0; trace_newVars=nvars; trace_decl=gerDecl; 
+                      var_type=ftype; trace=nest1] (Wrepl, nest1[Nest.body]));
+             Wrepl = BuildList(Wrepl,nvars);
+
+            }
+         if (Xrepl) {<* APPLY Xbuf_SplitStmt; *>
+             nvars="";
+             if(addressTranslate == 0) {
+		TRACE(nvars,
+                  SplitStmt[ iReuse=0; trace_newVars=nvars; trace_decl=gerDecl; 
+                      var_type=ftype; trace=nest1] (Xrepl, nest1[Nest.body]));
+	     } else {
+		TRACE(nvars,
+                  SplitStmt[new=TRUE; iReuse=0; trace_newVars=nvars; trace_decl=gerDecl; 
+                      var_type=ftype; trace=nest1] (Xrepl, nest1[Nest.body]));
+  	     }
+             Xrepl = BuildList(Xrepl,nvars);
+            }
+         if ((ker == 2 || fnum>1) && Arepl) {<* APPLY Abuf_SplitStmt; *>
+             nvars="";
+             TRACE(nvars,
+                  SplitStmt[iReuse=1; trace_newVars=nvars; trace_decl=gerDecl; 
+                      var_type=ftype; trace=nest1] (Arepl, nest1[Nest.body]));
+             Arepl = BuildList(Arepl,nvars);
+            }
+
+         if (SSENO && SSELEN) {   <* APPLY body2_Vectorize; *>
+             vars = ( (Arepl,1) (Yrepl,0) (Xrepl,1) );
+             ivars=(Xrepl Yrepl);
+             if (ker==2) { vars= (Wrepl,1)::(Zrepl,0)::vars; 
+                           ivars= Wrepl :: Zrepl :: ivars; 
+                         }
+             VectorizeLoop[ext=nest2[Nest.body];
+                         iRegno=SSENO; iReglen=SSELEN; elem_prec=pre; 
+                         init_vars=ivars; save_vars=Arepl;
+                         alignOpt=(align? 
+                               (Bop#("+","A",aj),Bop#("+","A",aij),"alignA")
+                                : "");
+                         trace_include=gerdef; trace_decl=gerDecl; trace=nest2]
+                    (vars, nest1);
+             }
+         }
+
+    PERMUTE(permuteUnroll,
+
+       DELAY {<* APPLY nest1_Unroll; *>
+          factor=xu / loopI[Loop.step];
+          if (factor > 1) 
+             UnrollLoops[factor=factor; cleanup=1; trace=nest2](nest1[Nest.body],nest1) ;
+          }
+
+       DELAY {<* APPLY array_FiniteDiff; *>
+          FiniteDiff[prefix="pA"; trace_decl=gerDecl; exp_type=ftype "*"]
+              ("A", (ExpDim#(nest2,loopJ[Loop.step],lda) ExpDim#(nest1,1,1)), gerBody);
+
+          FiniteDiff[prefix="pX"; trace_decl=gerDecl; exp_type=ftype "*"; trace=nest2]
+               ("X", ExpDim#(nest1, 1, 1), nest2[Nest.body]);
+
+          FiniteDiff[prefix="pY"; trace_decl=gerDecl; exp_type=ftype "*"]
+              ("Y", ExpDim#(nest2, loopJ[Loop.step], "incY"),  gerBody);
+
+          }
+
+       )
+
+
+
+    DELAY { <* APPLY body2_Prefetch; *>
+
+       if (PF == 1) 
+
+         Prefetch[trace_decl=gerDecl; data_type="const " ftype "*"; trace_include=gerdef; var="prefA"; trace=gerBody] 
+
+             ("A" + (dist=(loopJ[Loop.step]*lda)), 
+
+               ( (nest2, nest2[Nest.body]) (nest1, nest1[Nest.body])), 
+
+                 (dist loopI[Loop.step]));
+
+        if (PF == 2 || PF == 4) 
+
+           Prefetch[trace_include=gerdef; trace_decl=gerDecl; data_type="const " ftype " *"; var="prefY"; trace=gerBody] 
+
+              ("Y"+loopJ[Loop.step], 
+
+                  (nest1,nest1[Nest.body]), (loopJ[Loop.step]));
+
+        if (PF == 3 || PF == 4) 
+
+           Prefetch[trace_include=gerdef; trace_decl=gerDecl; data_type="const " ftype " *"; var="prefA"; trace=gerBody] 
+              ("A"+loopI[Loop.step], 
+                  ((nest2,nest2[Nest.body]) (nest1,nest1[Nest.body])), 
+                  ( (loopJ[Loop.step]*lda) loopI[Loop.step]));
+       }
+
+/>
+
+<output cond=orig to="dger_kernel.c" syntax="Cfront.code" from=( 
+	APPLY {specialize};
+        gerdef
+)/>
+
+<output cond=(!orig) to="dger_kernel.c" syntax="Cfront.code" from=( 
+	APPLY {specialize};
+	APPLY {optimize};
+        gerdef
+)/>

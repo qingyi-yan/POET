@@ -1,0 +1,51 @@
+include opt.pi
+<trace target/>
+<input to=target syntax="Cfront.code" from=("rose_dgemm.C")/>
+<trace top_nest1,decl_top_nest1,nest1,nest3,nest2/>
+<eval decl_top_nest1 = "";
+      top_nest1 = (decl_top_nest1 nest1);
+      EraseTraceHandle[repl=top_nest1](nest1,target)/>
+
+
+<trace var_tile_nest1/>
+<eval var_clnup_top_nest1 = top_nest1/>
+<trace trace_include_files/>
+<eval trace_include_files = "";
+      target = (trace_include_files (ERASE(target)))/>
+<trace trace_private_top_nest1/>
+<eval trace_private_top_nest1 = ""/>
+
+<parameter pthread_nest1 type=1.._ default=1 message="number of threads to parallelize loop nest1"/>
+<parameter psize_nest1 type=1.._ default=256 message="number of loop iterations to run by different threads for nest1"/>
+<parameter bsize_nest1 type=(INT INT INT) default=(16 16 16) message="Blocking factor for loop nest nest1"/>
+
+<cond psize_nest1==1||(psize_nest1>=(HEAD(bsize_nest1))&&(psize_nest1%HEAD(bsize_nest1))==0)/>
+
+<eval par_nest1 = DELAY{
+         trace_private_top_nest1 = ("j_par" "l" "i" "j");
+         AppendDecl[trace=decl_top_nest1](IntegerType,"j_par");
+         if (pthread_nest1!=1)  {
+            BlockLoops[factor=BlockDim#("j","j_par",psize_nest1);cleanup=0](nest1[Nest.body],nest1);
+            ParallelizeLoop[trace=top_nest1;private=trace_private_top_nest1;trace_include=trace_include_files;threads=pthread_nest1](nest1);
+            ERASE(nest1,top_nest1);
+            nest1 = nest1[Nest.body];
+            REPLACE(ERASE(nest1),nest1,top_nest1);
+            MoveTraceHandle[trace=target](top_nest1,nest1)
+         }
+      }/>
+<eval block_nest1 = DELAY{
+         bdim_nest1 = (BlockDim#("j","j_bk",HEAD(bsize_nest1)) BlockDim#("i","i_bk",HEAD(TAIL(bsize_nest1))) BlockDim#("l","l_bk",HEAD(TAIL(TAIL(bsize_nest1)))));
+         var_tile_nest1 = COPY(nest1);
+         AppendDecl[trace=decl_top_nest1](IntegerType,(("l_bk" "i_bk" "j_bk")));
+         BlockLoops[factor=bdim_nest1;cleanup=0;trace_innerNest=var_tile_nest1;trace_decl=decl_top_nest1;nonPerfect=NonPerfectLoops#("",nest2)](nest2[Nest.body],nest1);
+         trace_private_top_nest1 = (("l_bk" "i_bk" "j_bk") (ERASE(trace_private_top_nest1)))
+      }/>
+<eval cleanup_nest1 = DELAY{
+         CleanupBlockedNests[trace=top_nest1](var_clnup_top_nest1)
+      }/>
+
+
+<eval APPLY{par_nest1};
+      APPLY{block_nest1};
+      APPLY{cleanup_nest1}/>
+<output from=(target) syntax=("Cfront.code")/>

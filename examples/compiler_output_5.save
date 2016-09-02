@@ -1,0 +1,22 @@
+: loadi 0  r_2
+: store r_2 rarp 16
+L_1: loadAI rarp 18 r_3
+: loadi 10  r_4
+: add r_3 r_4 r_5
+: loadAI rarp 16 r_1
+: if< r_1 r_5 L_2
+: goto   L_3
+L_2: loadAI rarp 18 r_6
+: loadi 1  r_7
+: add r_6 r_7 r_8
+: storeAI r_8 rarp 18
+: loadi 0.1  r_9
+: loadAI rarp 16 r_10
+: multi r_10 4 r_11
+: add rarp r_11 r_11
+: storeAI r_9 r_11 20
+: loadAI rarp 16 r_12
+: addi r_12 1 r_12
+: storeAI r_12 rarp 16
+: goto   L_1
+L_3:    

@@ -1,0 +1,137 @@
+<xform MULADD2FMA pars=(input) trace = "">
+new = "";
+org = "";
+for (ptr = input; ptr != NULL; ptr = cdr(ptr)) {
+  pre = car(ptr);
+  if (cdr(ptr) != NULL && car(cdr(ptr)) != "") {
+    nxt = car(cdr(ptr));
+    if (pre : ExpStmt#VecRegAdd3#(CLEAR s11,CLEAR s12,CLEAR d1)) {
+      if (nxt : ExpStmt#VecRegMul3#(CLEAR s21,CLEAR s22,CLEAR d2)) {
+        if ((d2 == s11) || (d2 == s12)) {
+          org = BuildList(pre,org);
+          org = BuildList(nxt,org);
+          new = ExpStmt#(VecRegFma3#(s21,s22,d1));
+          REPLACE(org,new,trace);
+          org = "";
+          new = "";
+          ptr = cdr(ptr);
+        }
+      }
+    } else if (pre : ExpStmt#VecRegMinus3#(CLEAR s11,CLEAR s12,CLEAR d1)) {
+      if (nxt : ExpStmt#VecRegMul3#(CLEAR s21,CLEAR s22,CLEAR d2)) {
+        if ((d2 == s11) || (d2 == s12)) {
+          org = BuildList(pre,org);
+          org = BuildList(nxt,org);
+          new = ExpStmt#(VecRegFms3#(s21,s22,d1));
+          REPLACE(org,new,trace);
+          org = "";
+          new = "";
+          ptr = cdr(ptr);
+        }
+      }
+    } else 
+      if (pre : ExpStmt#VecRegMul3#(CLEAR s11,CLEAR s12,CLEAR d1)) {
+        if (nxt : ExpStmt#VecRegAdd3#(CLEAR s21,CLEAR s22,CLEAR d2)) {
+          if ((d1 == s21) || (d1 == s22)) {
+            org = BuildList(nxt,org);
+            org = BuildList(pre,org);
+            new = ExpStmt#(VecRegFma3#(s21,s22,d1));
+            REPLACE(org,new,trace);
+            org = "";
+            new = "";
+            ptr = cdr(ptr);
+          }
+        }
+      }
+  }
+}
+</xform>
+
+<xform AVX2SSE pars=(input) trace = "">
+new = "";
+org = "";
+for (ptr = input; ptr != NULL; ptr = cdr(ptr))
+{
+  if (car(ptr) : ExpStmt#VecRegRed2Var) {
+    org = BuildList(car(ptr), org);
+    new = BuildList(car(ptr), new);
+  } else if (car(ptr) : UnrolledFromIvar#(_,_,CLEAR outer))
+  {
+    org = BuildList(car(ptr), org);
+    for (qtr = outer; qtr != NULL; qtr = cdr(qtr)) {
+      if (car(qtr) : ExpStmt#VecRegRed2Var) {
+        new = BuildList(car(qtr), new);
+      } 
+    }
+  }
+}
+split1 = "";
+split2 = "";
+if (new != "") {
+  for (ptr = new; ptr != NULL; ptr = cdr(ptr)) {
+    ExpStmt#(VecRegRed2Var#(reg1, addr, reg2)) = car(ptr);
+    split1 = BuildList(split1,ExpStmt#(VecRegRed#(reg1,reg2)));
+    split2 = BuildList(split2,ExpStmt#(VecMovRtoM#(reg1,addr)));
+  }
+  split1 = BuildList(split1, ExpStmt#(VecZero#(0)));
+  new = BuildList(split1, split2);
+  REPLACE(org, new, trace);
+}
+</xform>
+
+
+<xform apply_peephole_optimization1 pars=(routine, input) >
+dup = COPY(input);
+stmtblock = "";
+for (ptr = dup; ptr != NULL; ptr = cdr(ptr)) {
+  cur = car(ptr);
+  switch (cur) 
+  {
+    case ExpStmt:
+      stmtblock = BuildList(cur,stmtblock);
+    case Nest#(_,CLEAR body):
+      if (stmtblock != "") {
+        routine(stmtblock);
+        stmtblock = "";
+      }
+      apply_peephole_optimization1(routine,body);
+    case (first second):
+      if (stmtblock != "") {
+        routine (stmtblock);
+        stmtblock = "";
+      }
+      apply_peephole_optimization1(routine,first);
+      apply_peephole_optimization1(routine,second);
+    case UnrolledFromIvar#(_,_,CLEAR content):
+      if (stmtblock != "") {
+        routine (stmtblock);
+        stmtblock = "";
+      }
+      stmtblock = BuildList(ReverseList(content), stmtblock);
+    case OMPPragma#(OMPParallelBlock#(CLEAR content)):
+      if (stmtblock != "") {
+        routine (stmtblock);
+        stmtblock = "";
+      }
+      apply_peephole_optimization1(routine,content);
+    default:
+      if (stmtblock != "") {
+        routine (stmtblock);
+        stmtblock = "";
+      }
+  }
+}
+if (stmtblock != "") {
+  routine (stmtblock);
+  stmtblock = "";
+}
+</xform>
+
+
+<xform peephole_optimization pars=(input) trace = GLOBAL.TRACE_TARGET>
+if (GLOBAL.REG_LEN == 32) {
+  apply_peephole_optimization1(AVX2SSE[trace=trace], input);
+  if (GLOBAL.FMA == 1)
+    apply_peephole_optimization1(MULADD2FMA[trace=trace], input);
+}
+</xform>

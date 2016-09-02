@@ -1,0 +1,28 @@
+include utils.incl
+
+<parameter A type=((INT,INT),INT) default=((1,2), 3) message="affinity relations"/> 
+<parameter B type=(INT|(INT...)...) parse=LIST(INT|IntList," ")  default=((1 2)  3) message="affinity relations"/> 
+<parameter C type=( (INT,INT),INT) default=((1,2),3) parse=TUPLE( "" TUPLE("(" INT "," INT ")") "," INT "") />
+<parameter D type=0 .. 5 default=2 />
+<parameter E type=0 .. _ default=80 />
+<eval DEBUG{
+    A;
+    A[0];
+    A[1];
+    LEN(A);
+}/>
+
+<eval DEBUG{
+   B;
+   car B;
+   cdr B;
+   LEN(B);
+}/>
+
+<eval DEBUG{
+    C;
+    C[0];
+    C[1];
+    LEN(C);
+}/>
+

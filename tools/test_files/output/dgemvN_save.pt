@@ -1,0 +1,48 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default=2 message="number of threads to parallelize loop nest1" />
+<parameter tp2 type=1.._ default=(256) message="number of loop iterations to run by different threads for nest1" />
+<parameter tp3 type=INT default=(32 32) message="Blocking factor for loop nest nest1" />
+<parameter tp4 type=INT default=((2 2)) message="Unroll and Jam factor for loop nest nest1" />
+<parameter tp5 type=1.._ default=((3)) message="Unroll factor for loop nest2" />
+<trace inputCode />
+<trace nest1,nest2 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace nest2_group1 = (nest2) />
+<trace nest2_group2 = (nest2_group1) />
+<trace nest1_group1 = (nest1) />
+<trace nest1_group2 = (nest1_group1) />
+<trace nest1_cleanup = (nest1_group2) />
+<trace nest1_group3 = (nest1_cleanup) />
+<trace nest1_ParallelizeLoop_private_th1 = (("i" "j")) />
+
+<trace _decl1="" />
+<eval nest1_decl=nest1;
+      if (nest1 : CODE.FunctionDecl) 
+          nest1_decl=nest1[FunctionDecl.body][StmtBlock.stmts];
+      else nest1_decl = nest1;
+      EraseTraceHandle[repl=(_decl1 nest1_decl)](nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_VARS (nest1_ParallelizeLoop_private_th1) />
+
+<eval EraseTraceHandle[repl=nest2_group2](nest2,inputCode);
+	EraseTraceHandle[repl=nest1_group3](nest1,inputCode);
+	BlockLoops[factor=tp2](nest1_group3[Nest.body],nest1_group3);
+	ParallelizeLoop[private=nest1_ParallelizeLoop_private_th1;threads=tp1;factor=tp2](nest1_group3);
+	TraceNestedLoops(nest1_group2,nest1_group3[Nest.body]);
+	TraceNestedLoops(nest1_cleanup,nest1_group3[Nest.body]);
+	BlockLoops[factor=tp3;trace_ivars=nest1_ParallelizeLoop_private_th1](nest2_group2[Nest.body],nest1_group2);
+	TraceNestedLoops[orig_nested=1;report_err=0]((nest1_group1 nest2_group1),nest2_group2[Nest.body]);
+	UnrollJam[factor=tp4;cleanup=0](nest2_group1,nest1_group1);
+	UnrollLoop[factor=tp5;cleanup=0](nest2_group1);
+	CleanupBlockedNests(nest1_cleanup); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

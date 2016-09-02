@@ -1,0 +1,113 @@
+include utils.incl
+
+<code CppComment pars=(content:UnknownUntilEOL) rebuild="" > //@content@ </code>
+
+<define TOKEN (CODE.Char (":"":") ("*" "/") CODE.CppComment)/>
+<code C_Comment pars=(content:(~("*/")...)) rebuild="" > /*@content@*/ </code>
+<define KEYWORDS ("for" "__attribute__" "__asm" "return")/>
+<define BACKTRACK FALSE />
+<define IGNORE_DECL TRUE/>
+<define IGNORE_STMT TRUE />
+
+<define PARSE CODE.Program/>
+<define C_DECL CODE.C_typedef|CODE.C_Decl|CODE.C_Macro|CODE.C_IgnoreDecl />
+<define C_STMT CODE.C_Comment|CODE.C_Macro/>
+
+<define CUR_FUNCTION ""/>
+<define COLLECT_CALLS  "" />
+
+<code CallGraph pars=(content :LIST(CODE.CallRel, "\n")) > 
+@content@
+
+</code>
+
+
+<code CallRel pars=(from, to)> @from@ -> @to@ </code>
+
+
+<code Program parse=LIST(C_DECL, "\n")/>
+
+<code FunctionDefn pars=(name:ID, params: CODE.CtrlExp, body:CODE.C_FunctionBody) >
+@name@@params@
+@body@
+</code>
+
+<code C_typedef pars=(t : CODE.C_Type, rest : CODE.C_Stmt) rebuild=(IGNORE_DECL? "" : C_typedef#(t,rest))>
+typedef @t@ @rest@
+</code>
+
+<code C_Decl pars=(t : CODE.C_Type, rest : CODE.C_TypeDecl| CODE.C_VarDecl | CODE.C_Stmt)
+             rebuild = (IGNORE_DECL? ((rest : FunctionDefn)? rest : "") : C_Decl#(t,rest)) >
+@t@ @rest@
+</code>
+
+<code C_TypeDecl pars=(content : LIST(C_DECL, "\n"))>
+{
+  @content@
+}
+</code>
+
+<code C_VarDecl pars=(name : CODE.Name|CODE.CtrlExp, params : CODE.CtrlExp|"",
+                   rest : CODE.C_FunctionBody | CODE.C_Stmt) 
+                rebuild = (if (rest : C_FunctionBody) { CUR_FUNCTION=name; }
+                           (IGNORE_DECL? ((rest : C_FunctionBody)? FunctionDefn#(name,params,rest) : "") 
+                            : C_VarDecl#(name,params,res)))  >
+@name@@params@@rest@
+</code>
+
+<code C_FunctionBody pars=(body: LIST(C_STMT|CODE.C_IgnoreNest|C_FunctionBody|CODE.C_IgnoreStmt,"\n")) 
+                     rebuild=((body=="")? "" : C_FunctionBody#body)   >
+{
+  @body@
+}
+</code>
+
+<code C_Nest pars=(ctrl : CODE.C_Loop|CODE.C_If|"else", body : CODE.C_Nest| CODE.C_StmtBlock | CODE.C_Stmt) >
+@ctrl@
+  @body@
+
+</code>
+
+<code C_IgnoreNest pars=(content : CODE.C_Nest) 
+             rebuild=(IGNORE_STMT? ((!(content[C_Nest.ctrl] : C_Loop))? "" : content) : content)> 
+@content@
+</code>
+
+<code C_Macro pars=(content:UnknownUntilEOL) rebuild=""> #@content@ </code>
+
+<code C_Stmt pars=(content : LIST(ID|CODE.CtrlExp|~(";"|"}"|"{"),""), end :";"|"") 
+             rebuild=(if (CUR_FUNCTION != "") { for ( p = content ; (car p) != ""; p = cdr(p)) {
+                          if ((car(p) : ID) && (car(cdr(p)) : CtrlExp)) 
+                                COLLECT_CALLS = BuildList(CallRel#(CUR_FUNCTION, car(p)), COLLECT_CALLS); } }
+                      C_Stmt#(content,end)) > 
+@content@@end@ </code>
+<code C_IgnoreStmt pars=(content : C_Stmt) rebuild=(IGNORE_STMT? "" : content) > @content@ </code>
+<code C_IgnoreDecl pars=(content: (~(";"|"{"|"}")...), end:";"|"") 
+                     rebuild=(IGNORE_DECL? "" : content) > 
+@content@ @end@ </code>
+
+<code C_Loop pars=(init : (~(";")...), test: (~(";")...), incr: CODE.InsideLP)>
+for (@init@;@test@;@incr@) 
+</code>
+<code C_If pars=(content : CODE.CtrlExp) > if @content@ </code>
+
+<code C_Type pars=(base:ID | CODE.C_Block, prefix: LIST("long"|"struct"|"union"|"enum"|"__inline"|"__inline__"|"static"|"extern"|CODE.Extra," "), postfix : LIST("*"|"&"|CODE.C_Block,""))> 
+@prefix@ @base@ @postfix@
+</code>
+
+<code Extra pars=(extra:"C"|"")> "@extra@" </code>
+<code C_Block pars=(content : CODE.InsideLB) > { @content@ } </code>
+<code C_StmtBlock pars=(body: LIST(C_STMT|C_Nest|C_StmtBlock|CODE.C_Stmt,"\n")) > 
+{
+  @body@
+}
+</code>
+
+<code CtrlExp pars=(content : CODE.InsideLP) > (@content@) </code>
+
+<code InsideLB parse=LIST(C_Block | CODE.NoLRB,"") />
+<code InsideLP parse=LIST(CtrlExp | CODE.NoLRP,"") />
+
+<code NoLRB parse=(~("{"|"}"))... />
+<code NoLRP parse=(~("("|")"|";"|"{"|"}"))... />
+

@@ -1,0 +1,462 @@
+\documentclass[11pt]{article}
+\usepackage{makeidx}
+\usepackage{appendix}
+\usepackage{ifthen}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage[pdfpagemode=UseOutlines,bookmarks,bookmarksopen,
+pdfstartview=FitH,colorlinks,linkcolor=blue,
+pdftitle={POET Language Manual},
+pdfauthor={Qing Yi},
+citecolor=blue,urlcolor=red]{hyperref}
+\textwidth 6.5in
+\textheight  8.8in
+\oddsidemargin  0in
+\evensidemargin 0in
+\topmargin      -0.3in
+\parindent      0.25in
+
+%\def\bs{\char'134 } % backslash in \tt font.
+%\newcommand{\ie}{i.\,e.,}
+%\newcommand{\eg}{e.\,g..}
+%\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+\makeindex 
+
+\title{POET Tutorial: Building A Small Compiler Project}
+\author{ Qing Yi \\
+  University of Colorado at Colorado Springs \\(qyi@cs.uccs.edu) \\
+}
+
+\begin{document}
+
+\maketitle
+%%%%%%%%%%
+
+A compiler is essentially a translator that reads in some code in one language and produces 
+a result in another language. The following demonstrates basic techniques to accomplish parsing, AST construction, type checking, unparsing, and basic program analysis when using POET to implement a small compiler project.
+  
+  \section{Parsing}
+\label {sec-driver}
+
+The following illustrates a simple parser (in POET/examples/compiler\_1.pt) in the POET language.
+\begin {verbatim}
+<parameter in message="input file name"/>
+<* parse the in File using syntax defined in file "compiler_input_1.code" *>
+<input from=(in) syntax="compiler_input_1.code" />
+\end {verbatim}
+Here the first line declares a command-line parameter named $in$, and the second line is a POET comment that explains the third line. 
+
+The following Linux command invokes the above translator to parse the ``exp.input" file contained in the same directory.
+\begin {verbatim}
+> pcg -pin=exp.input compiler_1.pt
+\end {verbatim}
+Here the command-line option $-pin=exp.input$ defines exp.input as the value for the parameter $in$ declared at line~1 of compiler1.pt. Alternatively, the following Linux command accomplishes the same purpose.
+\begin {verbatim}
+> pcg compiler_1.pt < exp.input
+\end {verbatim}
+Here since the value for the command-line parameter $in$ is undefined, the input is read from the standard input (the keyboard), for which the content is supplied from file exp.input using Linux shell redirection. 
+
+\section {Writing Syntax Specifications For Parsing}
+\label {sec-grammar}
+
+The $input$ command at line~3 of the compiler\_1.pt file is used to parse an arbitrary file using the concrete syntax  defined in the $compiler\_input\_1.code$ file, which aims to support the following BNF specifications. 
+\begin {verbatim}
+Block ::= For | E ; | Decl | Block Block
+For ::= for ( id = E ; id < E ; E)  { Block } 
+E ::=  E + F | E [ E ]  | F = E | F ++ 
+F ::= id | intval | floatval
+Decl ::= Type id ; 
+Type ::= int | float [ Type ]
+\end {verbatim} 
+After eliminating left-recursion (POET parses the input code in a top-down recursive descent fashion, 
+so left-recursion in the grammar needs to be eliminated) and applying left factoring,  we obtain the following BNF.
+\begin {verbatim}
+Block ::= For | E ; | Decl | Block Block
+For ::= for ( id = E ; id < E ; E)  { Block }
+E ::=  F E'
+E' ::= + F E' | [ E ] E' |  = E |  ++ | epsilon 
+F ::= id | intval | floatval
+Decl ::= Type id ; 
+Type ::= int | float | [ Type ]
+\end {verbatim} 
+The following is a POET implementation of the above BNF  in POET/examples/compiler\_input\_1.code.
+{\footnotesize
+\verbatiminput{../examples/compiler_input_1.code}
+}
+Here a one-to-one correspondence can be clearly seen from the POET implementation to the original BNF specification. The first line of the POET implementation defines the start non-terminal to be Block. The second line extends the POET internal tokenizer to recognize two additional tokens, ``++" and ``--". The third line extends the POET internal tokenizer to recognize three keywords, ``for", ``int", and ``float",   instead of treating them as identifiers.  Finally,  each production $x ::= \beta$ is translated to $<$code x parse=($\beta$)/$>$, where each non-terminal name $x$ is referenced using $CODE.x$ within the {\it parse} phrase.  
+Each of the {\it code} definitions is called a {\it \bf code template} in POET. 
+The three keywords,  ID, INT, and FLOAT, are built-in token types used by POET to represent identifiers, integers, and floating point numbers respectively. The POET built-in {\it LIST} operator is used in the production for {\it Block} to easily specify a sequence of items separated by a single token (a line break). 
+
+%%%%%
+\section {Type Checking}
+\label {sec-type}
+%%%
+To apply type checking to an input program, a type must be uniquely determined for each expression within the 
+input program, by recording a unique type declared for each variable through a sequence of nested symbol tables.
+A translation scheme for type checking can be specified like the following. 
+\begin {tabbing}
+Block ::= For $|$ E `;' $|$ Decl $|$ Block Block \\
+For ::= \= for `(' id `=' E$^1$ `;' id `$<$' E$^2$ `;' E$^3$ `)'  `\{' \{ push\_scope(); \} Block \{ pop\_scope(); \} `\}' \\  
+\>    \{ t1:=Lookup\_Variable(id);  if (t1$\not=$IntType or t1 $\not=$ E$^1$.type or t1 $\not=$ E$^2$.type) ERROR; \} \\
+E ::=  F \{ E'.inh := F.type; \} E' \{ E.type := E'.type; \} \\
+E' \=::= \= `+' F \{  if \=(E'.inh $\not=$ F.type or (E'.inh$\not=$IntType$|$FloatType)) ERROR;  \\
+\> \> E'$^1$.inh := E'.inh; \} E'$^1$ \{ E'.type:=E'$^1$.type; \} \\
+\>  $|$ \> `[' E `]' \{ if (E.type $\not=$ IntType or E'.inh $\not=$ PtrType(t1)) ERROR; \\ 
+\> \> E'$^1$.inh:=t1; \} E'$^1$ \{ E'.type := E'$^1$.type; \} \\
+\> $|$ \> `=' E \{ if (E'.inh $\not=$ E.type) ERROR; E'.type := E.inh; \} \\
+ \> $|$ \> `++'  \{ if (E'.inh $\not=$ IntType) ERROR; E'.type:=IntType; \} \\
+ \> $|$ \> $\epsilon$ \{ E'.type := E'.inh; \} \\
+F \=::= \= id  \{ F.type = Lookup\_Variable(id);  if (F.type=empty) ERROR; \}  \\
+\>  $|$ \> intval \{ F.type = IntType; \} \\
+\> $|$ \> floatval \{ F.type := FloatType; \} \\
+Decl \=::=\= Type id ; \{ if (Lookup\_Variable(id.name) ERROR;   insert\_entry(id.name, Type.type); \} \\
+Type \=::=\= int \{ Type.type := IntType; \} $|$ float \{ Type.type = FloatType; \} \\
+\> $|$ \> `[' Type$^1$ `]' \{ Type.type = PtrType(Type$^1$.type); \}
+\end {tabbing}
+Combined with global symbol table management, the above translation scheme can be implemented by augmenting the original syntax specifications in POET/examples/compiler\_input\_1.code with the following (POET/examples/compiler\_input\_2.code)
+{\footnotesize
+\verbatiminput{../examples/compiler_input_2.code}
+}
+
+The translation scheme is implemented through syntax-directed translation by inserting $eval$ invocations inside the productions inside the {\it parse} attributes. The above example demonstrates the use of if-else conditionals as well as assignments and function calls to implement the necessary type checking support. Finally, if a synthesized attribute needs to be returned as result of the parsing function, the value of the attribute is used as parameter to invoke the $return$ operation inside the final $eval$ invocation of the production. The $print$ operation is invoked to print out an error message without stopping execution of the parser. The LINE\_NO macro is used to extract the line number of the input file currently being processed. Note that the $E1$ non-terminal has an inherited attribute named $inh$, and its definition is specified using the $inh=INHERIT$ attribute within the $E1$ specification.
+
+Note that when defining a compound type $PtrType$, we used the following.
+\begin {verbatim}
+<code PtrType pars=(elemtype) />
+\end {verbatim}
+The above definition essentially defines a C struct type which has a single member variable named $elemtype$. To build an object of the struct, use syntax $PtrType\#v$, where v is the value of $elemtype$. To check whether a variable $x$ is a PtrType, use notation $x : PtrType\#t$, where $t$ is an undefined variable. If $x$ is indeed a PtrType, this pattern matching expression returns true and then initializes $t$ so that it contains the value of elemtype of $x$; otherwise, the pattern matching returns false.
+For more details, please reference the POET language manual.
+
+POET provides a compound data type, MAP, to support the need of associative tables that map
+arbitrary keys to their values. The following POET statement constructs an empty symbol
+table for our simple toy language and stores the table into a global variable $symTable$.
+\begin {verbatim}
+<define symTable MAP(ID,"int"|"float"|"") />
+\end {verbatim}
+If nested scopes are allowed, a list of symbol tables can be used to represent the context information
+of each block. Specifically, the global variable {\it symTable} is used to map each variable name to its declared type. The function {\it LookupVariable} is used to look up variable information from the symbol table.  The following code from {\it POET/examples/compiler\_2.pt} illustrates the use and definition of the symbol table.
+
+{\footnotesize
+\verbatiminput{../examples/compiler_2.pt}
+}
+
+\section {Constructing The AST}
+\label {sec-ast}
+
+A real compiler needs to save the input program after parsing, typically in the form of the Abstract Syntax Tree (AST). 
+In POET, AST construction is supported through the concept of {\it code templates}, which are used in the parsing phase to recognize the structure of the input code, 
+in the program evaluation phase to represent the internal structure of programs, 
+and in the unparsing phase to output results to external files. So far we have used the POET code template
+to specify how to parse an input language,  where the {\bf name} of each {\it code template} corresponds to the left-hand non-terminal of a 
+BNF production, and its {\bf parse attribute} corresponds to the right-hand side of the production. 
+For example, the following code template definition corresponds to the BNF production
+{\it E ::= F E1}.
+\begin {verbatim}
+<code E parse=(CODE.F CODE.E1) />
+\end {verbatim}
+
+In addition to being used to parse an input language, POET code templates can also be used to specify the internal representation, specifically the Abstract Syntax Representation,
+ of an input program. 
+For example, the following code template definition additionally specifies what needs to be saved in the BNF production
+{\it E ::= F E1}.
+\begin {verbatim}
+<code E pars=(opd1 : CODE.F, rest : CODE.E1 ) parse=(opd1 rest) />
+\end {verbatim}
+In particular, if the value of any symbol in the right-hand side of a BNF production needs to be saved, a corresponding variable can be created as a parameter of the POET {\it code template}, and the variable is used in place of the original symbol in the right hand of the production (i.e., inside the parse attribute) to save the targeted value.
+Note that the type of each member variable $x$ is declared using the $x : t$ notation, where $t$ defines the code template type of $x$ so that x can be parsed correctly
+when used in the right hand side of E's production.. 
+Here two variables, $opd1$ and $rest$, are created and used to replace the non-terminals $F$ and $E1$ 
+in the original production respectively. 
+The above definition essentially defines a AST node type (similar to a C struct type) which is named E and has two member variables named opd1 and rest respectively. 
+
+To build an object of the struct, use syntax $E\#(v1,v2)$, where v1 and v2 are the values of $opd1$ and $rest$ respectively. To check whether a variable contains a value of the AST node type E, use notation $x : E\#(t1,t2)$, where $t1$ and $t2$ are undefined variables used to save the values of $opd1$ and $rest$ if $x$ is indeed an E AST node type, in which case the overall pattern matching expression returns true; otherwise the pattern matching returns false.
+For more details, please reference the POET language manual.
+The following code template definition shows how to save the parsing result as an object of the corresponding AST node type.
+\begin {verbatim}
+<code E pars=(opd1:CODE.F, rest:CODE.E1 ) parse=(opd1 rest eval(return(E#(opd1,rest)))) />
+\end {verbatim}
+Without the eval/return invocation, the parsing result (synthesized attribute of the production) would have simply been a singly-linked list that contains two components, opd1 and rest. The notation
+$E\#(opd1,rest)$ builds an AST node type named E, which is internally equivalent to a struct type in C with two data members named opd1 and rest respectively.
+Explicitly building AST node types allows the internal structure of the AST IR to be tested a lot more explicitly and thus enables much more effective processing of the AST.
+ 
+As a practical example, the following extends the type checking translation scheme in Section~\ref{sec-type} to additionally construct an AST IR as the result of parsing.
+Note that in order to support both type checking and AST construction, we have defined two synthesized attributes for each expression E, E.type and E.ast, which are used to save the type and the AST IR of the expression respectively.
+
+\begin {tabbing}
+Block \=::=\= For \{ Block.ast:=For.ast; \} $|$ E `;'  \{ Block.ast:=make\_expStmt(E.ast,E.type); \}  \\
+\>  $|$ \> Decl \{ Block.ast = Decl.ast; \} $|$ Block$^1$ Block$^2$ \{ Block.ast=make\_block(Block$^1$.ast,Block$^2$.ast); \} \\
+For ::= \= for `(' id `=' E$^1$ `;' id `$<$' E$^2$ `;' E$^3$ `)'  `\{' \{ push\_scope(); \} Block \{ pop\_scope(); \} `\}' \\  
+\>    \{ \= t1:=Lookup\_Variable(id);  if (t1$\not=$IntType or t1 $\not=$ E$^1$.type or t1 $\not=$ E$^2$.type) ERROR; \\
+ \>  \>       For.ast=make\_forLoop(id.name, E$^1$.ast, E$^2$.ast,E$^3$); \} \\
+E ::=  F \{ E'.inh := (F.ast,F.type); \} E' \{ E.type := E'.type; E.ast=E'.ast; \} \\
+E' \=::= \= `+' F \{  if \=(E'.inh.type $\not=$ F.type or (E'.inh.type$\not=$IntType$|$FloatType)) ERROR;  \\
+\> \> E'$^1$.inh := (make\_bop("+",E'.inh.ast,F.ast),F.type); \} E'$^1$ \{ E'.type:=E'$^1$.type; E'.ast:=E'$^1$.ast; \} \\
+\>  $|$ \> `[' E `]' \{ if (E.type $\not=$ IntType or E'.inh.type $\not=$ PtrType(t1)) ERROR; \\ 
+\> \> E'$^1$.inh:=(make\_arrAcc(E'.inh.ast,E.ast),t1);\} E'$^1$ \{ E'.type := E'$^1$.type; E'.ast:=E'$^1$.ast; \} \\
+\> $|$ \> `=' E \{ \= if (E'.inh.type $\not=$ E.type) ERROR; \\
+\>\> \>  E'.type := E'.inh.type; E'.ast=make\_bop("=", E'.inh.ast,E.ast); \} \\
+ \> $|$ \> `++'  \{ if (E'.inh.type $\not=$ IntType) ERROR; E'.type:=IntType; E'.ast=make\_uop("++",E'.inh.ast); \} \\
+ \> $|$ \> $\epsilon$ \{ E'.type := E'.inh.type; E'.ast=E'.inh.ast; \} \\
+F \=::= \= id  \{ F.type = Lookup\_Variable(id.name);  F.ast=id.name; if (F.type=empty) ERROR; \}  \\
+\>  $|$ \> intval \{ F.type = IntType;  F.ast=intval.value; \} \\
+\> $|$ \> floatval \{ F.type := FloatType; F.ast = floatval.value; \} \\
+Decl \=::=\= Type id ; \{ \= if (Lookup\_Variable(id.name) ERROR;  \\
+\>\>\>  insert\_entry(id.name, Type.type); Decl.ast=make\_decl(Type.type,id.name); \} \\
+Type \=::=\= int \{ Type.type := IntType; \} $|$ float \{ Type.type = FloatType; \} \\
+\> $|$ \> `[' Type$^1$ `]' \{ Type.type = PtrType(Type$^1$.type); \}
+\end {tabbing}
+
+
+The above translation scheme is implemented in  POET/examples/{\it compiler\_input\_3.code}, the content of which is shown  in the following. 
+{\footnotesize
+\verbatiminput{../examples/compiler_input_3.code}
+}
+In the above,  two additional {\it code templates}, {\it Bop} and {\it Uop},  are created as new types of the AST nodes to save the binary and unary operations in an expression. A code template, ATTR, is created to save both the AST and the type of an expression inside a single struct. These three code templates are used only as internal representations of the input program. Specifically, they are not used in parsing, so they do not have to have their parse attributes defined. The {\it match} attribute of Bop and Uop are used to define their subtype relations to the code template Exp. 
+Several other code templates, e.g., $For$, $Block$, and $Decl$, are extended with parameters (member variables)
+ to remember the key components of their productions. 
+
+When using the {\it compiler\_3.pt} file to parse and print out the internal representation of the following input code (POET/examples/compiler.input), 
+{\footnotesize
+\verbatiminput{../examples/compiler.input}
+}
+the following AST will be printed out.
+{\footnotesize
+\verbatiminput{../examples/compiler_output_3.save}
+}
+Note that each AST node is built (printed out) using the {\it op\#(p1,...,pm)} notation, where {\it op} is the code template name, and $p1,...,pm$ are values for the code template parameters. 
+
+\section {Unparsing AST}
+\label {sec-unparse}
+
+After parsing and saving the parsed input program as an AST, the AST representation eventually needs to be unparsed back into strings of readable syntax. The following shows the unparsing specification for the for loop in C.
+In the following example, 
+\begin {verbatim}
+<code Loop pars=(i:ID,start:EXP, stop:EXP, step:EXP) >
+for (@i@=@start@; @i@<@stop@; @i@+=@step@)
+</code>
+\end {verbatim}
+Here the list of strings between the pair of $<$code...$>$ and $<$/code$>$ defines the {\bf body} of the $Loop$ code template.
+Each template body is typically a list of strings in a POET input/output language such as C, C++. 
+POET expressions,  e.g., the template parameters $i$, $start$, $stop$, and $stop$
+in the above example, need to be wrapped inside pairs of  @s within the body to be properly evaluated.
+Dynamic code generation is supported by embedding POET expressions inside the pairs of  @s as needed.
+The formatting of the unparsing is preserved as much as possible when unparsing the IR. 
+
+The following POET driver script in POET/examples/compiler\_4.pt shows how to use POET to parse and unparse an input program.
+{\footnotesize
+\verbatiminput{../examples/compiler_4.pt}
+}
+The following POET implementation from POET/examples/compiler\_input\_4.code extends that in Section~\ref{sec-ast} to additionally
+unparse the IR with proper syntax.
+{\footnotesize
+\verbatiminput{../examples/compiler_input_4.code}
+}
+
+
+
+%%%%%%%%%
+%\section {Rebuilding AST}
+%\label {sec-AST}
+%%%%%%%%%%
+%Unless specified otherwise, POET automatically builds an AST node for
+%each {\it code template} definition used in the parsing process if the code template has a body. 
+%However, the structure of the AST may not be elegant due to the rewrite the productions to accommodate LL(1) parsing. 
+%You can reconfigure the AST construction by defining a $rebuild$ attribute for some {\it code templates}.
+%The following translation scheme for expressions can be used to build a better structured AST  than the one constructed by POET/examples/compiler\_2.pt.
+%\begin {verbatim}
+%E ::=  F  {E'.inh = F.ast; } E'  { E.ast = E'.ast; }
+%E' ::= + F { E'1.inh = Bop("+", E'.inh, F.ast); } E'1 
+%         {  E'.ast=E'1.ast;}
+%        | ++ { E'.ast = Uop#(E'.inh); }
+%        | -- { E'.ast = Uop#(E'.inh); }
+%        | =  E1 { E'.ast= Bop("=", E'.inh, E1.ast); } 
+%        | epsilon { E'.ast = E'.inh; }
+%F ::= id {F.ast = id.name; } 
+%        | intval   { F.ast = intval.val; }
+%        | floatval   { F.ast = floatval.val; }
+%\end {verbatim}
+%The above translation scheme can be implemented in POET using the following syntax definitions in POET/examples/compiler\_input\_3.code.
+%{\footnotesize
+%\verbatiminput{../examples/compiler_input_3.code}
+%}
+%Here each synthesized attribute evaluation is implemented using a $rebuild$ attribute defined inside the header of its  corresponding production implementation, e.g., the headers of the {\it E, Plus, PlusPlus, MinusMinus, Assign, and Empty} code templates, so that the AST construction for these code templates differs from simply combining all the template parameters using the given  template names. All the inherited attributes are defined inside the code template bodies, e.g., the bodies of the {\it Plus} and {\it LessThan} code templates, by assigning to a special variable named ``INHERIT". To use an inherited attribute, a declaration in the form of ``var = INHERIT", where $var$ is a variable name, needs to be included inside the header of the corresponding code template, e.g.,  the headers of {\it Plus, PlusPlus, MinusMinus, Assign,} and {\it Empty}, which are then used whenever the inherited attribute needs to be used, e.g., inside the {\it rebuild} definition or the body of the code template.
+% 
+%The following is the rebuilt AST for the same input in POET/examples/compiler.input.
+%{\footnotesize
+%\verbatiminput{../examples/compiler_output_3.save}
+%}
+
+
+ \section {Three-address code generation}
+ 
+ This means translating the input program  to another lower-level language. 
+ Here the symbol table needs to remember the memory allocation decisions for all variables, a set of new code templates need to be defined to implement the
+ output language,  and a translation scheme similar to the following needs to be implemented. 
+ \begin {verbatim}
+Block ::= {For.begin=Block.begin; } For  { Block.next = For.next; Block.instr=For.instr; }
+      | {E.begin=Block.begin; } E {Block.next=empty; Block.instr=E.instr; }
+      | {Decl.begin=Block.begin; } Decl  { Block.next=empty; Block.instr=empty; }
+      | {Block1.begin=Block.begin; } Block1 {Block2.begin=Block1.next;} Block2 
+        { Block.next=Block2.next; Block.instr=append(Block1.instr, Block2.instr); }
+Decl ::= Type id ; { manage_variable_memory(id, Type.size); }
+Type ::= int { Type.size=2; } | float { Type.size=4; }
+For ::= for ( id = {E1.begin=For.begin;} E1 ; id < {E2.begin=new_label();} E2 ; 
+        {E3.begin=Block.next; } E3 )  {Block.begin=new_label();} Block  
+       { r = new_reg(); offset=Lookup(id); 
+         s1 = gen_3addr(empty,"store",E1.reg,"rarp",offset); 
+         s2 = gen_3addr(empty,"loadAI","rarp",offset,r);
+         s3 = gen_3addr(empty,"if<",r, E2.reg, body_label); 
+         For.next = new_label(); 
+         s4 = gen_3addr(empty,"goto",empty,empty, For.next); 
+         s5 = gen_3addr(empty, "goto", empty, empty, E2.begin); 
+         For.instr = append(E1.instr,s1,E2.instr,s2,s3,s4,Block.instr,E3.instr,s5); }
+E ::= {E1.begin=E.begin; } E1 + { E2.begin=empty; } E2 
+   { E.reg = new_reg(); E.instr=gen_3addr(empty, "add",E1.reg,E2.reg,E.reg); }
+  | id = { E2.begin=E.begin; } E2 
+   { E.reg = E2.reg; 
+     E.instr=append(E2.instr,gen_3addr(empty,"storeAI",E2.reg,"rarp",Lookup(id))); }
+  |  id { E.reg = new_reg(); 
+        E.instr=gen_3addr(E.begin,"loadAI","rarp",Lookup(id),E.reg); }
+  | ++ id { E.reg = new_reg(); offset=Lookup(id);
+          E.instr=gen_3addr(E.begin,"loadAI","rarp",offset, E.reg);
+          E.instr=gen_3addr(empty,"addi",E.reg, 1, E.reg);
+          E.instr=gen_3addr(empty,"storeAI",E.reg,"rarp",offset); }
+  | -- id { E.reg = new_reg(); offset=Lookup(id);
+          E.instr=gen_3addr(E.begin,"loadAI","rarp",offset, E.reg);
+          E.instr=gen_3addr(empty,"addi",E.reg, 1, E.reg);
+          E.instr=gen_3addr(empty,"storeAI",E.reg,"rarp",offset); }
+  | intval { E.reg = new_reg(); 
+             gen_3addr(E.begin,"loadi", intval, empty, E.reg); }
+  | floatval { E.reg = new_reg(); 
+             gen_3addr(E.begin,"loadi",floatval, empty, E.reg); }
+ \end {verbatim}
+ Here the following attributes are defined for the non-terminals.
+ {\footnotesize
+ \begin {verbatim}
+ Block.begin, For.begin, E.begin: 
+     inherited attributes used to save the beginning label of the corresponding 3-address instructions; 
+ Block.next, For.next:
+     synthesized attributes used to save the beginning label for the next following statement;
+ Block.instr, For.instr, E.instr:
+     the actual 3-address instructions generated for each AST node; 
+ E.reg:
+     the register used to save the result of each expression
+ \end {verbatim}
+ }
+ All the attributes must be evaluated (defined) at the appropriate places. 
+ Note that the above translation scheme is not an L-attributed definition because the inherited attribute E3.begin in the For production uses the $next$ synthesized attribute of the loop body. 
+ So the scheme cannot be implemented correctly during parsing.
+ However, it can be easily implemented correctly by translating the loop body before E3 when traversing the AST. 
+The following illustrates a POET implementation of the above translation scheme  (POET/examples/compiler\_5.pt) together with some simple memory management and output language definitions. 
+{\footnotesize
+\verbatiminput{../examples/compiler_5.pt}
+}
+In above implementation, instead of saving all the 3-address instructions incrementally as a synthesized attribute, a global variable named $ir\_3addr$ is used to save the whole sequence of instruction generated, and the code generation process for each AST node is carefully coordinated to ensure all the 3-address instructions are appended at the end of the global sequence in the correct order. Otherwise, the AST traversal functions are quite similar in structure to the type checking code in POET/examples/compiler\_4.pt. Each traversal function includes the inherited attribute of its non-terminal as an input parameter and returns the synthesized attribute of its non-terminal as result.
+Finally the resulting three-address code is unparsed with proper syntax using the following POET output command.  
+ \begin {verbatim}
+ <output to=(out)  from=(InstrList#ir_3addr) />
+ \end {verbatim}
+Here the {\it InstrList} and the {\it ThreeAddress} code templates define both the internal representation and the concrete syntax of a linear sequence of three-address instructions. 
+
+\section {Building A Control Flow Graph }
+
+A control flow graph can also built while traversing the AST representation of an input program, by 
+promptly identifying the ending of old basic blocks, the beginning of new basic blocks, and connecting them properly. 
+Then the graph can be output using code template syntax definitions for the nodes and edges. 
+The construction algorithm can be specified using the following translation scheme.
+\begin {verbatim}
+Block ::= {For.begin=Block.begin; } For  { Block.next = For.next; Block.cfg=For.cfg; }
+      | {E.begin=Block.begin; } E {Block.next = append(Block.next, E.ast);  }
+      | {Decl.begin=Block.begin; } Decl  { Block.next=append(Block.next,Decl.ast); }
+      | {Block1.begin=Block.begin; } Block1 {Block2.begin=Block1.next;} Block2 
+        { Block.next=Block2.next; Block.cfg=combine(Block1.cfg, Block2.cfg); }
+For ::= for ( id = E1 ; id <  E2 ; 
+        {E3.begin=Block.next; } E3 )  {Block.begin=new_label();} Block  
+       { For.next = new_label(); 
+         prev = append(For.begin, assign(id,E1.ast));
+         test = Bop#("<", id, E2.ast);
+         body=append(Block.next,E3.ast);
+         For.cfg=combine(Block.cfg, flow#(prev->test), 
+                          flow#(test->body),flow#(test->For.next), flow#(body,test));}
+\end {verbatim}
+Here only the Block and For non-terminals need to be processed.  The following attributes are defined for the non-terminals.
+ {\footnotesize
+ \begin {verbatim}
+ Block.begin, For.begin
+     inherited attributes used to save the current basic block being processed. 
+ Block.next, For.next:
+     synthesized attributes used to save the basic block to be expanded by the following statement;
+ Block.cfg, For.cfg:
+     the actual control flow graph generated for the non-terminals; 
+ \end {verbatim}
+ }
+Note that both the definitions and the uses of the attributes are quite similar to those for three-address code generation in compiler\_5.pt. 
+The following illustrates a POET implementation of the above translation scheme at POET/examples/compiler\_6.pt.
+{\footnotesize
+\verbatiminput{../examples/compiler_6.pt}
+}
+
+\section {Traversing The Control-flow Graph}
+Building a control-flow graph simply means identifying all the basic blocks and then
+adding edges to represent the flow of control among the basic blocks.
+However, the control-flow graph often needs to be traversed in efficient ways. 
+For example, to support data flow analysis,  we need to quickly find all the successors 
+(or predecessors) of each basic block, by using additional data structures, e.g., associative maps. 
+The following code builds an associative table that maps each basic block to a list of its successors.
+\begin {verbatim}
+<xform MapSuccessors pars=(cfg)>
+  res = MAP(_,_);
+  foreach edge = Flow#(CLEAR from, CLEAR to) \in cfg do
+     res[from] = BuildList(to, res[from]);
+  enddo
+  res
+</xform>
+\end {verbatim}
+
+\section {Data-flow Analysis}
+When performing data-flow analysis, each basic block needs to be associated with a set
+of information (e.g., a set of expressions or variables). These sets of information can be implemented
+using either the built-in compound type $lists$ in POET or using associative maps in POET. 
+In general, you need to first traverse the entire input, find the set of all the entities in your analysis
+domain. The set of information associated with each basic block is then a subset of this domain.
+
+\section {Modifying the AST}
+\label {sec-mod}
+The $REPLACE$ operator is the most useful operation in POET for supporting code transformations.
+It can be invoked using two different syntax, illustrated in the following.
+\begin {verbatim}
+    REPLACE("x","y", SPLIT("","x*x-2"));
+    REPLACE( (("a",1) ("b",2) ("c",3)), SPLIT("","a+b-c"));
+\end {verbatim}
+The first REPLACE invocation replaces all occurrences of string ``x" with string ``y" in the third argument (the result of $SPLIT(``",``x*x-2")$). 
+In contrast, the second REPLACE invocation makes a sequence of replacements one after another:  it first looks for the occurrence of string ``a" to replace it
+with 1; then it tries to locate string ``b" to replace it with 2, before looking for ``c", and so on. 
+In the second invocation, each replacement is applied only once, and a warning message is issued if the entire list of
+replacement specifications are not exhausted when reaching the end of the last argument of REPLACE.
+
+Note that both REPLACE operation perform the modifications by returning a new data structure instead of modifying the original input code. 
+The following is a coding pattern commonly used in the POET library to build a list of the necessary 
+replacements  and then apply all the replacements in the end. 
+\begin {verbatim}
+  repl=NULL;
+  foreach decl=TypeInfo#(type=_,_,_) \in input do 
+      repl=BuildList( (type, TranslateCtype2Ftype(type)), repl); 
+  enddo
+  input = REPLACE(repl, input);
+\end {verbatim}
+Here to translate variable variable declarations in C syntax to those in Fortran, the above code
+first builds an empty replacement list and uses the variable $repl$ to keep track of this list.
+It then goes over the entire input in reverse order and locates all the $VarTypeDecl$ objects. 
+The code then extends the $repl$ list by pre-pending a new replacement (a (source, dest) pair)
+specification to it. After traversing the entire input, the list of replacements in $repl$ is then applied
+collectively by invoking the $REPLACE$ operation on $input$.
+
+\section {Other Tasks}
+\paragraph {Value Numbering.} As value number is a combined process of hash table management
+and AST modification, it is obvious that the POET associative map should be used to implement
+the hashing of value numbers and variable names, and that AST modification should be implemented
+by invoking the REPLACE operation. 
+ 
+ 
+
+\end{document}

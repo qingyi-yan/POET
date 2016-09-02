@@ -1,0 +1,46 @@
+<define SymTable NULL />
+
+
+<code BookKeeping pars=(content)> @content@ </code>
+
+<xform insert_typeInfo pars=(type,vars) tab=GLOBAL.SymTable/>
+
+<xform enter_block pars=(block) tab=GLOBAL.SymTable/> 
+
+<xform exit_block pars=(block) tab=GLOBAL.SymTable/>
+
+<xform get_type pars=(exp) tab=GLOBAL.SymTable/>
+
+<xform global_modread pars=(op) local_vars="" output=(_mod,_read) />
+
+<* collect all dereferences of ptr that may be modified *>
+<xform collect_ptr_mod pars=(ptr,block) />
+
+<xform collect_variable_uses pars=(var, stmt, input) />
+
+<xform is_known_operator pars=(name) mod="" read="" />
+<xform find_function_definition pars=(name, whole_program)/>
+<xform find_type_definition pars=(name, whole_program)/>
+<xform find_access_control pars=(op, scope)/>
+
+
+<***************************************************************>
+<code Graph pars=(nodes, edges)/>
+<***************************************************************>
+<*create a new unknown node, returns the name and declaration of the new node*>
+<xform new_unknown_node pars=(nodes,exp) output=(_name_, _decl_) />
+
+<* generate a new node representing exp in the given graphs*>
+<xform gen_ptr_node pars=(exp, graphs) output=(___new_graphs___) />
+
+<* delete the node v from the given graphs; return the new graphs *>
+<xform delete_ptr_node pars=(v, graphs) output=(__new_graphs___) />
+
+<* delete all edges from node v under tag next; return the rest of the edges *>
+<xform delete_edges_from pars=(v, next, edges)/>
+
+<* return a list of shape graphs modeling connectivity among given variables *>
+<xform analyze_connectivity pars=(graphs,ops) />
+
+<* return whether exp is linked by an unknown node in edges *>
+<xform is_linked_by_unknown pars=(exp, graphs) /> 

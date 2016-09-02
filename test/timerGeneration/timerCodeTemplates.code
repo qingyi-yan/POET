@@ -1,0 +1,607 @@
+include utils.incl
+include ExpStmt.incl
+
+<******** Types **************>
+<code TimerType pars=(useWallTime)>
+@ (!useWallTime)? "clock_t" : "double"@
+</code>
+
+<code TimerIntType >
+int
+</code>
+
+<code TimerFlushBufferType>
+double
+</code>
+
+<code TimerBaseType pars=(type) >
+@ foreach (type: (cur=ConstType#(CLEAR type1)): FALSE)  
+      type=REPLACE(cur, type1, type);
+type@
+</code>
+
+<code TimerBufferType pars=(type)>
+@type@*
+</code>
+
+<********* Variables and values *******>
+
+<code TimerRandomVal>
+rand();
+</code>
+
+<code CheckpointReturnVar>
+__pt_cpreturn
+</code>
+
+<code TimerRoutineReturnVar>
+__pt_return
+</code>
+
+<code FLUSH_buffer>
+__pt_flush_buffer
+</code>
+
+<code FLUSH_bufferVal>
+__pt_flush_bufferVal
+</code>
+
+<code TimerCacheSizeVar>
+CacheSZ
+</code>
+
+
+<code PT_ivar pars=(index)>
+__pt_i@index@
+</code>
+
+<code MT_ivar>
+__pt_MT_ivar
+</code>
+
+<code NREP_ivar>
+__pt_NREP_ivar
+</code>
+
+<code FLOPS_var>
+__pt_flops
+</code>
+
+<code TimerBegin>
+__timer_begin
+</code>
+
+<code TimerEnd>
+__timer_end
+</code>
+
+<code TimerDiff>
+__timer_diff
+</code>
+
+<code TimerMin>
+__timer_min
+</code>
+
+<code TimerMax>
+__timer_max
+</code>
+
+<code TimerMedian>
+__timer_med
+</code>
+
+<code TimerAvg>
+__timer_avg
+</code>
+
+<*****
+<code TimerVariance>
+__timer_variance
+</code>
+****>
+
+<code TimerAlignSize pars=(size, align)>
+@((align > 1)? (size + align-1)/align * align : size)@
+</code>
+<********** expressions and statements *****>
+
+<code IncludeSpec pars=(content:CODE.StmtList)>
+@content@
+</code>
+
+<code TimerBufferDecl pars=(type,name)>
+@TimerBufferType#type@ @name@_buf;
+</code>
+
+<code TimerStaticBufferDecl pars=(type,name,size)>
+@type@ @name@_buf[@size@ * NREP];
+</code>
+
+<code TimerStatic2DBufferDecl pars=(type,name,size,size2)>
+@type@ @name@_buf[@size@][@size2@];
+</code>
+
+<*** <code TimerStatic2DBufferDecl pars=(type,name,size,size2)>
+@type@ @name@_buf[@size@ @((GLOBAL.NREP > 1)? (" * (CacheSZ /" size "+ 1)") : "")@][@size@ @((GLOBAL.NREP> 1)? (" * (CacheSZ /" size2 "+ 1)") : "")@];
+</code>
+***>
+
+<code TimerVariableDecl pars=(type, name) >
+@type@ @name@;
+</code>
+
+<code TimerBufferSizeDecl pars=(name,nrep)>
+@TimerIntType@ @name@_size@((nrep > 1)? (", " name "_rep"):"")@; 
+</code>
+
+<code Timer2DBufferSizeDecl pars=(name,nrep)>
+@TimerIntType@ @name@_size@((nrep > 1)? (", " name "_rep"):"")@; 
+@TimerIntType@ @name@_size2;
+</code>
+
+<code TimerAssign pars=(lhs,rhs)>
+@lhs@ = @rhs@;
+</code>
+
+<code TimerBufferAllocate pars=(type,name,size,align,nrep)>
+@name@_size=@TimerAlignSize#(size,align)@; @ (if (nrep > 1) { @
+@name@_rep=CacheSZ / @name@_size + 1; @})@
+@name@_buf = calloc(@name@_size@((nrep>1)?("*" name "_rep"):"")@, sizeof(@type@));
+</code>
+
+<code Timer2DBufferAllocate pars=(type,name,size,size2,align,nrep)>
+@name@_size=@TimerAlignSize#(size,align)@; @ (if (nrep > 1) { @
+@name@_rep=CacheSZ / @name@_size + 1; @})@
+@name@_size2=@TimerAlignSize#(size2,align)@;
+@name@_buf = calloc(@name@_size@((nrep>1)?("*" name "_rep"):"")@, sizeof(@type@));
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@size@; ++@ivar@) {
+  @name@_buf[@ivar@] = calloc(@name@_size2@((nrep>1)?("*" name "_rep"):"")@, sizeof(@type@));
+}
+</code>
+
+<code StaticBufferAllocate pars=(type,name,size,align,nrep)>
+@name@_size=@TimerAlignSize#(size,align)@; @ (if (nrep > 1) { @
+@name@_rep=CacheSZ / @name@_size + 1; @})@
+</code>
+
+<code Static2DBufferAllocate pars=(type,name,size,size2,align,nrep)>
+@name@_size=@TimerAlignSize#(size,align)@; @ (if (nrep > 1) { @
+@name@_rep=CacheSZ / @name@_size + 1; @})@
+@name@_size2=@TimerAlignSize#(size2,align)@;
+</code>
+
+<code TimerBufferInitialize pars=(name, nrep, value, valueIncr)>
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@name@_size @((nrep>1)? ("*" name "_rep"):"")@; ++@ivar@)
+{
+  @name@_buf[@ivar@] = @value@; @ ((valueIncr=="")?"":(@
+  @valueIncr))@
+}
+@name@ = @name@_buf;
+</code>
+
+<code Timer2DBufferInitialize pars=(name, nrep, value, valueIncr)>
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@name@_size @((nrep>1)? ("*" name "_rep"):"")@; ++@ivar@) {
+  @(ivar2=PT_ivar#1; "")
+  @for (@ivar2@=0; @ivar2@<@name@_size2 @((nrep>1)? ("*" name "_rep"):"")@; ++@ivar2@) {
+    @name@_buf[@ivar@][@ivar2@] = @value@; @ ((valueIncr=="")?"":(@
+    @valueIncr))@
+  }
+}
+@name@ = @name@_buf;
+</code>
+
+<code TimerBufferIncrement pars=(name)>
+@(ivar=PT_ivar#0;"")
+@if (@ivar@ < @name@_rep-1)
+  @name@ += @name@_size;
+else @name@ = @name@_buf;
+</code>
+
+<code TimerMacroVal pars=(name,val)>
+/* macro for the value of routien parameter */
+#ifndef @name@
+#define @name@ @val@
+#endif
+</code>
+
+<* fun: the decl of function to call; funpar: the parameters to pass into fun *>
+<code TimerFunCall pars=(funDecl, params)>
+@ lhs = (funDecl[FunctionDecl.ret]:VoidType)? "" : TimerRoutineReturnVar "=";
+  lhs funDecl[FunctionDecl.name]@ (@NameList#params@);
+</code>
+
+<code TimerCheckpointCall pars=(cpfile,mt)>
+@CheckpointReturnVar@ = restart_checkpoint(@cpfile@);
+@TimerDiff ((mt > 1) ? "["MT_ivar"]":"")@ = @CheckpointReturnVar@;
+</code>
+
+<code TimerIncrementVar pars=(var,incr)>
+@var@ += @incr@;
+</code>
+
+<code BeginTimerCall pars=(useWallTime,mt)>
+/* Timer start */
+@TimerBegin@ = @((!useWallTime)? "clock()":"GetWallTime()")@;
+</code>
+
+<code EndTimerCall pars=(useWallTime, mt)>
+/* Timer end */
+@TimerEnd@ = @((!useWallTime)?"clock()":"GetWallTime()")@;
+</code>
+
+<code TimerParameterInit pars=(mt, initseq:LIST(_,"\n"))>
+/* parameter initializations */
+@(if (mt > 1) {
+@srand(RANDSEED); @})@
+@initseq@
+
+</code>
+
+<code ComputeTimerDiff pars=(mt,nrep)>
+/* result of a single timing */
+@TimerDiff ((mt > 1)? "["MT_ivar"]":"")@ = @((nrep>1)?("("TimerEnd"-"TimerBegin")/NREP"):(TimerEnd-TimerBegin))@;
+</code>
+
+<code ComputeFlops pars=(flops_exp, nrep)>
+/* flops of computation */
+@FLOPS_var@ = @flops_exp@;
+</code>
+
+<code ComputeMFLOPS pars=(useWallTime,mt)>
+/* flops per second */
+@FLOPS_var@ = @FLOPS_var@ / @TimerVar#(useWallTime,mt)@;
+</code>
+
+<code  TimerCompareFunctionDef pars=(useWallTime)>
+/*Comparison function for sorting */@(type=TimerType#(useWallTime);)@
+int compare_@type@(const void *x1, const void *x2) {
+  @type@ __tmp1 = (*(@type@*)x1);
+  @type@ __tmp2 = (*(@type@*)x2);
+  return (__tmp1 < __tmp2) ? -1 : (__tmp1 == __tmp2) ? 0 : 1; 
+}
+</code>
+
+<code MultiTimeMinAndAvg>
+/* Compute minimum of multiple timings */
+@(ivar=MT_ivar;"")
+TimerMin@=@TimerDiff@[0];
+@TimerMax@=@TimerDiff@[0];
+@TimerAvg@=@TimerDiff@[0];
+for (@ivar@=1; @ivar@<MT; ++@ivar@)
+{
+  if (@TimerMin@ > @TimerDiff@[@ivar@])
+      @TimerMin@ = @TimerDiff@[@ivar@];
+  if (@TimerMax@ < @TimerDiff@[@ivar@])
+      @TimerMax@ = @TimerDiff@[@ivar@];
+  @TimerAvg@ += @TimerDiff@[@ivar@];
+}
+@TimerAvg@ /= MT;
+
+</code>
+<***
+@TimerVariance@ = 0;
+for (@ivar@=1; @ivar@<MT; ++@ivar@)
+{
+  @TimerVariance@ += (@TimerDiff@[@ivar@]-@TimerAvg@)*(@TimerDiff@[@ivar@]-@TimerAvg@) *
+1000000000LL;
+}
+@TimerVariance@ /= MT;
+***>
+
+<code MultiTimeMedian> 
+@(ivar=MT_ivar;)@
+/* Sort and compute the median of multiple timings */
+@TimerMedian@=@TimerDiff@[@ivar@];
+@PT_ivar#0@=1; @PT_ivar#1@=MT-1; @PT_ivar#2@=0;
+while (1) 
+{
+   while (@TimerDiff@[@PT_ivar#1@] >= @TimerMedian@) --@PT_ivar#1@;
+   while (@PT_ivar#0@ < @PT_ivar#1@ && @TimerDiff@[@PT_ivar#0@] <= @TimerMedian@)
+      ++@PT_ivar#0@;
+   if (@PT_ivar#0@ < @PT_ivar#1@) 
+   {
+      __pt_tmp = @TimerDiff@[@PT_ivar#1@];
+      @TimerDiff@[@PT_ivar#1@] = @TimerDiff@[@PT_ivar#0@];
+      @TimerDiff@[@PT_ivar#0@] = __pt_tmp;
+   }
+   else {
+      @TimerDiff@[@PT_ivar#2@] = @TimerDiff@[@PT_ivar#0@];
+      @TimerDiff@[@PT_ivar#0@] = @TimerMedian@;
+      if (@PT_ivar#0@ * 2 < MT-1)
+      {  
+          @PT_ivar#2@=@PT_ivar#0@+1;
+          @TimerMedian@=@TimerDiff@[@PT_ivar#2@];
+          @PT_ivar#0@ += 2; @PT_ivar#1@=MT-1;
+      }
+      else if (@PT_ivar#0@ * 2 > MT+1)
+      {  
+          @PT_ivar#2@=@PT_ivar#0@-1;
+          @TimerMedian@=@TimerDiff@[@PT_ivar#2@];
+          @PT_ivar#1@ = @PT_ivar#0@ - 2; @PT_ivar#0@=0;
+      }
+      else break;
+   }
+}
+</code>
+
+<code TimingLoop pars=(call,update:LIST(_,"\n"))>
+/* Timing loop */@(ivar=NREP_ivar;"")@
+for (@ivar@=0; @ivar@<NREP; ++@ivar@) {
+  @call@
+  @update@
+}
+</code>
+
+<code MultiTimingLoop pars=(body:LIST(_,"\n"))>
+/* Multiple Timings */@(ivar=MT_ivar; "")@
+for (@ivar@=0; @ivar@<MT; ++@ivar@) {
+  srand(RANDSEED);
+  @body@
+}
+</code>
+
+<code TimerFlushCacheAlloc >
+#define DO_FLUSH 1
+@CODE.FLUSH_buffer@ = malloc(@TimerCacheSizeVar@ * sizeof(@TimerFlushBufferType@));
+@(ivar=CODE.PT_ivar#0; "")@
+for(@ivar@=0; @ivar@ < @TimerCacheSizeVar@; ++@ivar@) {
+  @CODE.FLUSH_buffer@[@ivar@] = ((@ivar@ % 3) == 2) ? -1 : @ivar@ % 2;
+}
+</code>
+<code TimerFlushCacheCode >
+/* code to flush the cache */
+@(ivar=CODE.PT_ivar#0; 
+  flush=CODE.FLUSH_buffer; tmp=CODE.FLUSH_bufferVal;"")
+tmp@ = 0;
+for (@ivar@=0; @ivar@ < @TimerCacheSizeVar@; ++@ivar@)
+  @tmp@ += @flush@[@ivar@];
+assert(@tmp@ < 10);
+
+</code>
+
+<code TimerFlushCacheX86Code pars=(ptr, size)>
+#define DO_FLUSH 1
+@(ivar=CODE.PT_ivar#0;)
+@for (@ivar@=0; @ivar@<@size@; ++@ivar@)
+  __asm__ __volatile__ ("clflush %0" :: "m" (*((char *)(@ptr@+@ivar@))));
+</code>
+
+<code TimerGetWallTimeCode pars=(arch,mhz)>
+@if (arch=="x86" || arch=="x86_64") {
+@long long GetCycleCount();
+double GetWallTime() {
+  static long long start = 0;
+  static const double SPC = 1.0 / (@mhz@*1.0E6);
+  long long t0;
+  if (start) {
+    t0 = GetCycleCount() - start;
+    return (SPC * t0);
+  }
+  start = GetCycleCount();
+  return(0.0);
+} 
+@} else if (arch=="Pentium") {@
+   #include <stdlib.h>
+   #include <stdio.h>
+
+   static const double CPS = 1.0 / (@mhz@*1.0E6);
+   static unsigned usec, sec;
+   static unsigned tusec, tsec;
+   static unsigned start=0, startu;
+   static long long foo;
+
+   static inline void microtime(unsigned *lo, unsigned *hi)
+   {
+     __asm __volatile (
+           ".byte 0x0f; .byte 0x31; movl    %%edx,%0; movl    %%eax,%1"
+                   : "=g" (*hi), "=g" (*lo) :: "eax", "edx");
+   }
+
+   double GetWallTime()
+   {
+     if (!start)
+     {
+        microtime(&startu, &start);
+        return(0.0);
+     }
+     microtime(&usec, &sec);
+
+     foo = sec;
+     foo -= start;
+     foo = (foo << 32) + usec;
+     foo -= startu;
+     return(((double)foo)*CPS);
+   }
+@} else {@
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+double GetWallTime(void)
+   {
+      struct timeval tp;
+      static long start=0, startu;
+      if (!start)
+      {
+         gettimeofday(&tp, NULL);
+         start = tp.tv_sec;
+         startu = tp.tv_usec;
+         return(0.0);
+      }
+      gettimeofday(&tp, NULL);
+      return( ((double) (tp.tv_sec - start)) + (tp.tv_usec-startu)/1000000.0 );
+   }
+@}@
+</code>
+
+<******  collective templates ****>
+
+<***,@TimerVariance@ ***>
+<code DeclForTimerVars pars=(useWallTime : (0, 1), nrep:INT, mt : INT, paramDecl:LIST(_,"\n"), flop_exp)>
+@(timerType = TimerType#useWallTime; 
+if (mt > 1) {@
+/* arrays for storing results of multiple timings */
+@timerType@ @TimerDiff@[MT];
+
+/* induction variable for Multiple timing */
+int @MT_ivar@;
+@(if (useWallTime) {@
+@timerType@ @TimerMin@,@TimerAvg@,@TimerMax@;
+@} else {@
+@timerType@ @TimerMedian@, __pt_tmp;
+@})} 
+else {
+@/* variable for storing results of a single timing */
+@timerType@ @TimerDiff@;
+@})
+(if (nrep > 1) {@
+/* induction variable for multiple invocations in a single timing */
+int @NREP_ivar@;
+@})@
+/* variables to support cache flushing */
+@TimerFlushBufferType@* @CODE.FLUSH_buffer@;
+@TimerFlushBufferType@ @CODE.FLUSH_bufferVal@;
+@(if (flop_exp != "") {@
+/* variable for computing MFLOPS */
+double @FLOPS_var@;
+@})@
+/* induction variables */
+int @PT_ivar#0@, @PT_ivar#1@, @PT_ivar#2@;
+
+/*variables to store starting and ending of timing */
+@timerType@ @TimerBegin@, @TimerEnd@; 
+
+/* Declaring parameters of the routine */
+@paramDecl@
+
+</code>
+
+<code TimerIncludes pars=(useCheckPoint:0|1, useWallTime:0|1, arch:STRING, mhz:INT, cacheKB:INT,nrep:INT, mt:INT, randseed:INT, fun:LIST(FunctionDecl|TimerMacroVal,"\n"))>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+@(if(useCheckPoint == 1) {
+@#include <checkpoint.h>
+@})@
+#ifndef CS
+#define CS @cacheKB@
+#endif
+#define @TimerCacheSizeVar@ CS*1024/sizeof(@TimerFlushBufferType@)
+
+@(if (useWallTime==0) {
+@#include <time.h>
+@} else {TimerGetWallTimeCode#(arch,mhz)}) 
+(if (mt > 1) {@
+/* Collect multiple timing samples */
+#ifndef MT
+#define MT @mt@
+#endif
+
+#ifndef RANDSEED
+#define RANDSEED @randseed@
+#endif
+@})
+(if (nrep > 1) {
+@/* Measure the collective performance of multiple invocations */
+#ifndef NREP
+#define NREP @nrep@
+#endif
+@})@
+/* routine to measure performance of*/
+@fun@
+
+</code>
+
+<code GetCycleCountCode pars=(ISA) >
+@ ((ISA : "x86") ? (@
+.text
+.global GetCycleCount
+GetCycleCount:
+.byte 0x0f; .byte 0x31
+ret
+@) 
+: (ISA : "x86_64") ? (@
+.text
+.global GetCycleCount
+GetCycleCount:
+xorq %rax, %rax
+.byte 0x0f; .byte 0x31
+shlq $32, %rdx
+orq %rdx, %rax
+ret
+@)
+: (ISA : "Sparc") ? (@
+.section \".text\"
+.global GetCycleCount
+GetCycleCount:
+rd %tick, %o0
+clruw %o0, %o1
+retl
+srlx %o0, 32, %o0
+@): (ERROR "ISA not set, cannot select GetCycleCountCode"))
+@
+</code>
+
+<code PrintTimerParam pars=(mt,nrep) >
+printf("Configuration\n"
+       "-------------\n");
+printf("CPU MHZ: @GLOBAL.MHZ@\n");
+printf("Cache Size: %d\n", CS);
+#ifdef DO_FLUSH
+printf("Cache Flush Method: @GLOBAL.CacheFlushMethod@\n");
+#else
+printf("Cache Flush Method: none\n");
+#endif
+printf("ARCH: @GLOBAL.ISA@\n");
+@(if (nrep > 1){
+@printf("nrep: %d\n", NREP);@})
+(if (mt > 1) {@
+printf("mt: %d\n", MT);
+printf("Random Seed: %d\n", RANDSEED); @})@
+</code>
+
+<code TimerMainCode pars=(mt,nrep,body:LIST(_,"\n"))>
+int main(int argc, char **argv) 
+{
+  @body@
+  @PrintTimerParam#(mt,nrep)@
+  return(0);
+}
+</code>
+
+<*** printf("Variance:  %.15f\n", @TimerVariance@);***>
+<*** printf("Variance:  %.15f\n", @TimerVariance@); ***>
+<code OutputTiming pars=(useWallTime, mt, flops_exp)>
+
+/* output timing results */
+@(if (mt > 1) { ivar=MT_ivar;
+@for (@ivar@=0; @ivar@ < MT; ++@ivar@)
+{
+@(useWallTime? (
+@  printf("time in seconds [%d]:  %.15f\n", @ivar@, @TimerDiff@[@ivar@]);
+@) : (
+@  printf("time  in seconds[%d]:  %.15f\n", @ivar@, (@TimerDiff@[@ivar@]+0.0)/CLOCKS_PER_SEC); @))@
+}
+@(useWallTime? (
+@printf("Minimum time in seconds:  %.15f\n", @TimerMin@);
+printf("Maximum time in seconds:  %.15f\n", @TimerMax@);
+printf("Average time in seconds:  %.15f\n", @TimerAvg@);
+@) : (
+@printf("Minimum time  in seconds:  %.15f\n", (@TimerMin@+0.0)/CLOCKS_PER_SEC);
+printf("Maximum time  in seconds:  %.15f\n", (@TimerMax@+0.0)/CLOCKS_PER_SEC);
+printf("Average time  in seconds:  %.15f\n", (@TimerAvg@+0.0)/CLOCKS_PER_SEC);
+@))
+(if (flops_exp != "") {
+@printf("Maximum MFLOPS: %.15f\n", @FLOPS_var@/@TimerMin@/1000000); 
+printf("Minimum MFLOPS: %.15f\n", @FLOPS_var@/@TimerMax@/1000000); 
+printf("Average MFLOPS: %.15f\n", @FLOPS_var@/@TimerAvg@/1000000); @})
+} else {
+@printf("time in seconds: %.15f\n", @TimerDiff@);
+@(if (flops_exp != "") {
+@printf("MFLOPS: %.15f\n", @FLOPS_var@/@TimerDiff@/1000000); 
+@})})@
+</code>
+

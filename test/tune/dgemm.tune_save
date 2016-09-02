@@ -1,0 +1,12 @@
+<parameter name=OMP_SCHEDULE opt=ParallelizeLoop config=OMP_SCHEDULE enum="static,dynamic,runtime" default="auto" />
+<parameter name=pthread_nest1 loopnest=nest1 opt=ParallelizeLoop config=NumOfThreads default=1 max=32 trial=4 />
+<parameter name=psize_nest1 loopnest=nest1 opt=ParallelizeLoop config=BlockFactor default=256 max=512 trial=4 />
+<parameter name=bsize_nest1 loopnest=nest1 opt=BlockLoops config=BlockFactor dim=3 default=16,16,16 max=128 trial=64 />
+<parameter name=copy1_config_C loopnest=nest1 opt=CopyArray config=switch arrayName=C enum=0,1,2 default=1 />
+<parameter name=copy2_config_A loopnest=nest1 opt=CopyArray config=switch arrayName=A enum=0,1,2 default=1 />
+<parameter name=copy3_config_B loopnest=nest1 opt=CopyArray config=switch arrayName=B enum=0,1,2 default=1 />
+<parameter name=ujsize_nest1 loopnest=nest1 opt=UnrollJam config=UnrollJamFactor dim=2 default=2,2 max=16 trial=8 />
+<parameter name=scalar1_config_C loopnest=nest1 opt=ScalarRepl config=switch arrayName=C enum=0,1,2 default=1 />
+<parameter name=scalar2_config_A loopnest=nest1 opt=ScalarRepl config=switch arrayName=A enum=0,1,2 default=1 />
+<parameter name=scalar3_config_B loopnest=nest1 opt=ScalarRepl config=switch arrayName=B enum=0,1,2 default=1 />
+<parameter name=usize_nest2 loopnest=nest2 opt=UnrollLoop config=UnrollFactor dim=1 default=4 max=32 trial=8 />

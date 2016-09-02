@@ -1,0 +1,67 @@
+include utils.incl
+
+<code CppComment pars=(content:UnknownUntilEOL) rebuild="" > //@content@ </code>
+
+<define TOKEN (CODE.Char (":"":") ("*" "/") CODE.CppComment)/>
+<code C_Comment pars=(content:(~("*/")...)) rebuild="" > /*@content@*/ </code>
+<define KEYWORDS ("for" "__attribute__" "__asm" "return")/>
+<define BACKTRACK FALSE />
+<define IGNORE_DECL TRUE/>
+<define IGNORE_STMT TRUE />
+
+<define PARSE CODE.Program/>
+
+<define CUR_FUNCTION ""/>
+<define COLLECT_CALLS  "" />
+
+<code CallGraph pars=(content :LIST(CODE.CallRel, "\n")) > 
+@content@
+
+</code>
+
+
+<code CallRel pars=(from, to)> @from@ -> @to@ </code>
+
+
+<code Program parse=LIST(CODE.F_DoNest|CODE.IgnoreStmt, "\n")/>
+
+<code IgnoreStmt pars=(content:CODE.UnknownUntilEOL) rebuild="">
+@content@
+</code>
+
+<code F_DoNest pars=(content : LIST(F_DoNest|CODE.F_IfNest|CODE.NoNest, ""),end:("enddo"|("end" "do")|"continue")) >
+do @content@ @end@ 
+
+</code>
+
+<code F_IfNest pars=(exp : CODE.CtrlExp|"", content : CODE.F_IfThen | UnknownUntilEOL)>
+if @exp@ @content@ 
+
+</code>
+
+<code F_IfThen pars=(content: LIST(F_DoNest|CODE.F_IfNest|CODE.NoNest, ""),end:("endif" | ("end" "if") | CODE.F_Else)) >
+then 
+ @content@
+@end@
+
+</code>
+
+<code F_Else pars=(content : CODE.F_IfNest | CODE.F_ElseEnd)> 
+else @content@
+</code>
+
+<code F_ElseEnd pars=(content : LIST(F_DoNest|CODE.NoNest,""), end:("endif" | ("end" "if") | CODE.F_Else)) >
+ @content@
+@end@
+</code>
+
+<code NoNest parse=(~("do"|"if"|"enddo"|"continue"|"endif"|"else"|"end")....)/> 
+
+<code CtrlExp pars=(content : CODE.InsideLP) > (@content@) </code>
+
+<code InsideLB parse=LIST(C_Block | CODE.NoLRB,"") />
+<code InsideLP parse=LIST(CtrlExp | CODE.NoLRP,"") />
+
+<code NoLRB parse=(~("{"|"}"))... />
+<code NoLRP parse=(~("("|")"|";"|"{"|"}"))... />
+

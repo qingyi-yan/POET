@@ -1,0 +1,457 @@
+
+<*
+   POET : Parameterized Optimizations for Empirical Tuning
+   Copyright (c)  2008,  Qing Yi.  All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+ 3. Neither the name of UTSA nor the names of its contributors may be used to
+    endorse or promote products derived from this software without specific
+    prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGE.
+*>
+
+<define DEBUG_REPL  0/>
+
+<code UnrolledLoopStep pars=(index,step)> @step@ </code>
+
+<*********************************************
+Try determine the offset in the copied buffer from the offset of subscript
+at each dimension.
+***********************************************>
+<xform DimOffset pars=(offset, dim_copy)  
+                 output=(_succ,_isconst,_ispositive,_buf,_left)>
+succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
+
+  cur_offset=car offset;
+  cur_left=0;
+  for (rest_dim=dim_copy; succ && (rest_dim != NULL); rest_dim=cdr rest_dim) {
+    CopyDim#(i,start,count,dist) = car rest_dim;
+    for ( j=0; j < i; (j=j+1;dist=cdr(dist))) {}
+    dist = car(dist);
+
+    if (dist != 0) (r, cur_offset)=IntDiv(cur_offset, dist);
+    else continue;
+
+    if (!(r : INT)) isconst=0;
+    else if (r < 0) ispositive=0;
+  
+    if (count == 0 || (count : INT && !(r  < count))) {
+      buf=AppendList(buf,0);
+      cur_left += r * dist;   
+    } 
+    else  buf=AppendList(buf,r); 
+  }
+
+  if (cur_offset != 0)
+    cur_left+=cur_offset;
+
+  left = REBUILD(left+cur_left);
+
+  if (buf != NULL && cdr(buf) == NULL) buf = car(buf);
+
+(!succ)? (0,0,0,0,0) : (1,isconst, ispositive,buf, left)     
+</xform>
+
+
+<***********************************************>
+<* block is used to map blocked loop ivars *>
+<xform ReplExp_buf_offset pars=(buf_offset, ivardims)
+           block="" linearized=1 output=(_repl, _offset)>
+  res = 0; 
+  if (!linearized) {
+     for ( (pd = ivardims; p_offset=buf_offset); p_offset != NULL; 
+            (pd=cdr(pd); p_offset=cdr(p_offset))) {
+        cur_offset=car(p_offset);
+        (ivar, idx, dimsize) = car(pd);
+        cur_offset = cur_offset * dimsize;
+        res = res + cur_offset;
+     }
+     return res;
+  }
+  for ( (idx=0;p_offset=ReverseList(buf_offset)); p_offset != NULL; 
+        (idx=idx+1;p_offset=cdr(p_offset))) {
+    cur_offset=car(p_offset);
+    foreach ( ivardims :  (CLEAR ivar, idx, CLEAR dimsize) : TRUE) {
+      if (Lookup(ivar, cur_offset)) {
+         ivarrepl=ivar; bvar=""; bvarsize=0;
+         foreach (block : BlockDim#(ivar, CLEAR bvar, _) : TRUE) {
+           if (!Lookup(bvar, cur_offset)) {
+              ivarrepl = ivar - bvar;  
+              foreach (ivardims : (bvar, idx, CLEAR bvarsize) : TRUE) {""} 
+           } 
+         }
+         if (bvar != "")
+             cur_offset = REPLACE(ivar,ivarrepl*dimsize+bvar*bvarsize,cur_offset); 
+         else 
+             cur_offset = REPLACE(ivar,ivar*dimsize,cur_offset); 
+       }
+     }
+     res = res + cur_offset;
+   }
+   res
+</xform>
+
+<xform CopyDim2IvarDim pars=(rdim,block) res=NULL prev="" blocksize=1 >
+  pdim = rdim; cpsize=1; cur_size = blocksize; next=""; prev1=ReverseList(prev);
+  if (block != "") {
+     idx = 0;
+     for (p_block=ReverseList(block); p_block != NULL; p_block = cdr p_block) {
+        cur_block = car p_block; 
+        if (!(cur_block : BlockDim#(CLEAR ivar,CLEAR bvar,CLEAR bs_cur))) bs_cur = cur_block;
+        else next = BuildList(cur_block[BlockDim.next], next);
+        <* make sure the copy dimension uses the outer blocking dim *>
+        if (Lookup(ivar,rdim)) rdim=REPLACE(ivar,bvar,rdim); 
+        if (prev1 != NULL && car(prev1) != "") { <* not the first level of blocking *>
+           BlockDim#(_, ivar1, bs1) = car(prev1); 
+           <* check partial blocking of only selected dimensions*>
+           for ( prev1=cdr(prev1); (pdim!=NULL&&ivar1!=ivar); 
+                (pdim=cdr(pdim);BlockDim#(_,ivar1,bs1)=car(prev1);prev1=cdr(prev1))) {
+              res = (ivar1, idx, cur_size)::res; 
+              idx = idx + 1;
+              CopyDim#(i,start,count,dist) = car(pdim);
+              for (pc = count; pc != NULL; pc=cdr(pc)) 
+                  {  pc1 = car(pc);} <<* last number is the size
+              cpsize = cpsize * pc1;
+              cur_size=cpsize;
+           }
+        }
+        res = (ivar, idx, cur_size)::res;
+        idx = idx + 1;
+        cpsize = cpsize * bs_cur; 
+        cur_size=cpsize;
+     }
+     BlockDim#(_, _, bs1) = car(block); 
+     if (next != "") (cpsize,res) = CopyDim2IvarDim[blocksize=cpsize/bs1;prev=block;res=res](rdim,next);
+     else (cpsize,res) = CopyDim2IvarDim[blocksize=cpsize/bs1;prev="";res=res](rdim,"");
+   }
+   else { <* handle rest of the copy dimensions *>
+     for ( idx=0; pdim != NULL; (pdim = cdr pdim; idx=idx+1)) {
+       CopyDim#(CLEAR i, CLEAR start, CLEAR count, CLEAR dist) = car(pdim); 
+       ivar = car(i); 
+       if (!Lookup(ivar, res)) {
+           res = (ivar, idx, cur_size)::res;
+       }
+       for (pc = count; pc != NULL; pc=cdr(pc)) 
+            { pc1 = car(pc);} <<* last number is the size
+       cpsize = cpsize * pc1;
+       cur_size=cpsize;
+   } }
+   (cpsize, res)
+</xform>
+
+<xform AddIvarDim pars=(ivardims, addi_vars)>
+ res = ivardims;
+ foreach (ivardims : (CLEAR ivar, CLEAR idx, CLEAR size) : TRUE) {
+     foreach (addi_vars : (CLEAR ivar2, ivar, _) : TRUE)
+          res = (ivar2, idx, size) :: res;
+ }
+ res
+</xform>
+
+<xform CopyDim2CopyStart pars=(rdim, sub) >
+   cpstart = ERASE(sub,sub); 
+   for ( pdim=rdim; pdim != NULL; pdim = cdr pdim) {
+       CopyDim#(CLEAR i, CLEAR start, CLEAR count, CLEAR dist)=car(pdim); 
+       if (Lookup(Uop#("-",i), cpstart)) revert=1; else revert = 0;
+       for ( (ps=start; pi = i; ); pi != NULL; (pi = cdr(pi); ps=cdr(ps);))
+       {
+          if (revert) r = REBUILD(car(ps) + car(count) - 1);
+          else r = car(ps);
+          cpstart = REBUILD(REPLACE(car(pi), r, cpstart));
+       }
+    }
+   REBUILD(cpstart)
+</xform>
+
+<xform SortCopyDims pars=(dim) >
+  num = LEN(dim); 
+  if (num < 2) RETURN "";
+  permute = MAP(INT,INT);
+  for ( (p = dim; i = 0) ; p != NULL; (p = cdr(p); i=i+1)) {
+     CopyDim#(_,_,_,CLEAR dist) = car(p);  
+     permute[i] = (dist,i+1);
+  }
+  <* bubble sort *>
+  start=0;
+  for ( change=1; change != 0; "" ) {
+     change = 0;
+     for (i = start; i < num; (i=i+1; start=start+1)) {
+        (dist0,loc0) = permute[i]; 
+        if (dist0 : INT)  {
+           for (j = i+1; j < num; j=j+1) {
+               (dist1,loc1) = permute[j];
+               if (!(dist1 : INT) || (dist0 < dist1)) {
+                 loc0 = loc0 + 1;
+                 permute[j] = (dist1, loc1-1);
+                 change = 1;
+               }
+           }
+           permute[i] = (dist0, loc0);
+        }
+     }
+  }
+  res = permute[num-1][1]; 
+  for (i = num-2; i >= 0; i=i-1) 
+    res = permute[i][1] :: res;
+  res 
+</xform>
+
+<xform ReplExp pars=(buf, exp, sub, dim, input)  skip="" buf_size="inf"
+         addi_vars="" scalar=0 block="" permute="" trace=GLOBAL.TRACE_TARGET >
+   rdim = ReverseList(dim);
+   (_,ivardims) = CopyDim2IvarDim(rdim,block); 
+   ivardims = AddIvarDim(ivardims,addi_vars);
+   cpstart = CopyDim2CopyStart(rdim,sub);
+
+   if (permute == "") permute = SortCopyDims(dim);
+   if (permute != "") permuteDim=PERMUTE(permute,dim); else permuteDim=dim;
+   repl=MAP(_,_);
+   pattern = (exp == sub)?  DELAY{cur_sub=Bop}
+           : REPLACE( (ERASE(sub), DELAY{CLEAR cur_sub}), ERASE(exp)); 
+   foreach_r ( input : (d = pattern) : FALSE) { 
+      d = ERASE(d);
+      if (repl[d] != "") CONTINUE; 
+      offset=NULL;
+      for ( (p_cur = cur_sub; p_start=cpstart);
+            (p_start != NULL && p_cur != NULL); 
+            (p_cur=cdr(p_cur); p_start=cdr(p_start))) {
+         cur_offset = REBUILD(car(p_cur)) - car(p_start);
+         offset = cur_offset :: offset;
+      }
+      offset=ReverseList(offset);
+      if (cdr(offset) == NULL) { <*copy dims are linearized*>
+         (succ, isconst, is_positive,buf_offset, left_offset)=DimOffset(offset,permuteDim);
+         if (succ && !scalar && buf_offset != NULL && get_coeff(buf_size,car(buf_offset)) != 0) succ=FALSE;
+          if (!succ) CONTINUE;
+      }
+      else { buf_offset = NULL; succ=TRUE;
+        for ( (pdim=dim;pstart = sub,p_offset=offset); (p_offset != NULL);
+              (pdim=cdr(pdim),pstart=cdr(pstart),p_offset=cdr(p_offset))) {
+            cur_offset=car(p_offset);
+            if (scalar && ! (cur_offset : INT)) { succ=0; break; } 
+            buf_offset=cur_offset :: buf_offset;
+        }
+        if (!succ) CONTINUE;
+        buf_offset=ReverseList(buf_offset);
+        left_offset=0; is_positive=1; 
+      }
+      if (permute!="") buf_offset = PERMUTE(permute, buf_offset);
+      if (skip == "" || !Lookup(skip,left_offset)) {
+        if (!scalar) {
+            buf_offset = ReplExp_buf_offset[block=block; linearized=(cdr(cpstart)==NULL)](buf_offset, ivardims);
+            repl[d]=ArrayAccess#(buf, buf_offset + left_offset);
+            if (p_cur != NULL) <<* array has additional dimensions
+               repl[d] = ArrayAccess#(repl[d], p_cur);
+         }
+         else if (is_positive && (!(exp : ArrayAccess|CODE.FunctionCall) || left_offset==0)) {
+            repl[d] = BuildName(buf buf_offset) + left_offset;
+         }
+         else if (GLOBAL.DEBUG_REPL) {
+            PRINT("Cannot resolve " cur_sub "-" cpstart ": permuteDim=" permuteDim "; left_offset = " left_offset);
+            PRINT("offset=" offset);
+            PRINT("buf_offset=" buf_offset);
+            PRINT("scalarRepl = " scalar);
+            PRINT("pattern=" pattern);
+            PRINT("From calling ReplExp in POET/lib/ReplExp.pt");
+         }
+     }
+   }
+
+   res = input;
+   did_repl=NULL;
+   foreach (repl : (CLEAR from, CLEAR to) : TRUE) {
+      res = REPLACE(from,to, res);
+      did_repl = to :: did_repl;
+   }
+   if (res != input) {
+      if (trace != "") {
+          if (Lookup(input,trace))
+             REPLACE(ERASE(input),res, trace);
+          else REPLACE(MergeList(ERASE(input),res), trace);
+      }
+      (res, did_repl)
+  }
+  else { (input, did_repl) }
+</xform>
+
+<***********************************************>
+<xform FiniteDiffHelp pars=(prefix, base, dim, input) 
+         output=(_res,_ivar,_repl_config) prefetch_arr=0 copied_array=0 >
+switch (dim) {
+case ExpDim#(nest,count,dist): 
+     Nest#( (curloop=Loop#(iv,start,_,step)), body) = nest;
+      <* always start from the outer tile position if blocked (due to copying). May need to change later.
+         NOTE: this needs to be consistent with the ReplExp configuration in FiniteDiff. Should try unify*> 
+     if ( start ==0) { p1=base; iv2=iv; }
+     else if (copied_array && start : (bv=ID|CODE.Name)) 
+         { p1 = base; iv2=iv - bv; }
+     else { p1=REBUILD(base+REBUILD(start*car(dist))); iv2 = iv; }
+
+     if (count == step) { step = 1; }
+     else { 
+       if (count != 1) ERROR( "count should be either 1 or equal to loop step but is:" count);
+       step=CODE.UnrolledLoopStep#(iv,step);
+     }
+     for ((ivar=NULL;  init=""; j = 0); j < count; j=j+1) {
+        v = (prefix : Name#(CLEAR n))? BuildName(n  j) : BuildName(prefix j);
+        ivar = v :: ivar;
+        switch (prefetch_arr) {
+        case (1, CLEAR pref_dist): 
+           init = BuildList(init,(ExpStmt#(Assign#(v,p1)) 
+                                   ExpStmt#(AddrPrefetch#(v+pref_dist)))); 
+        case (0|2.._, _):
+           init = BuildList(init, ExpStmt#(Assign#(v,p1)));
+        }
+        p1 = Bop#("+",v,step*dist);
+    }
+    p1 = car ivar;
+    if (cdr(ivar) != NULL)
+       ivar = ReverseList(ivar);
+    for ((p=ivar; incr = ""; j = 0); j < count; (p1 = car p; p = cdr p; j=j+1;)) {
+        incr = BuildList(incr,ExpStmt#(Assign#(car p, Bop#("+",p1,step*car(dist)))));
+    }
+    init = BuildList(init, nest);
+    (_,res) = EraseTraceHandle[repl=init](nest,input);
+    incr = BuildList(body, incr); 
+    (_,res) = EraseTraceHandle[repl=incr](body,res);
+
+    res = (res, ivar, CopyDim#(iv,iv2, count,dist))
+case (dim1 dim2) : 
+   (res, ivar1, repl1) = FiniteDiffHelp(prefix, base, dim1, input);
+   if (prefetch_arr[0] > 0) prefetch_arr = (prefetch_arr[0] -1, prefetch_arr[1]); 
+   for ( (ivar2=ivar1; init=""; incr=""; pb=ivar1); pb != NULL ; pb=cdr pb) {
+       p = car pb;
+       (res, ivar, repl2) = FiniteDiffHelp( p, p, dim2, res);
+       ivar2 = AppendList(ivar2, ivar);
+       repl2 = BuildList(repl1, repl2);
+   } 
+   res = ( res, ivar2, repl2);
+case NULL|"": res=(input, NULL, "");
+default:  ERROR("Incorrect loop configuration for FiniteDiff: " dim)
+}
+res
+</xform> 
+
+<xform Nest2ExpDim pars=(dim,exp) >
+  if (exp : ""|NULL) RETURN NULL;
+  switch (dim) {
+   case CODE.Nest#(Loop#(ivar, _, _, _),_)|Loop#(ivar,_,_,_): 
+     for (p = exp; p != NULL; p = cdr(p)) {
+        coeff=get_coeff[throwaway=(_..0)](ivar, car(p));
+        if (coeff!=0) RETURN (ExpDim#(dim, 1, coeff));
+     }
+     NULL
+   case CODE.ExpDim: dim
+   case (first ""): Nest2ExpDim(first,exp)
+   case NULL: NULL
+   case (first rest): AppendList(Nest2ExpDim(first,exp),Nest2ExpDim(rest,exp))
+  }
+</xform>
+
+<xform FiniteDiff1 pars=(base,repl_exp, dim, repl_config)  skip=""
+     trace=GLOBAL.TRACE_TARGET trace_mod="" scalar=1 prefix="" permute="">
+
+    pattern = scalar? (base + "__exp", "__exp")
+                    :   (ArrayAccess#(base, "__exp"), "__exp");
+    cur_config=NULL; buf = prefix; replHandle = trace;
+    for ( (p_dim=dim; p_repl=repl_config); p_dim != NULL && car(p_dim) != ""; (p_dim=cdr(p_dim);p_repl=cdr(p_repl))) 
+    {
+         CopyDim#(iv,iv2,curcount,curdist) = car(p_repl);
+         cur_config=AppendList(cur_config,car(p_repl));
+         
+         repl_exp=repl_exp + iv * curdist;
+
+         if (!scalar) buf = BuildName(buf 0); 
+       
+         ExpDim#(Nest#(_, body),_,_) = car(p_dim);
+         next_nest = ((cdr p_dim) == NULL)? "" : (car (cdr p_dim));
+         if (next_nest : ExpDim) next_nest = next_nest[ExpDim.nest];
+         stmtsToRepl = (next_nest=="")? body : FindStmtsOutsideNest(next_nest, body);
+         if (stmtsToRepl != "") {
+              cur_repl = REPLACE(pattern[1], repl_exp, pattern[0]); 
+              ReplExp[scalar=scalar;trace=replHandle; permute=permute; skip=skip]
+                    (buf, cur_repl, repl_exp, cur_config,stmtsToRepl);
+              if (cdr(p_dim) == NULL) 
+                 trace_mod=
+                    ReplExp[scalar=scalar;permute=permute;skip=skip]
+                      (buf, cur_repl, repl_exp, repl_config,trace_mod);
+        }
+    }
+</xform>
+
+<* finite differencing for a single expression or single-dimenional array ref*>
+<xform FiniteDiff pars=(base,dim, input) refs="" outside_loops="" prefetch_arr=(0,0)
+        exp_type="" prefix="" scalar=1 permute="" copied_array=0
+        trace_decl=GLOBAL.TRACE_DECL trace_newVars="" 
+        trace_mod=GLOBAL.TRACE_EXP trace=GLOBAL.TRACE_TARGET
+        trace_incl=GLOBAL.TRACE_INCL>
+  if (prefix == "") prefix = Name#("_FD_"  (car base));
+  if (prefetch_arr[0]> 0) Append_Include[trace=trace_incl](InclPrefetch);
+  if (trace == "") trace=input;
+
+  explist = refs;
+  if (refs == "") { <* if no reference specified, loop for the first one in input*>
+       foreach (input :  
+          Bop#("+",base,CLEAR exp)|Bop#("+",CLEAR exp,base)|ArrayAccess#(base,CLEAR exp): 
+          TRUE) { explist=exp; BREAK; }
+    }
+  base = COPY(base); res=input; 
+  for ( exp=explist; exp != NULL; exp=cdr(exp)) {
+     exp1 = car(exp); 
+     dim1=Nest2ExpDim(dim, exp1); 
+     if (cdr(exp) == NULL) dim2="";
+     else dim2=Nest2ExpDim(dim,car(cdr(exp)));
+     repl_exp = 0; 
+     if (outside_loops != "") {
+         outside=Nest2ExpDim(outside_loops,exp1);
+         for (po = outside; po != NULL; po=cdr(po)) {
+            ExpDim#(Loop#(iv,_,_,_),_,curdist) = car po;
+            repl_exp = repl_exp + iv * curdist;
+         }
+      }
+      base1 = base + repl_exp;
+      (res, ivar2,repl_config) = FiniteDiffHelp[prefetch_arr=prefetch_arr;copied_array=copied_array](prefix, base1, dim1,res);
+      skip="";
+      foreach (dim2 : (cur=ExpDim#(CLEAR n,_,_)) : TRUE) 
+         { if (!Lookup(cur,dim1)) {skip = n[Nest.ctrl][Loop.i]; BREAK; } }
+      FiniteDiff1[skip=skip;trace=trace;trace_mod=trace_mod;permute=permute;prefix=prefix;scalar=scalar](base,repl_exp,dim1,repl_config);
+       if (exp_type != "")
+           AppendDecl[trace=trace_decl](exp_type, ivar2);
+       if (trace_newVars : VAR) 
+          REPLACE(ERASE(trace_newVars), BuildList(ivar2,ERASE(trace_newVars)), trace_newVars);
+       prefix = BuildName(prefix  "_n");
+  }
+  if (input == res) { res }
+  else if (trace != "") {
+     REPLACE(input, res, trace);
+     res
+  }
+  else { REPLACE(ERASE(input), res, input) }
+</xform> 
+
+<***********************************************>
+<xform ValueRepl pars=(nval, oldval, sub, dim, input) > 
+  input = ReplExp("___T", oldval, sub, dim, input);
+  repl = ""; 
+  nval = REPLACE(sub,(DELAY {i}), nval);
+  foreach ( input : (cur = ArrayAccess#("___T",CLEAR i)) : TRUE) {
+     repl = BuildList(repl, (cur, (APPLY {nval})));
+  }
+  (repl != "")? 
+     REBUILD(REPLACE(repl, input))
+  : input
+</xform>

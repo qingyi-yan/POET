@@ -1,0 +1,109 @@
+include Cfront.code
+
+<* generate various code from stencil dimension *>
+<xform gen_stencil_dim pars=(dim) macro=0 size=0 index=0 body="" >
+ res=(body=="")? NULL : body;
+ for (i = 0; i < dim; i=i+1) {
+   if (body != "") {
+       res=Nest#(Loop#("i"^i,1,"N"^i-1,1), res);
+   }
+   else if (size > 0) {
+      var = "N"^i;
+      if (macro != 0) var = MacroDef#(var, 100);
+      res = var :: res;
+   }
+   else if (index > 0) { var = "i"^i; res = var :: res; }
+   else { "" = "Error: nothing is generated"; }
+ }
+res
+</xform>
+
+<* generate subscript reference with dim sizes and index variable *>
+<xform gen_stencil_subscript pars=(size, index) >
+  res = 0;
+  for (p = index; p != NULL; p = cdr(p)) {
+    size=cdr(size);
+    res = res + Multiply#((car p):: size);
+  }
+  res
+</xform>
+
+<* generate stencil body *>
+<xform gen_stencil_stmt pars=(old_array, new_array, dim, points)>
+ sizes = gen_stencil_dim[size=1](dim);
+ index = gen_stencil_dim[index=1](dim);
+ cur_pos = gen_stencil_subscript(sizes, index);
+ rhs = ArrayAccess#(old_array,cur_pos); 
+ p_index=index; cur_pts = 1;
+ for (i = 0; i < dim; i=i+1) {
+   cur_index = REPLACE((car(p_index)), (car(p_index))+1, index);
+   rhs = rhs + ArrayAccess#(old_array, gen_stencil_subscript(sizes,cur_index));
+   cur_index = REPLACE((car(p_index)), (car(p_index))-1, index);
+   rhs = rhs + ArrayAccess#(old_array, gen_stencil_subscript(sizes,cur_index));
+ }
+ res = ExpStmt#(Assign#(ArrayAccess#(new_array,cur_pos), rhs / points));
+</xform>
+
+<code stencil_main pars=(elem, old_array, new_array, dim, time, points)>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+double GetWallTime(void)
+   {
+      struct timeval tp;
+      static long start=0, startu;
+      if (!start)
+      {
+         gettimeofday(&tp, NULL);
+         start = tp.tv_sec;
+         startu = tp.tv_usec;
+         return(0.0);
+      }
+      gettimeofday(&tp, NULL);
+      return( ((double) (tp.tv_sec - start)) + (tp.tv_usec-startu)/1000000.0 );
+   }
+
+#ifndef RANDSEED
+#define RANDSEED 1
+#endif
+
+#ifndef TS
+#define TS 100
+#endif
+
+int main(int argc, char ** argv) 
+{
+@StmtList#(gen_stencil_dim[size=1;macro=1](dim))@
+  @elem@* @old_array@, *@old_array@_tmp;
+  @elem@* @new_array@, *@new_array@_tmp;
+  unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t;
+  double __timer_begin, __timer_end, __timer_diff, __pt_flops;
+
+  unsigned stencil_size = @CODE.Multiply#(gen_stencil_dim[size=1](dim))@;
+  @old_array@ = calloc(stencil_size,sizeof(@elem@));
+  @new_array@ = calloc(stencil_size,sizeof(@elem@));
+  srand(RANDSEED);
+  for (i=0; i<stencil_size; ++i)
+  {
+      @old_array@[i] = rand();;
+      @new_array@[i] = rand();;
+  }
+
+  __timer_begin = GetWallTime();
+  for (t = 0; t < TS; t++) {
+      if (t%2 == 0) 
+           { @old_array@_tmp = @old_array@; @new_array@_tmp = @new_array@; }
+      else { @old_array@_tmp = @new_array@; @new_array@_tmp = @old_array@; }
+      @gen_stencil_dim[body=gen_stencil_stmt(old_array"_tmp",new_array"_tmp",dim,points)](dim)@
+  }
+  __timer_end = GetWallTime();
+  __timer_diff = (__timer_end-__timer_begin);
+  __pt_flops = @points@ * TS;
+  __pt_flops =  __pt_flops * @Multiply#(gen_stencil_dim[size=1](dim))@;
+  __pt_flops = __pt_flops / __timer_diff;
+  printf("time in seconds:  %.15f\n", __timer_diff);
+  printf("MFLOPS:  %.15f\n", __pt_flops/1000000);
+  return 0;
+}
+</code>

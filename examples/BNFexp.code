@@ -1,0 +1,33 @@
+include utils.incl
+
+<code Exp/>
+<code Exp1/>
+<code Exp2/>
+<code Factor />
+<xform BuildExp1 pars=(inh, content)   />
+
+<code Goal parse=Exp />
+
+<code Exp pars=(opd1 : Factor, rest : Exp1 ) rebuild=(BuildExp1(opd1,rest))>
+@opd1@ @rest@
+</code>
+
+<code Exp1 parse=Exp2|"" />
+
+<code Exp2 pars=(opd2: Factor, rest : Exp1) >
++ @opd2@ @rest@
+</code>
+
+<code Factor parse=Name | INT />
+
+<code Bop pars=(op : STRING, opd1 : Exp, opd2 : Exp)>
+(opd1 op opd2)
+</code>
+
+<xform BuildExp1 pars=(inh: Exp, content : Exp1)>
+switch (content) {
+  case Exp2#(opd2, rest) : BuildExp1(Bop#("+", inh, opd2), rest)
+  case "" : inh
+ }
+</xform>
+

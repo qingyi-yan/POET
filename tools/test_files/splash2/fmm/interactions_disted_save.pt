@@ -1,0 +1,34 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default=((2)) message="Unroll factor for loop Nest1_1" />
+<parameter tp2 type=1.._ default=((2)) message="Unroll factor for loop Nest3" />
+<trace inputCode />
+<trace Nest1_1,Nest1_2,Nest2,Nest3,Nest4,Nest5 />
+<trace Stmt1 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest3_group1 = (Nest3) />
+<trace Nest1_1_group1 = (Nest1_1) />
+
+
+<trace _decl1="" />
+<eval Nest1_1_decl=Nest1_1;
+      if (Nest1_1 : CODE.FunctionDecl) 
+          Nest1_1_decl=Nest1_1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_1_decl = Nest1_1;
+      EraseTraceHandle[repl=(_decl1 Nest1_1_decl)](Nest1_1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval EraseTraceHandle[repl=Nest3_group1](Nest3,inputCode);
+	EraseTraceHandle[repl=Nest1_1_group1](Nest1_1,inputCode);
+	UnrollLoop[factor=tp1](Nest1_1_group1);
+	UnrollLoop[factor=tp2](Nest3_group1); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

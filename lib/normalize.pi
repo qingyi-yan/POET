@@ -1,0 +1,7 @@
+
+<xform gen_return_var pars=(dummy) />
+<xform normalize_exp pars=(exp)/>
+<xform eliminate_early_return pars=(input,rtype) /> 
+<xform breakup_var_decls pars=(input) />
+<xform extract_var_decls pars=(input) output=(_decls,_newinput)/>
+<xform rename_var pars=(origdecl, oldname, newname, input)/>

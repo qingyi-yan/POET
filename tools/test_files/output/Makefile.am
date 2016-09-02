@@ -1,0 +1,2 @@
+
+EXTRA_DIST= dgemm_1_save.c dgemvT_save.c jacobi7_save.c dgemm_1_save.pt	dgemvT_save.pt jacobi7_save.pt dgemm_2_save.c jacobi7_2_save.c vmult_1_save.c dgemm_2_save.pt jacobi7_2_save.pt vmult_1_save.pt dgemvN_save.c jacobi7_3_save.c	vmult_2_save.c dgemvN_save.pt jacobi7_3_save.pt vmult_2_save.pt DistributeLoop1_save.c DistributeLoop1_save.pt DistributeLoop2_save.c DistributeLoop2_save.pt DistributeLoop3_save.c DistributeLoop3_save.pt

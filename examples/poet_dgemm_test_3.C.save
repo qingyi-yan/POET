@@ -1,0 +1,72 @@
+void dgemm_test(const int M,const int N,const int K,const double alpha,const double* A,const int lda,const double* B,const int ldb,const double beta,double* C,const int ldc) {
+   int i;
+   int j;
+   int l;
+   int j_bk_1;
+   int i_bk_2;
+   int l_bk_3;
+   for (j_bk_1=0; j_bk_1<-15+N; j_bk_1+=16) 
+     {
+        for (i_bk_2=0; i_bk_2<-15+M; i_bk_2+=16) 
+          {
+             for (l_bk_3=0; l_bk_3<-15+K; l_bk_3+=16) 
+               {
+                  for (j=0; j<16; j+=1) 
+                    {
+                       for (i=0; i<16; i+=1) 
+                         {
+                            for (l=0; l<16; l+=1) 
+                              {
+                                 
+                                 
+                                 
+                                 /*SPLIT-START*/if (l_bk_3+l==0)  
+                                   {
+                                      C[(j_bk_1+j)*ldc+(i_bk_2+i)] = beta*C[(j_bk_1+j)*ldc+(i_bk_2+i)];
+                                   }
+                                  
+                                   {
+                                      C[(j_bk_1+j)*ldc+(i_bk_2+i)] = C[(j_bk_1+j)*ldc+(i_bk_2+i)]+alpha*A[(l_bk_3+l)*lda+(i_bk_2+i)]*B[(j_bk_1+j)*ldb+(l_bk_3+l)];
+                                   }
+                              }
+                         }
+                    }
+               }
+          }
+     }
+   for (j=0; j<j_bk_1; j+=1) 
+     {
+        for (i=0; i<i_bk_2; i+=1) 
+          {
+             for (l=l_bk_3; l<K; l+=1) 
+               {
+                  /*Loop Bound*/if (l>=0&&l<K)  
+                    {
+                       C[j*ldc+i] = C[j*ldc+i]+alpha*A[l*lda+i]*B[j*ldb+l];
+                    }
+               }
+          }
+     }
+   for (j=0; j<j_bk_1; j+=1) 
+     {
+        for (i=i_bk_2; i<M; i+=1) 
+          {
+             C[j*ldc+i] = beta*C[j*ldc+i];
+             for (l=0; l<K; l+=1) 
+               {
+                  C[j*ldc+i] = C[j*ldc+i]+alpha*A[l*lda+i]*B[j*ldb+l];
+               }
+          }
+     }
+   for (j=j_bk_1; j<N; j+=1) 
+     {
+        for (i=0; i<M; i+=1) 
+          {
+             C[j*ldc+i] = beta*C[j*ldc+i];
+             for (l=0; l<K; l+=1) 
+               {
+                  C[j*ldc+i] = C[j*ldc+i]+alpha*A[l*lda+i]*B[j*ldb+l];
+               }
+          }
+     }
+}

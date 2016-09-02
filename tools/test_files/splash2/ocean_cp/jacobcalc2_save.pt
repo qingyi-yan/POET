@@ -1,0 +1,49 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest1,Nest2 />
+<trace Stmt1 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest2_group1 = (Nest2) />
+<trace Nest2_ScalarRepl_aref_th10 = (CODE.ArrayAccess#("t1b",CODE.Bop#("-", "iindex", 1))) />
+<trace Nest2_ScalarRepl_aref_th9 = (CODE.ArrayAccess#("t1b",CODE.Bop#("+", "iindex", 1))) />
+<trace Nest2_ScalarRepl_aref_th8 = (CODE.ArrayAccess#("t1d",CODE.Bop#("-", "iindex", 1))) />
+<trace Nest2_ScalarRepl_aref_th7 = (CODE.ArrayAccess#("t1d","iindex")) />
+<trace Nest2_ScalarRepl_aref_th6 = (CODE.ArrayAccess#("t1d",CODE.Bop#("+", "iindex", 1))) />
+<trace Nest2_ScalarRepl_aref_th5 = (CODE.ArrayAccess#("t1a","iindex")) />
+<trace Nest2_ScalarRepl_aref_th4 = (CODE.ArrayAccess#("t1e",CODE.Bop#("-", "iindex", 1))) />
+<trace Nest2_ScalarRepl_aref_th3 = (CODE.ArrayAccess#("t1e","iindex")) />
+<trace Nest2_ScalarRepl_aref_th2 = (CODE.ArrayAccess#("t1e",CODE.Bop#("+", "iindex", 1))) />
+<trace Nest2_DistributeLoop_private_th1 = () />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Nest2_ScalarRepl_aref_th10 Nest2_ScalarRepl_aref_th9 Nest2_ScalarRepl_aref_th8 Nest2_ScalarRepl_aref_th7 Nest2_ScalarRepl_aref_th6 Nest2_ScalarRepl_aref_th5 Nest2_ScalarRepl_aref_th4 Nest2_ScalarRepl_aref_th3 Nest2_ScalarRepl_aref_th2) />
+<define TRACE_VARS (Nest2_DistributeLoop_private_th1) />
+
+<eval EraseTraceHandle[repl=Nest2_group1](Nest2,inputCode);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th10,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th9,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th8,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th7,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th6,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th5,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th4,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th3,(Nest2_group1),Nest2_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1](Nest2_ScalarRepl_aref_th2,(Nest2_group1),Nest2_group1[Nest.body]);
+	DistributeLoop[outer_nest=Nest1;statement_to_split=Stmt1;data_type="double"](Stmt1,Nest2); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

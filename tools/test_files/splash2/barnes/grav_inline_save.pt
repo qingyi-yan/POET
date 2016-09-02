@@ -1,0 +1,33 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5,Stmt6 />
+<trace FunctionDecl1,FunctionDecl2 />
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+<trace Stmt6_StrengthReduction_subexpression_th1 = () />
+
+<trace _decl1="" />
+<eval FunctionDecl1_decl=FunctionDecl1;
+      if (FunctionDecl1 : CODE.FunctionDecl) 
+          FunctionDecl1_decl=FunctionDecl1[FunctionDecl.body][StmtBlock.stmts];
+      else FunctionDecl1_decl = FunctionDecl1;
+      EraseTraceHandle[repl=(_decl1 FunctionDecl1_decl)](FunctionDecl1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Stmt6_StrengthReduction_subexpression_th1) />
+
+<eval ;
+	StrengthReduction[fp_division=Stmt4;appendix=Stmt5](1,Stmt6);
+	InlineFunction(FunctionDecl1,Stmt1);
+	InlineFunction(FunctionDecl2,Stmt2);
+	InlineFunction(FunctionDecl2,Stmt3); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

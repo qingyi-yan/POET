@@ -1,0 +1,557 @@
+<*
+   POET : Parameterized Optimizations for Empirical Tuning
+   Copyright (c)  2008,  Qing Yi.  All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+ 3. Neither the name of UTSA nor the names of its contributors may be used to
+    endorse or promote products derived from this software without specific
+    prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGE.
+*>
+
+<define TAG_PREFIX "___TAG_"/>
+<define TAG_INDEX 0/>
+
+<define BVAR_INDEX 0/>
+
+<xform BlockIvarName pars=(ivar)>
+ GLOBAL.BVAR_INDEX = GLOBAL.BVAR_INDEX + 1;
+ (ivar^"_bk_"^GLOBAL.BVAR_INDEX) 
+</xform>
+
+<* Marker for the stopping end of a inner tiled loop *> 
+<code BlockLoopTileEnd pars=(tag,bstop,stop) stop_op=CODE.MIN >
+@stop_op#(bstop,stop)@
+</code>
+
+<* split the first iteration of the loop *>
+<code BlockLoopSplitStart pars=(btag, tivar, start) >
+/*SPLIT-START*/@If#(Bop#("==",tivar,start))@
+</code>
+
+<* split the later iterations of the loop*>
+<code BlockLoopSplitStop pars=(btag, tivar, stop) >
+@If#(Bop#(">", tivar, stop))@
+</code>
+
+<code StripmineTriangularBloop pars=(bloop1,bloop2)> 
+/*Triangular unprocessed*/@Loop#(bloop1[Loop.i], bloop1[Loop.start], bloop2[Loop.stop], bloop1[Loop.step])@
+</code>
+<code StripmineTriangularTloop pars=(bvar,tloop1,tloop2)/> 
+
+<code StripmineTileStart pars=(btag,bvar,tstart) 
+         rebuild=((bvar==tstart)?bvar:StripmineTileStart#(btag,bvar,tstart))>
+@MAX#(bvar,tstart)@
+</code>
+
+<code BlockLoopEndBeforeCleanup pars=(stop,nstop)>
+@nstop@
+</code>
+
+<code LoopStartCheck pars=(tag, i, start) >
+/*Loop Start Check*/@If#(Bop#(">=",i, start))@
+</code>
+
+<code UnrolledLoopCheck pars=(tag, i, stop) >
+/*Unroll Check*/@If#(Bop#("<",i, stop))@
+</code>
+
+<***********************************************>
+
+<xform NewTAG pars=(empty)>
+GLOBAL.TAG_INDEX = GLOBAL.TAG_INDEX + 1;
+GLOBAL.TAG_PREFIX ^ GLOBAL.TAG_INDEX
+</xform>
+
+<xform StripmineLevel pars=(config)>
+switch (config) {
+case CODE.Loop|CODE.UnrolledLoop: 1
+case (CODE.Loop|CODE.UnrolledLoop _): 1
+case ("","","",_): 0
+case (_,tloop,_,_): StripmineLevel(tloop) + 1
+}
+</xform>
+
+<* QY:  each stripmine configuration is a quadruple tree of the form 
+   (bloop,tloop,rloop,body), where the each tloop or rloop can itself
+   be another quadruple of the same form 
+   res1 and res2 need to have the same structure at the bottom level when merged.
+*>
+<xform MergeStripmine pars=(res1, res2) d1="" d2="" triangular="" >
+  if (d1 == "") { d1 = StripmineLevel(res1); d2 = StripmineLevel(res2); }
+  switch (res1) {
+  case "":  ""::res2  <* res2 may or may not be empty *>
+  case CODE.Loop#(i,_,_,_)|CODE.UnrolledLoop:
+     switch (res2) { <* check all the valid values for res2 *>
+     case "": res1::res2   <* do not skip empty here *>
+     case CODE.Loop|CODE.UnrolledLoop: 
+         if (res2:Loop#(i2,start2,stop2,step2) && (triangular == 1 || triangular == i2)) 
+              { res2 = StripmineTriangularTloop#(start2, 
+                      Loop<*[ATTR=res2[Loop.ATTR]]*>#(i2,i,stop2,step2), res2); }
+         res1 :: res2 
+     case (CODE.Loop|CODE.UnrolledLoop _): res1 :: res2 
+     }
+  case (bloop1,tloop1,rloop1,body1):
+     switch (res2) {
+     case ("","","",body2): (bloop1,tloop1,rloop1, body2)
+     case (bloop2,tloop2,rloop2,body2) : 
+        if (d1 == d2) {
+          if (((first2=car(bloop2)): Loop#(i2,start2,stop2,step2)) && (triangular==1 || first2[Loop.origivar]==triangular)) {
+            tail2=cdr(bloop2);
+            if (start2 == 0) first2_1 = REPLACE( ((start2, bloop1[Loop.i]) 
+                                    (stop2, bloop1[Loop.i]+1)), first2);
+            else first2_1 = REPLACE( (stop2, bloop1[Loop.i]+1), first2);
+            first2_2 = REPLACE(start2, bloop1[Loop.i]+step2, first2);
+            bloop2=BuildList(StripmineTriangularBloop#(first2_1, first2_2),tail2);
+          }
+          (bloop1::bloop2, MergeStripmine[d1=d1-1;d2=d2-1](tloop1,tloop2), 
+                           MergeStripmine[d1=d1-1;d2=d2-1](rloop1,rloop2), 
+                           MergeStripmine[d1=0;d2=0](body1,body2)) }
+        else if (d1 > d2) {
+           (bloop1, MergeStripmine[d1=d1-1;d2=d2](tloop1,res2),
+                    MergeStripmine[d1=d1-1;d2=d2](rloop1,res2),
+                    MergeStripmine[d1=0;d2=0](body1,body2))} 
+        else { <* d1 < d2)  *>
+           (bloop2, MergeStripmine[d2=d2-1](res1,tloop2), 
+                    MergeStripmine[d2=d2-1](res1,rloop2), 
+                    MergeStripmine[d1=0;d2=0](body1, body2)) }
+      }
+  }
+</xform>
+
+<xform StripmineGenOuterLoops pars=(tag,ivar,start,stop,step,bsize,imax) 
+       stop_op=MIN
+       unroll=0 cleanup=0 trace_ivars="" trace_decl="" bvar="" exact=0 > 
+     <* generate the loop tag *>
+     if (tag == "") btag=NewTAG(""); else btag=tag;
+
+     if (bvar == "") { <* generate bloop index variable if not specified *>
+       if (unroll!=0) bvar = ivar;
+       else { 
+           bvar = BlockIvarName(ivar);
+           if (Lookup(ivar, trace_ivars))
+              AppendVar[trace=trace_ivars](bvar);
+           AppendDecl[trace=trace_decl](CODE.IntegerType, bvar);
+       }
+     }
+
+     nstep = REBUILD(bsize * step);  <* new loop step *>
+     if (!exact && cleanup > 0) { 
+         if (!(stop : BlockLoopEndBeforeCleanup#(stop1,_))) stop1 = stop;
+         minus=(stop_op==MIN)?"-":"+";
+         bloop=Loop[tag=btag;origstep=step;origivar=ivar;maxiternum=imax]#(bvar,start,
+                 BlockLoopEndBeforeCleanup#(stop1,REBUILD(Bop#(minus,stop1,Bop#(minus,nstep,1)))),nstep);
+         rloop= Loop[tag=btag;maxiternum=imax]#(ivar,bvar,stop,step);
+     }
+     else {
+        <<*if (imax : INT) imax=(imax+bsize-1)/bsize; else imax=""; 
+        if (imax : INT) imax=(imax+bsize-1)/bsize;  
+        bloop=Loop[tag=btag;maxiternum=imax;origstep=step;origivar=ivar]#(bvar,start,stop,nstep); 
+        rloop="";
+     }
+ (bloop,rloop)
+</xform>
+
+<xform StripmineGenInnerLoop pars=(bloop,ivar,start,stop,step,bsize) stop_op=MIN 
+            unroll=0 cleanup=0 exact=0 no_mod=0 unroll_check="" >
+     plus = (stop_op==MIN)? "+" : "-";
+     Loop#(bvar,_,_,nstep) = bloop; btag=bloop[Loop.tag];
+     if (exact || cleanup) {
+        if (unroll !=0) tloop = UnrolledLoop[check_start=unroll_check]#(ivar,ivar,plus,step,bsize) ;
+        else if (!no_mod && start:INT) tloop = Loop[tag=btag^"TILE";maxiternum=bsize]#(ivar,0,REBUILD(bsize*step),step); 
+        else tloop = Loop[tag=btag^"TILE";maxiternum=bsize]#(ivar,bvar,REBUILD(bvar+REBUILD(bsize*step)),step); 
+     }
+     else {
+        if (unroll !=0) tloop = UnrolledLoop[check_start=unroll_check]#(ivar,ivar,plus,step,UnrolledLoopTileEnd#(bloop,bsize));
+        else if (!no_mod && start:INT) 
+         {
+            if (stop : BlockLoopTileEnd#(stop_tag,stop_1,stop_2))
+                stop = BlockLoopTileEnd#(stop_tag,stop_1-bvar,stop_2-bvar);
+            else stop = stop - bvar;
+            tloop = Loop[tag=btag^"TILE";maxiternum=bsize]#(ivar,0,BlockLoopTileEnd[stop_op=stop_op]#(btag, nstep, stop),step);
+         }
+        else if (start : INT)
+            tloop = Loop[tag=btag^"TILE";maxiternum=bsize]#(ivar,bvar,BlockLoopTileEnd[stop_op=stop_op]#(btag,bvar+nstep,stop),step);
+        else
+            tloop = Loop[tag=btag^"TILE";maxiternum=bsize]#(ivar,StripmineTileStart#(btag,bvar,start),BlockLoopTileEnd[stop_op=stop_op]#(btag,bvar+nstep,stop),step);
+     }
+tloop
+</xform>
+
+<xform StripmineGenLoops pars=(loop,bdim)   
+       unroll=0  no_mod=0 cleanup=0 
+       trace_decl=GLOBAL.TRACE_DECL  trace_ivars=GLOBAL.TRACE_VARS 
+        output = (_bloop, _tloop, _rloop,_exact) >
+
+    <* initialize bvar, ivar, bsize, next from the 'bdim' specification *>
+     Loop#(i,start,stop,step) = loop;
+     if ( !(bdim : BlockDim#(ivar, bvar, bsize))) 
+          {  ivar = bvar = ""; bsize = bdim; next=NULL; }
+     if (bsize==0) ERROR("Invalid blocking factor 0: " bdim) ;
+     if (ivar == "") ivar = i;
+     else if (i != ivar) ERROR("blocking dimension mismatch: " loop " **vs.** " ivar);
+
+     <*  initialize inum, imax, exact from the original loop *>
+     inum = (stop - start) / step; if (!(inum : INT)) inum="";
+     if ((inum != ""  && inum % bsize == 0)) exact= 1; else exact=0;
+     stop_op = (step < 0)? MAX : MIN;
+     imax = loop[Loop.maxiternum]; 
+
+     unroll_check=""; <* QY: if start contains index variables of outside loops, 
+            need to check loop bound before executing the unrolled stmt *>
+     for (p = unroll; p != NULL; p = cdr(p)) { 
+       cur = car p;
+       if (cur : CODE.Name && Lookup(cur,start)) unroll_check=start; 
+     }
+
+     <* early return from special boundary cases *>
+     plus = (stop_op==MIN)? "+" : "-";
+     if ( (inum : INT) && (inum == bsize))  <* no tiling necessary *>
+         RETURN ((unroll !=0)? 
+           ("",UnrolledLoop[check_start=unroll_check]#(i,start,plus,step,bsize),"",exact)
+         : ("",loop,"",exact));
+     if ((inum : INT) && (inum < bsize) || (imax : INT) && imax < bsize)
+          RETURN ("", "", loop,exact);
+
+     (bloop,rloop) = StripmineGenOuterLoops[exact=exact;bvar=bvar;
+           unroll=unroll;cleanup=cleanup;trace_ivars=trace_ivars;trace_decl=trace_decl;stop_op=stop_op](loop[Loop.tag],ivar,start,stop,step,bsize,imax);
+     tloop = StripmineGenInnerLoop[no_mod=no_mod;exact=exact;cleanup=cleanup;
+                  unroll=unroll;unroll_check=unroll_check;no_mod=no_mod;stop_op=stop_op]
+                  (bloop,ivar,start,stop,step,bsize);
+
+(bloop,tloop,rloop,exact)
+</xform>
+
+<xform Stripmine pars=(inner, bdim, input) triangular=""
+       unroll=0 cleanup=0 nonPerfect="" no_mod=0 trace_mod=GLOBAL.TRACE_EXP
+       trace_decl=GLOBAL.TRACE_DECL  trace_ivars=GLOBAL.TRACE_VARS
+       output = (_bloop, _tloop, _rloop, _body) >
+
+  if (bdim == NULL) RETURN ("","","",input);
+  switch (car(bdim)) {
+    case BlockDim: next = (car bdim)[BlockDim.next]; 
+    case INT : next = cdr(bdim);
+    default:  next=NULL;
+  }
+
+  switch (input) {
+  case StmtBlock#body : 
+       (bloop,tloop,rloop,body)  = Stripmine(inner,bdim,body);
+       if (next != NULL) body = Stripmine(inner, next, body);
+       (bloop,tloop,rloop,body)
+  case inner: ("","","",input)
+  case CODE.Loop:
+     (bloop,tloop,rloop,exact) = StripmineGenLoops[unroll=unroll;cleanup=cleanup;trace_decl=trace_decl;trace_ivars=trace_ivars;no_mod=no_mod](input,car bdim);
+     if (next != NULL) {
+         if (exact || cleanup) {
+               tloop = XFORM.Stripmine[cleanup=-1](inner,next, tloop);
+         }
+         else tloop = XFORM.Stripmine(inner,next, tloop);
+         rloop = XFORM.Stripmine(inner,next, rloop);
+     }
+     (bloop, tloop, rloop, "")
+  case ((loop=Loop) otherLoops):
+     curdim = car bdim;
+     first=Stripmine ("", curdim, loop);
+     if (curdim : INT && inner!="" && unroll==0 && next == NULL) next = curdim;
+     else next = cdr(bdim);
+     second=Stripmine (inner, cdr bdim, otherLoops);
+     res=MergeStripmine[triangular=triangular](first, second);
+     res
+  case Nest#((loop=Loop#(i,start,stop,step)),body) : 
+     if (unroll != 0) { unroll=loop[Loop.i]::unroll; }
+     curdim = car bdim;
+     (bloop1,tloop1,rloop1,body1) = Stripmine ("", curdim, loop);
+     if (curdim : INT && inner!="" && unroll==0 && next == NULL) next = curdim;
+     else next = cdr(bdim);
+     (bloop2,tloop2,rloop2,body2) = Stripmine (inner, next, body);
+     if (bloop2 != "") {
+        bloop_new=""; 
+        foreach_r (bloop2: (cur=Loop#(CLEAR i2,CLEAR lb2,CLEAR ub2,CLEAR step2)): TRUE) {
+           lb2_new=REPLACE(i,bloop1[Loop.i],lb2);
+           ub2_new=REPLACE(i,bloop1[Loop.i]+step2-1,ub2);
+           imax = REPLACE(i,bloop1[Loop.i], ub2);
+           if (lb2_new != lb2 || ub2_new != ub2) { 
+               cur_new=Loop[tag=cur[Loop.tag];origivar=cur[Loop.origivar];origstep=cur[Loop.origstep];maxiternum=imax]#(i2,lb2_new,ub2_new,step2);
+               tloop2=REPLACE(cur, cur_new, tloop2);
+               bloop_new=BuildList(cur_new,bloop_new);
+           }
+           else bloop_new=BuildList(cur,bloop_new);
+        }
+        bloop2=bloop_new;
+     }
+     if (unroll==0 && tloop1 : Loop#(t_ivar, 0,_,_)) {
+      <* QY: replace i1 with i1+bi1 in tloop2 and body2. *>
+       tloop2_orig = tloop2;
+       tloop2=REBUILD(REPLACE(t_ivar,bloop1[Loop.i] + t_ivar,tloop2));
+       body2 = REPLACE(t_ivar, bloop1[Loop.i] + t_ivar, body2);
+       if (trace_mod !="") REPLACE(t_ivar, bloop1[Loop.i]+t_ivar, trace_mod);
+     }
+     MergeStripmine[triangular=triangular]( (bloop1,tloop1,rloop1,body1), (bloop2,tloop2,rloop2,body2))
+  default :  <<*QY: the loop is not perfectly nested
+    if ((car input) == "" && (cdr(input) != NULL)) { <* empty stmt at the beginning*>
+        RETURN (Stripmine(inner,bdim, cdr(input)));
+    }
+    if ((car input) != "" && (cdr(input) == NULL)) { <*single stmt list *>
+        RETURN (Stripmine(inner,bdim, car(input)));
+    }
+    if (nonPerfect == "") {
+       print("Cannot find innermost loop:" inner "\n From Stripmining " input);
+       assert(0);  
+    }
+    switch (nonPerfect) {
+      case NonPerfectLoops#(pivot,origloops):  
+            nonperfect_outer=origloops; nonperfect_inner="";
+      case (NonPerfectLoops#(pivot,origloops) rest):
+            nonperfect_outer=origloops; nonperfect_inner=rest;
+      default: 
+            pivot=""; nonperfect_outer=nonPerfect; nonperfect_inner="";
+    }
+    if (pivot!="") pivot=Loop#("",pivot[Nest.ctrl][Loop.i],"","");
+
+    <<* QY: fuse the non-perfect loops into a single one
+    fused_loop=UnionLoops[level=input](BuildList(pivot,nonperfect_outer)); 
+    Loop#(ivar_outer, lb_outer, ub_outer,step_outer) = fused_loop;
+    bbody="";  <<*QY: the resulting new body
+
+    splits = DistributeLoops_internal(nonperfect_outer, input);
+    for ( (p_splits=splits;p_nest=nonperfect_outer;); 
+              p_splits != NULL; p_splits=cdr(p_splits)) {
+          cur_split = car(p_splits);
+          if (p_nest != NULL && Lookup( (cur_nest=(car p_nest)),cur_split)) {
+             p_nest=cdr(p_nest); 
+             Nest#(Loop#(ivar_inner,lb_inner,ub_inner,step), body1)= cur_nest;
+             if (lb_inner == lb_outer) lb_inner = "";
+             if (ub_inner == ub_outer) ub_inner = "";
+             body1 = Nest#(LoopBound#(ivar_inner,lb_inner,ub_inner),body1);
+             if (cur_nest != cur_split) <<*QY: get conditionals surrounding cur_nest 
+                 body1=REPLACE(cur_nest,body1,cur_split);
+             bbody=body1::bbody;
+           }
+           else { <*QY: no blocking. *>
+               if(bbody == "" || pivot != "")
+                  bbody = Nest#(BlockLoopSplitStart#("__BLOCKLOOP__", ivar_outer,lb_outer),cur_split)::bbody;
+               else
+                  bbody = Nest#(BlockLoopSplitStop#("__BLOCKLOOP__",ivar_outer,REBUILD(ub_outer-step_outer)),cur_split)::bbody;
+          }
+    }
+    if (p_nest != NULL) ERROR("Did not find non-perfect loops:" p_nest);
+    bbody = ReverseList(bbody);
+    (bloop,tloop,rloop,bbody)=Stripmine[nonPerfect=""]("",car(bdim),Nest#(fused_loop,bbody));
+    bbody = REPLACE("__BLOCKLOOP__",bloop[Loop.tag], bbody);
+    if (nonperfect_inner == "") { (bloop, tloop, rloop, bbody) }
+    else { <<*QY: this has not been tested
+        (bloop_inner, tloop_inner, rloop_inner,body_inner) = 
+           Stripmine[nonPerfect=nonperfect_inner](inner,cdr(bdim),bbody);
+        (bloop::bloop_inner, tloop::tloop_inner, rloop::rloop_inner, body_inner)
+    }
+  }
+</xform>
+
+<***********************************************>
+<xform BlockHelp pars = (loopsBlock, loopsCleanup,bodyBlock, nestOriginal) 
+                output=(_nestBlocked, _nestCleanup) trace_mod=GLOBAL.TRACE_EXP
+                nonPerfect="" unroll=0 loopsInnerCleanup = "">
+
+  if (loopsBlock == NULL || car(loopsBlock)=="") RETURN (bodyBlock, ""); 
+  loopBlock=(car loopsBlock); 
+  if (nestOriginal : Nest#(loopOriginal,bodyOriginal)) {
+      Loop#(i_orig, start_orig, stop_orig, step_orig) = loopOriginal;
+      bodyCleanup = bodyOriginal;
+  }
+  else {
+     switch (nonPerfect) {
+      case "": ERROR("Expecting a nest but get:" nestOriginal);
+      case CODE.Nest: loops=nonPerfect;
+      case CODE.NonPerfectLoops#(_,loops): "" 
+      case (CODE.NonPerfectLoops#(_,loops) rest): nonPerfect=rest; 
+     }
+     nestOriginal=loops;
+     bodyOriginal=""; loopOriginal=""; bodyCleanup = "";
+     Nest#(Loop#(i_orig, start_orig, stop_orig, step_orig),_)
+          = car(loops); <*QY: should be the union of all nonperfect*>
+     for (p = loops; p!=NULL; p=cdr(p)) {
+            cur=car(p);
+            Nest#(loop=Loop#(i,lb,ub,step),body) = car(cur);
+            bodyCleanup = BuildList(Nest#(LoopBound#(i_orig,lb,ub),body),bodyCleanup);
+            bodyOriginal= BuildList(body,bodyOriginal);
+            if (i_orig != i) {
+               bodyOriginal=REPLACE(i,i_orig,bodyOriginal);
+               bodyCleanup=REPLACE(i,i_orig,bodyCleanup);
+               REPLACE(i,i_orig,trace_mod);
+            }
+            loopOriginal=BuildList(loop,loopOriginal);
+      }
+      bodyOriginal=ReverseList(bodyOriginal);
+      bodyCleanup=ReverseList(bodyCleanup);
+  }
+  if (stop_orig : BlockLoopEndBeforeCleanup)
+     stop_orig = stop_orig[BlockLoopEndBeforeCleanup.stop];
+  for (p = loopOriginal; p != NULL; p = cdr(p)) {
+     loopOrigTrace = car(p); <<* QY: only replace the first tracing handle
+     REPLACE(ERASE(loopOrigTrace), loopBlock, loopOrigTrace);
+  }
+  loopOriginal=COPY(loopOriginal);
+  bodyCleanup = COPY(bodyCleanup);
+
+  Loop#(bivar, _, _, bsize) | (StripmineTriangularBloop#(Loop#(bivar,_,_,bsize),_)) = loopBlock;
+  (nestBlocked2,nestCleanup) = 
+       BlockHelp[loopsInnerCleanup=BuildList(loopsInnerCleanup,
+           Loop#(i_orig, start_orig, bivar, step_orig))]
+           (cdr loopsBlock, (loopsCleanup==NULL)? NULL : (cdr loopsCleanup), bodyBlock, bodyOriginal);
+
+  loopCleanup = (loopsCleanup==NULL)? "" : car loopsCleanup;
+  if (loopCleanup != "") 
+     curCleanup = BuildNest(loopCleanup, bodyCleanup) ;
+  else if (unroll && bsize > step_orig && (skipIters=(stop_orig-start_orig)%step_orig)!=0) 
+  {
+     curCleanup =  ExpStmt#(Assign#(i_orig,stop_orig-skipIters));
+  }
+  else curCleanup=""; 
+  if (!unroll) {
+      annot = "";
+      if (nestOriginal : CODE.Nest) annot=nestOriginal[Nest.annot];
+      nestBlocked=BuildNest[annot=annot](loopBlock,nestBlocked2); 
+      nestCleanup=BuildList(nestCleanup,BuildNest(loopsInnerCleanup,curCleanup));
+  }
+  else { 
+      nestBlocked=BuildNest[annot=nestOriginal[Nest.annot]](loopBlock, BuildList(nestBlocked2,nestCleanup));
+      nestCleanup=curCleanup;
+  }
+  for (p=ReverseList(nestOriginal); p != NULL; p = cdr(p)) {
+      cur = car(p);
+      for (cur1 = ERASE(cur); cur1 : VAR; cur1 = ERASE(cur1)) {}
+      nestBlocked=REPLACE(cur1, nestBlocked, cur);
+  }
+  for (p = bodyOriginal; p != NULL; p = cdr(p)) {
+     bodyOrigTrace = car(p); <<* QY: only replace the first tracing handle
+     if (!Lookup(bodyOrigTrace,nestOriginal)) <<*reset non-loop tracing handles only
+        REPLACE(ERASE(bodyOrigTrace), nestBlocked2, bodyOrigTrace);
+  }
+
+  (nestBlocked,nestCleanup)
+</xform>
+
+<***********************************************
+QY: additional internal configuration parameters:
+ trace_innerNests: tracing handles for the outer tiled loop nests;
+ unroll (1/0): whether unroll the blocked loops ;
+**********************************************>
+<define NB_INDEX 1 />
+<xform BlockLoops pars=(inner,input) 
+       factor=1 cleanup=0 unroll = 0 nonPerfect="" tri_loop="" trace_include=GLOBAL.TRACE_INCL
+       trace_mod=GLOBAL.TRACE_EXP trace_outerNest="" trace_innerNest="" trace_cleanup=""
+       trace_decl=GLOBAL.TRACE_DECL trace_ivars=GLOBAL.TRACE_VARS trace=GLOBAL.TRACE_TARGET >
+  done = 1;
+  for (p = factor; p != NULL; p = cdr(p)) { 
+     if (!(car(p) : 1|BlockDim#(_,_,1))) { done=FALSE; BREAK;}
+  }
+  if (done) RETURN input;
+
+  if (Lookup("MACRO", factor)) {
+    r = NULL;
+    for (p = ReverseList(factor); p != NULL; p = cdr(p)) { 
+       if (car(p) == "MACRO") {
+          macro_factor=("_NB_" GLOBAL.NB_INDEX);
+          GLOBAL.NB_INDEX=GLOBAL.NB_INDEX+1;
+          Append_Include[trace=trace_include](CODE.Macro#("define" " " macro_factor  " " 1));
+          r = Name#(macro_factor) :: r;
+       }
+       else r = (car p) :: r;
+    }
+    factor=r;
+  }
+
+  if (nonPerfect == "") nonPerfect=FindNonPerfect(inner, input);
+
+  (bloop,tloop,rloop,body) = 
+       Stripmine[nonPerfect=nonPerfect; trace_mod=trace_mod;
+               unroll=unroll; cleanup=cleanup; triangular=tri_loop;
+               trace_decl=trace_decl; trace_ivars=trace_ivars] 
+           (inner, factor,input);
+   bbody = BuildNest(tloop, body);
+
+  if (trace_innerNest : VAR)  {
+     bbody = REPLACE(ERASE(trace_innerNest),bbody,trace_innerNest); 
+  }
+  (nestBlocked,nestCleanup) = BlockHelp[nonPerfect=nonPerfect;unroll=unroll;trace_mod=trace_mod](bloop, rloop, bbody, RebuildNest(input));
+  nestCleanup=FlattenList(nestCleanup);
+  REPLACE(ERASE(trace_outerNest), car nestBlocked, trace_outerNest);
+
+  result = BuildList(nestBlocked,nestCleanup);
+  if (trace_cleanup : VAR)  {
+     REPLACE(ERASE(trace_cleanup),nestCleanup,trace_cleanup); 
+     INSERT(trace_cleanup,result); 
+  }
+  EraseTraceHandle[repl=result](input, trace);
+  result
+</xform>
+ 
+<***********************************************>
+<xform UnrollLoops pars=(inner,input) factor=8 cleanup=1  trace=GLOBAL.TRACE_TARGET>
+ BlockLoops[factor=factor; unroll=1; cleanup=cleanup; trace=trace] (inner,input)
+</xform>
+
+<xform UnrollLoop pars=(input) factor=8 cleanup=1  trace=GLOBAL.TRACE_TARGET>
+ BlockLoops[factor=factor; unroll=1; cleanup=cleanup; trace=trace] (input[Nest.body],input)
+</xform>
+
+<***********************************************>
+<xform UnrollJam pars=(jnest,input) factor=4 cleanup=1 trace=GLOBAL.TRACE_TARGET>
+  if (factor==1) RETURN input;
+
+  numOfLoops=0;
+  for (p = FindNest(input); p != jnest && p != ""; p = FindNest(p[Nest.body])) {
+    numOfLoops=numOfLoops+1;
+  }
+  i = LEN(factor); 
+  if ( i < numOfLoops) {
+     for ( ""; i < numOfLoops; i=i+1) {
+       factor = factor :: 1;
+     }
+     factor = FlattenList(factor);
+  }
+  (_bloop,_tloop,_rloop,_body) = Stripmine[unroll=1;cleanup=cleanup](jnest,factor,input);
+  if (!_bloop) { 
+     PRINT("Warning: skipping Unroll&Jam due to failed stripmining"); 
+     RETURN input;
+  }
+
+  (_beforej,_,_afterj) = FissionHelp(jnest,_body); 
+
+  input=ERASE( _beforej, input);
+  input=ERASE( _afterj, input);
+  input=ERASE( jnest, input);
+  
+  njnest=BuildNest(_tloop, jnest);
+  njnest=ModifyTraceHandle(jnest, FuseLoops(njnest,jnest));
+  beforej=ModifyTraceHandle(_beforej,BuildNest(_tloop,_beforej));
+  afterj=ModifyTraceHandle(_afterj, BuildNest(_tloop, _afterj));
+
+  tilebody=BuildList(beforej, BuildList(njnest, afterj));
+  tilebody=ModifyTraceHandle(_body,tilebody);
+  (nestBlocked,nestCleanup) = BlockHelp[unroll=1](_bloop, _rloop, tilebody, input);
+  nestCleanup=FlattenList(nestCleanup);
+  result = BuildList(nestBlocked,nestCleanup);
+
+  if (input != result)  {
+     if (trace == "") trace=input;
+     EraseTraceHandle[repl=result](input,trace);
+  }
+  result
+</xform>
+

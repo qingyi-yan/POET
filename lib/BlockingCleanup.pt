@@ -1,0 +1,695 @@
+
+<code BlockLoopCleanup pars=(bloop,stop) 
+    rebuild=(if (bloop[Loop.start] == 0 &&  (stop % bloop[Loop.step] ==0))
+               { If#(FALSE) } else { BlockLoopCleanup#(bloop,stop) }) >
+@ If#(Bop#("<",bloop[Loop.i],stop)) @
+</code>
+
+<code UnrolledLoopCleanup pars=(bloop,stop,incr) >
+@ Loop#(bloop[Loop.i],bloop[Loop.i],stop,incr) @
+</code>
+
+
+<xform CleanupBoundCheckTriRect pars=(input)/>
+<xform FindVarFromBop pars=(exp)/>
+
+<xform append_ENV pars=(ctrl, L_map)>
+ (L,U,IV) = L_map; step=0;
+ lb_list = var_list = ub_list = NULL;
+ switch (ctrl) {
+ case ExpStmt#(Assign#(ivar,lb)): 
+       IV = ivar :: IV; var_list=ivar::var_list;
+       if (lb : StripmineTileStart#(_,b1,s1)) lb_list=s1 :: b1 :: lb_list; 
+       else { lb_list=lb::lb_list; ub_list=(lb+1)::ub_list;}
+ case Loop#(ivar,lb,ub,CLEAR step) | If#(Bop#("<",Bop#("=",ivar,lb),ub)):
+       IV = ivar :: IV;
+       if (ub : CODE.BlockLoopEndBeforeCleanup#(_,stop)) ub = stop;
+       if (step < 0) { t = ub+1; ub = lb+1; lb = t; step = - step; }
+       if (!(step : INT && (ub - lb) % step == 0)) step = 0; else step=step-1;
+       if (ub : BlockLoopTileEnd#(_,b,s)) { ub_list=REBUILD(s-step)::REBUILD(b-step) :: ub_list; }
+       else ub_list=REBUILD(ub-step)::ub_list;
+       var_list=ivar::var_list;
+       if (lb : StripmineTileStart#(_,b1,s1)) { lb_list=s1 :: b1 :: lb_list; }
+       else {
+             lb_list= lb :: lb_list;
+             if (ctrl : If) ub_list=(lb+1) :: ub_list;
+       }
+ case BlockLoopCleanup#(Loop#(i,_,stop1,_),stop): 
+       var_list=i::var_list; ub_list=stop::ub_list;
+ case If#(Bop#("<",CLEAR l,CLEAR u)) | Bop#("<",CLEAR l,CLEAR u) | LoopBound#(CLEAR l,"",CLEAR u) | UnrolledLoopCheck#(_,CLEAR l,CLEAR u): 
+       if (u : BlockLoopTileEnd#(_,b,s)) { ub_list=s::b::ub_list; }
+       else ub_list=u::ub_list;
+       if (l : StripmineTileStart#(_,b1,s1)) { var_list=b1::s1::var_list; } 
+       else { var_list=l::var_list; }
+ default: ""
+ }
+ for (vp = var_list; vp != NULL; vp = cdr(vp))
+ {
+    var=car(vp);
+    for (lp = lb_list; lp != NULL; lp = cdr(lp))
+    {
+       if (!((car lp) == var)) L=BuildList( (var, car(lp)), L);
+    }
+    for (up = ub_list; up != NULL; up = cdr(up))
+    {
+       if (!((car up) == var)) U = BuildList( (var, car(up)), U);
+    }
+ }
+ (L,U,IV)
+</xform>
+
+<xform is_index_var pars=(var,L_map)>
+  Lookup(var, L_map[2])
+</xform>
+
+<xform append_surround_ENV pars=(outer,inner,L_map)>
+switch (outer)
+{
+  case inner: L_map
+  case NULL|""|ExpStmt|UnrolledFromIvar: NULL
+  case Nest#(ctrl,body): append_surround_ENV(body,inner,append_ENV(ctrl, L_map))
+  case (first second): 
+      map1 = append_surround_ENV(first,inner,L_map);
+      if (map1 == NULL) { append_surround_ENV(second,inner,L_map) }
+      else { map1 }
+}
+</xform>
+
+<xform map_BOP pars=(op, opd1, opd2)>
+c1 = car(opd1); r1=cdr(opd1);
+c2 = car(opd2); r2=cdr(opd2);
+cur = REBUILD(Bop#(op,c1,c2));
+if (r1 == NULL) { 
+    if (r2 == NULL) { cur }
+    else { cur :: map_BOP(op, c1, r2) }
+}
+else { 
+  if (r2 == NULL) { cur :: map_BOP(op, r1, c2) }
+  else { cur :: map_BOP(op,r1,c2) :: map_BOP(op, r1,r2) }
+}
+</xform>
+
+<***********************************************>
+<xform ENV_bound pars=(exp) L_map=(NULL,NULL,NULL)>
+  switch (exp) {
+  case Bop#((op="-"|"/"), d1,d2)|Uop#("-",d)|CODE.FunctionCall|CODE.ArrayAccess: (exp,exp+1)
+  case Bop#((op="+"|"*"), d1,d2)|MIN#(d1,d2)|MAX#(d1,d2)
+      |StripmineTileStart#(_,d1,d2)|BlockLoopTileEnd#(_,d1,d2):
+     if (exp : MIN | BlockLoopTileEnd) op=CODE.MIN; 
+     else if (exp : MAX|StripmineTileStart) op=CODE.MAX;
+     if (d2 : INT) 
+       { (lb1,ub1) = ENV_bound(d1); 
+         (map_BOP(op,lb1,d2),map_BOP(op, ub1, d2)) }
+     else if (d1 : INT) 
+       { (lb2,ub2) = ENV_bound(d2); 
+         ( map_BOP(op,d1,lb2), map_BOP(op, d1, ub2)) }
+     else { 
+       (lb1,ub1) = ENV_bound(d1); 
+       (lb2,ub2) = ENV_bound(d2); 
+       (map_BOP(op,lb1,lb2), map_BOP("-",map_BOP(op, ub1, ub2),1)) }
+  case ID|CODE.Name|CODE.CopyIvarName: 
+        (L,U,_) = L_map;
+        lb_list=exp; ub_list=exp+1;
+        foreach (L : (exp,CLEAR lb) : TRUE)   
+               { lb_list=lb :: lb_list; }
+        foreach (U : (exp,CLEAR ub) : TRUE)   
+               { ub_list= ub :: ub_list; }
+        (lb_list,ub_list)
+  case BlockLoopEndBeforeCleanup#(_,stop): ENV_bound(stop) 
+  }
+</xform>
+
+<xform ENV_eq pars=(l,u) L_map=(NULL,NULL,NULL)>
+  left=REBUILD(l-u);
+  if (left : INT) RETURN ((left== 0)? 1 : -1);
+  (lb,ub) = ENV_bound[L_map=L_map](left);
+  for (p=ub; p != NULL ; p = cdr(p)) 
+      { cur=car(p); if (cur : INT && cur <= 0) RETURN (-1);}
+  for (p=lb; p != NULL ; p = cdr(p)) 
+      { cur=car(p); if (cur : INT && cur > 0) RETURN (-1);}
+  RETURN 0;
+</xform>
+
+<xform ENV_lt pars=(l,u) L_map=(NULL,NULL,NULL)>
+  if (l : Bop#("=",lhs,rhs)) RETURN (ENV_lt(rhs,u));
+  if (u : BlockLoopTileEnd#(_,u1,u2)) RETURN (ENV_lt(l,u1) && ENV_lt(l,u2));
+  if (l : StripmineTileStart#(_,l1,l2)) RETURN (ENV_lt(l1,u) && ENV_lt(l2,u));
+  if (u : StripmineTileStart#(_,l1,l2)) RETURN (ENV_lt(l,l1) || ENV_lt(l,l2));
+  if (Lookup( (l,u), L_map[1])) RETURN 1;
+  left=REBUILD(l-u);
+  if (left < 0) RETURN 1;
+  else if (left >= 0) RETURN (-1);
+  (lb,ub) = ENV_bound[L_map=L_map](left);
+  for (p=ub; p != NULL ; p = cdr(p)) 
+        { cur=car(p); if (cur : INT && cur <= 0) RETURN 1; }
+  for (p=lb; p != NULL ; p = cdr(p)) 
+       { cur = car(p); if (cur : INT && cur >= 0) RETURN (-1); }
+  RETURN 0;
+</xform>
+
+<xform ENV_ge pars=(u,l) L_map=(NULL,NULL,NULL)>
+  if (u : StripmineTileStart#(_,l1,l2)) RETURN (ENV_ge(l1,l) || ENV_ge(l2,l));
+  if (l : StripmineTileStart#(_,l1,l2)) RETURN (ENV_ge(u,l1) && ENV_ge(u,l2));
+  foreach (L_map[0] : (u,CLEAR l1) : TRUE) {
+      v = REBUILD(l1 - l);
+      if (v >= 0 || ENV_ge(v,0) == 1) RETURN 1; 
+  }
+  foreach (L_map[1] : (u,CLEAR u2) : TRUE) {
+      v = REBUILD(l - u2);
+      if (v >= 0 || ENV_ge(v,0) == 1) RETURN (-1); 
+  }
+  left=REBUILD(u-l);
+  if (left >= 0 || Lookup( (left,0),L_map[0])) RETURN 1;
+  else if (left < 0) RETURN (-1);
+  (lb,ub) = ENV_bound[L_map=L_map](left);
+  for (p=ub; p != NULL ; p = cdr(p)) 
+       { switch (cur=car(p)) {
+         case INT: if (cur<=0) RETURN (-1); 
+         case ID|CODE.Name: if (Lookup( (cur,0), L_map[1])) RETURN (-1); 
+         case Uop#("-",(cur1=ID|Name)): if (Lookup( (cur1,0), L_map[0])) RETURN (-1); 
+         default: NULL
+         }
+       }
+  for (p=lb; p != NULL ; p = cdr(p)) 
+       { switch (cur=car(p)) {
+         case INT: if (cur>=0) RETURN (1); 
+         case ID|CODE.Name: if (Lookup( (cur,0), L_map[0])) RETURN (1); 
+         case Uop#("-",(cur1=CODE.Name|ID)): if (Lookup( (cur1,0), L_map[1])) RETURN (1); 
+         default: NULL
+         }
+       }
+  RETURN 0;
+</xform>
+
+<***********************************************>
+<xform PeelLoop pars=(numOfItersToPeel, loopNestToPeel) 
+        trace=GLOBAL.TRACE_TARGET trace_peel=NULL peel_at_end=0 precise_split=1 >
+   Nest#(loop, body) = loopNestToPeel;
+   Loop#(ivar,lb,ub,step) = loop;
+   step_negative = (step < 0); tag=loop[Loop.tag]; iter=loop[Loop.maxiternum]; 
+   pointToSplit = (step_negative || peel_at_end)?  ub - numOfItersToPeel * step : lb + numOfItersToPeel * step;
+   iter_before = iter_after = "peeled";
+   if (step_negative || peel_at_end)
+     {
+       pointToSplit = ub - numOfItersToPeel * step ;
+       if (iter : INT) {iter_before = iter - numOfItersToPeel; }
+       iter_after = numOfItersToPeel;
+     }
+   else
+     {
+       pointToSplit= lb + numOfItersToPeel * step;
+       if (iter : INT) {iter_after = iter - numOfItersToPeel; }
+       iter_before = numOfItersToPeel;
+     }
+
+     if (iter_before==1) {
+          if (lb : INT && ub : INT && lb < ub) 
+              loopBeforeSplit=ExpStmt#(Assign#(ivar,lb));
+          else loopBeforeSplit= If[tag=tag]#(Bop#("<",Bop#("=",ivar,lb),ub));
+     }
+     else loopBeforeSplit = Loop[tag=tag;maxiternum=iter_before;origivar=loop[Loop.origivar];origstep=loop[Loop.origstep]]#(ivar, lb, RebuildBop(MIN,pointToSplit,ub), step);
+
+   if (iter_after == 0) {loopAfterSplit=If#FALSE; }
+   else if (precise_split)
+      loopAfterSplit = Loop[tag=tag;maxiternum=iter_after;origivar=loop[Loop.origivar];origstep=loop[Loop.origstep]]#(ivar, pointToSplit, ub, step);
+   else 
+      loopAfterSplit = Loop[tag=tag;maxiternum=iter_after;origivar=loop[Loop.origivar];origstep=loop[Loop.origstep]]#(ivar, ivar, ub, step);
+   if (peel_at_end) {
+       nestPeeled =  Nest#(loopAfterSplit, COPY(body)); 
+       nestLeft = Nest#(loopBeforeSplit,body);
+       result = step_negative? nestPeeled::nestLeft : nestLeft::nestPeeled;
+       ModifyTraceHandle(trace_peel,nestPeeled);
+       REPLACE(loopNestToPeel, result, trace);
+    }
+    else {
+       if (step_negative) {
+          nestPeeled =  Nest#(loopAfterSplit, COPY(body)) ;
+          nestLeft = Nest[annot=loopNestToPeel[Nest.annot]]#(loopBeforeSplit,body);
+       }
+       else {
+          nestPeeled =  Nest#(loopBeforeSplit, COPY(body));
+          nestLeft=Nest[annot=loopNestToPeel[Nest.annot]]#(loopAfterSplit, body); 
+       }
+       if (iter_after == 0) nestLeft="";
+       result = (nestPeeled  nestLeft);
+       ModifyTraceHandle(trace_peel,nestPeeled);
+       REPLACE(loopNestToPeel, result, trace);
+   }
+   result
+</xform>
+
+
+<***********************************************>
+<xform CleanupBoundCheck pars=(input) L_map=(NULL,NULL,NULL) >
+switch (input) {
+ case Nest#(CLEAR ctrl,CLEAR body) : 
+   body1=CleanupBoundCheck[L_map=append_ENV(ctrl,L_map)](body);
+   if (body1 == NULL) RETURN NULL;
+   switch (ctrl)
+   {
+     case BlockLoopSplitStart#(btag,tivar, start):
+               if (ENV_ge[L_map=L_map](tivar,start) == 1 && ENV_ge[L_map=L_map](start,tivar) == 1) {  ModifyTraceHandle(input,body1) }
+               else if (ENV_lt[L_map=L_map](start,tivar)==1) NULL; 
+               else if (ENV_lt[L_map=L_map](tivar,start)==1) NULL; 
+               else { ModifyTraceHandle(input,Nest[annot=input[Nest.annot]]#(BlockLoopSplitStart#(btag,tivar,start),body1)) }
+
+    case If#(Bop#("<",Bop#("=",_,cur),_)) | Loop#(_,cur,_,_):
+       if (cur : StripmineTileStart#(_,t1,t2)) {
+          r1 = ENV_ge[L_map=L_map](t1,t2); r2 = ENV_ge[L_map=L_map](t2,t1);
+          if (r1 > 0 || r2 < 0) { ctrl=REPLACE(cur,t1,ctrl); }
+          else { if (r1 < 0 || r2 > 0) { ctrl = REPLACE(cur, t2, ctrl); } }
+       }
+       ModifyTraceHandle(input,Nest[annot=input[Nest.annot]]#(ctrl,body1))
+    case (If#(Bop#("<",CLEAR lb,CLEAR ub)|Bop#(">",CLEAR ub,CLEAR lb)) | LoopBound#(CLEAR lb,"",CLEAR ub)|UnrolledLoopCheck#(_,CLEAR lb, CLEAR ub)):
+       left = ENV_lt[L_map=L_map](lb,ub);
+       if (left == 0 && !(ub:BlockLoopTileEnd)) left = ENV_ge[L_map=L_map](ub,lb+1);
+       if (left > 0) { body1 }
+       else if (left < 0) { NULL }
+       else { ModifyTraceHandle(input,Nest[annot=input[Nest.annot]]#(ctrl,body1)) }
+    case If#(Bop#("<=",CLEAR lb,CLEAR ub))|If#(Bop#(">=",CLEAR ub,CLEAR lb)) | LoopBound#(CLEAR ub,CLEAR lb,"")|LoopStartCheck#(_,CLEAR ub,CLEAR lb):
+       left = ENV_ge[L_map=L_map](ub,lb);
+       if (left == 0 && !(lb : StripmineTileStart)) left = ENV_lt[L_map=L_map](lb,ub+1);
+       if (left > 0) { body1 }
+       else if (left < 0) { NULL }
+       else { ModifyTraceHandle(input,Nest[annot=input[Nest.annot]]#(ctrl,body1)) }
+    default: 
+      REPLACE(ERASE(input),Nest[annot=input[Nest.annot]]#(ctrl,body1),input) 
+   }
+ case (first second) :
+   curenv = L_map; 
+   res1 = CleanupBoundCheck(first);
+   L_map=curenv;
+   res2 = CleanupBoundCheck(second);
+   (res1 == NULL)? res2 : res1::res2
+ case StmtList#cur : StmtList#(CleanupBoundCheck(cur))
+ case UnrolledFromIvar#(i,ur,cur): UnrolledFromIvar#(i,ur,CleanupBoundCheck(cur))
+ case CODE.AllocateStore|CODE.DeleteStore|CODE.ExpStmt|""|NULL: input
+ }
+</xform>
+
+<xform GenBlockLoopBeforeTileEnd pars=(bloop_tag, bnest_before) >
+    repl_before=NULL; 
+    pattern1 = DELAY {cur_cleanup= BlockLoopTileEnd#(bloop_tag,CLEAR bstop,_)};
+    pattern2 = DELAY{ cur_cleanup= BlockLoopEndBeforeCleanup#(BlockLoopTileEnd#(bloop_tag,CLEAR bstop,_),_) };
+    foreach_r (bnest_before : (cur=Nest#((cur_loop=Loop#(CLEAR ivar,CLEAR istart,pattern1|pattern2,_)),_)) : TRUE) {
+        cur_tag=cur_loop[Loop.tag];
+        if (ivar != istart) { <* not a cleanup *>
+           new_nest = REPLACE( cur_cleanup,bstop, cur);
+           if (cur_tag != "") {
+              cur_body=new_nest[Nest.body];
+              new_body=GenBlockLoopBeforeTileEnd(cur_tag,cur_body); 
+              repl_body=NULL;
+              foreach_r (new_body: (cur1=Nest#( UnrolledLoopCheck#(cur_tag,_,_),cur2)) : TRUE) 
+                   repl_body= (cur1,cur2) :: repl_body;
+              new_nest=REPLACE( (cur_body,new_body), new_nest);
+           }
+        }
+        else <* unnecessary cleanup *>
+           new_nest = "";
+        repl_before= (cur,new_nest) :: repl_before;
+    }
+    if (repl_before != NULL) { REPLACE(repl_before, bnest_before) } else { bnest_before} 
+</xform>
+
+<xform GenBlockLoopCleanup pars=(bnest) unroll=0 output=(_before,_after) />
+
+<xform GenBlockLoopAfterTileEnd pars=(bloop_tag, bnest_after) >
+    repl_after=NULL;
+    foreach_r (bnest_after:  
+            (cur=Nest#((cur_loop=Loop#(CLEAR cur_i,_,BlockLoopTileEnd#(bloop_tag,_,_),CLEAR cur_step)),_)) : TRUE) repl_after=cur :: repl_after;
+
+    for (p_repl = repl_after; p_repl != NULL; p_repl = cdr(p_repl)) {
+         cur_nest = car(p_repl);
+         Nest#((cur_loop=Loop#(CLEAR cur_i,_,(cur1=BlockLoopTileEnd#(bloop_tag,_,CLEAR stop1)),CLEAR cur_step)),cur_body) = cur_nest;
+         origstep=cur_loop[Loop.origstep]; cur_tag=cur_loop[Loop.tag];
+         nloop=REPLACE( (cur1, stop1), cur_loop);
+         repl_cur=NULL;
+         foreach_r (cur_body: (cur1=BlockLoopTileEnd#(bloop_tag,_,CLEAR stop1)):TRUE) 
+               repl_cur= (cur1,stop1) :: repl_cur;
+         if (repl_cur != NULL) nbody=REPLACE(repl_cur, cur_body);
+         else nbody = cur_body;
+         new_nest=Nest#(nloop,nbody);
+
+         if (origstep == "" || origstep==cur_step) {""}
+         else if (!(Lookup(UnrolledLoopCheck#(cur_tag,_,_),nbody))) {
+            new_nest=BuildList(XFORM.GenBlockLoopCleanup(new_nest));
+         }
+         else {
+            nloop = REPLACE( (cur_step, origstep), nloop);
+            cur_body=nbody;
+
+            repl_body=NULL;
+            foreach_r (nbody: (cur1=UnrolledFromIvar#(cur_i,cur_step,CLEAR stmt)) : TRUE) 
+                repl_body= (cur1,car(stmt)) :: repl_body;
+            if (repl_body != NULL) nbody = REPLACE(repl_body, nbody);
+
+            nbody = REPLACE( UnrolledLoopStep#(cur_i,cur_step), origstep, nbody);
+
+            repl_body=NULL;
+            foreach_r (nbody: (cur1=Nest#( UnrolledLoopCheck#(cur_tag,_,_),_)) : TRUE) 
+                repl_body= (cur1,"") :: repl_body;
+            if (repl_body != NULL) nbody = REPLACE(repl_body, nbody);
+            new_nest=Nest#(nloop,nbody);
+        }
+        bnest_after = REPLACE( (cur_nest, new_nest), bnest_after);
+    }
+
+    bnest_after
+</xform>
+
+<xform GenBlockLoopCleanup pars=(bnest) L_map="" unroll=0 output=(_before,_after) >
+    Nest#((bloop=Loop#(bvar, bstart, bstop, bstep)),bbody) = bnest;
+    (_,_,IV) = L_map;
+    bloop_tag = bloop[Loop.tag];
+	trilooptag = 0; triloopshap = "R";
+	if (Lookup[breakup_pattern=1](bstart,IV)) {
+		trilooptag = 1;
+		triloopshap = "L";
+	}
+	if (Lookup[breakup_pattern=1](bstop,IV)) {
+		if (trilooptag) triloopshap = "B";
+		else triloopshap = "U";
+	}
+
+    if (bstep:INT && bstop % bstep == 0) RETURN (bnest,"");
+    if (!(bstop : BlockLoopEndBeforeCleanup#(bstop1,_))) bstop1 = bstop;
+    maxiternum=bloop[Loop.maxiternum]; 
+    minus=((bstep<0)?"+":"-");
+    stop_before=BlockLoopEndBeforeCleanup#(bstop1,REBUILD(Bop#(minus,bstop1,Bop#(minus,bstep,1))));
+	if (triloopshap:"U") {
+		trirectbound = car(FindVarFromBop(bstop));
+		stop_before = BlockLoopEndBeforeCleanup#(bstop1, trirectbound);
+	}
+
+    loop_before = Loop[tag=bloop_tag; maxiternum=maxiternum;origivar=bloop[Loop.origivar];origstep=bloop[Loop.origstep]]#(bvar,bstart,stop_before,bstep);
+    loop_after = (unroll)? UnrolledLoopCleanup#(loop_before,bstop,unroll)
+                          : BlockLoopCleanup#(loop_before,bstop);
+    bnest_after = Nest#(loop_after, COPY(bbody));
+
+	if (triloopshap:"R") {
+		bnest_before= ModifyTraceHandle(bnest,Nest[annot=bnest[Nest.annot]]#(loop_before, bbody));
+		bnest_before = GenBlockLoopBeforeTileEnd(bloop_tag, bnest_before);
+		bnest_before = CleanupBoundCheck[L_map=L_map](bnest_before);
+		bnest_after = GenBlockLoopAfterTileEnd(bloop_tag,bnest_after);
+	} else {
+		bnest_before = Nest[annot=bnest[Nest.annot]]#(loop_before, bbody);
+		bnest_before = GenBlockLoopBeforeTileEnd(bloop_tag, bnest_before);
+		bnest_after = GenBlockLoopAfterTileEnd(bloop_tag,bnest_after);
+		if (triloopshap:"U") {
+			bnest_before = CleanupBoundCheckTriRect(bnest_before);
+		}
+		bnest_before= ModifyTraceHandle(bnest, bnest_before);
+	}
+   (bnest_before,bnest_after)
+</xform>
+
+<xform CleanupBlockSplit1 pars=(L_map,bloop_tag,peel,bnest) 
+                              split_tag="" split_dir=1 loopshap="R">
+   bloop = Loop#(bvar,bstart,bstop,bstep) = bnest[Nest.ctrl];
+  if (split_tag == "") split_tag=bloop_tag;
+
+   if (split_dir > 0) {
+      (bnest_before bnest_after) = PeelLoop( 1, bnest);
+      bnest_split= bnest_before; bvar_repl=bstart; 
+      bnest_left = bnest_after;
+      pattern=DELAY{cur=StripmineTileStart#(_, bvar, _)|BlockLoopSplitStart#(split_tag,CLEAR left,_)|BlockLoopTileEnd#(bloop_tag,_,_)};
+   }
+   else {
+      (bnest_before bnest_after) = PeelLoop[peel_at_end=1;precise_split=0]( 1, bnest);
+      bnest_split= bnest_after; bvar_repl=bstop; 
+      bnest_left = bnest_before;
+      pattern=DELAY{cur=BlockLoopSplitStop#(split_tag,CLEAR left,_)}; 
+   }
+
+   repl_split=NULL; left=bvar;
+   foreach_r (bnest_split : pattern :TRUE) 
+   {
+      new_cur = REPLACE(bvar,bvar_repl,cur);
+      repl_split= (cur,new_cur) :: repl_split;
+   }
+   if (repl_split == NULL) {
+      RETURN ((split_dir > 0)? ("",bnest) : (bnest, ""));
+   }
+   bnest_split = REBUILD(REPLACE(repl_split, bnest_split));
+   L_map1=append_ENV(bnest_split[Nest.ctrl],L_map);
+   bnest_split = CleanupBoundCheck[L_map=L_map1](bnest_split);
+
+   tloop_tag = bloop_tag ^ "TILE";
+   repl_split=""; L_map_cur = L_map; append_stop = 0;
+   foreach_r( bnest_split : (tnest=Nest#(CLEAR tloop, CLEAR t_body)) : FALSE) {
+        if ( !(tloop : CODE.Loop#(CLEAR tivar,CLEAR tstart,_,CLEAR t_step)) || tloop[Loop.tag]!=tloop_tag) CONTINUE;
+
+        repl_tnest=""; 
+        if (split_dir < 0) { 
+           append_tnest="";
+           foreach_r (tnest : 
+                      Nest#( (cur=BlockLoopSplitStop#(split_tag,CLEAR iter,_)),CLEAR splitbody) : TRUE) {
+              repl_tnest=BuildList( (cur,If#FALSE), repl_tnest); 
+              if (iter == tivar + bstop) <* skip the unrolled copies*>
+                 append_tnest=BuildList(splitbody, append_tnest);
+           }
+           new_tnest = REBUILD(REPLACE(repl_tnest,tnest));
+           if (append_stop==0) { <<* only append once for splitstop
+               new_tnest = new_tnest::append_tnest;
+               append_stop = 1;
+           }
+        }
+        else {
+          if (L_map_cur == L_map) {
+             L_map_cur=append_surround_ENV(bnest_split, tnest, L_map);
+          }
+          new_tnest=BuildList(CleanupBlockSplit1(L_map_cur,tloop_tag,peel,tnest));
+        }
+        repl_split = BuildList( (tnest,new_tnest), repl_split);
+   }
+   bnest_split = REBUILD(REPLACE(repl_split, bnest_split));
+
+  if (bnest_left != "" && bnest_left != NULL) {
+    peel = peel - bstep;
+     if (peel > 0 && !is_index_var(bstart,L_map))
+{
+         bnest_left=BuildList(CleanupBlockSplit1(L_map,bloop_tag,peel,bnest_left));
+}
+     else if (peel < 0 || (peel == 0 && left == bvar)) {
+        repl_left=""; 
+        if (split_dir > 0) {
+           foreach_r (bnest_left : (cur=BlockLoopSplitStart#(split_tag,_,_)) : TRUE) 
+              repl_left=BuildList( (cur,If#FALSE), repl_left); 
+           bnest_left = REBUILD(REPLACE(repl_left,bnest_left));
+           repl_left="";
+           foreach_r (bnest_left : 
+                      (cur=StripmineTileStart#(bloop_tag,bvar,_)) : TRUE)
+              repl_left=BuildList( (cur,bvar), repl_left); 
+           bnest_left = REBUILD(REPLACE(repl_left,bnest_left));
+        }
+        else { 
+           foreach_r (bnest_left : 
+                      (cur=BlockLoopSplitStop#(split_tag,_,_)) : TRUE) 
+              repl_left=BuildList( (cur,If#FALSE), repl_left); 
+           bnest_left = REBUILD(REPLACE(repl_left,bnest_left));
+        }
+		<*********************************************
+			For the rectangular part of a triangular 
+			matrix, loop bound can all be removed
+	    *********************************************>
+        switch (loopshap) {
+         case "L"|"B": bnest_left=CleanupBoundCheckTriRect(bnest_left);
+	 case "R"|"U": bnest_left=CleanupBoundCheck[L_map=L_map](bnest_left);
+        }
+     }
+  }
+  bnest_left=ModifyTraceHandle(bnest,bnest_left);
+  (split_dir > 0)? (bnest_split, bnest_left) : (bnest_left, bnest_split)
+</xform>
+
+<***********************************************>
+<xform CleanupBlockSplit pars=(L_map,bnest)  split_dir=1
+              trace_cleanup="" output=(_before,_after) trace=GLOBAL.TRACE_TARGET>
+  Nest#(bloop,_) = bnest;
+  if (bloop : (cur=Loop#(bvar,bstart,_,_))) {
+	  <**********************************************
+		  Adding by Qian, used to check loop shap
+	  **********************************************>
+	  trilooptag = 0; triloopshap = "R";
+	  if (!(bstart:INT)) {
+		  trilooptag = 1;
+		  triloopshap = "L";
+	  }
+	  if (cur[Loop.stop]:Bop) {
+		  if (trilooptag) triloopshap = "B";
+		  else triloopshap = "U";
+	  }
+	  <***********************************************>
+
+      if ((bloop_tag=cur[Loop.tag]) == "") RETURN ("",bnest);
+     pattern = (split_dir > 0)? (BlockLoopSplitStart#(bloop_tag,_,CLEAR split)|StripmineTileStart#(bloop_tag,_,CLEAR split)) : (BlockLoopSplitStop#(bloop_tag,_,CLEAR split));
+     if (!Lookup_r(DELAY{f=pattern},bnest)) RETURN ("",bnest); 
+     split_last=split;
+     if (!Lookup(DELAY{f=pattern},bnest)) RETURN ("",bnest); 
+     split_first=split;
+     peel=split_last - split_first + 1;
+     if (! (peel : INT) || peel < 0) 
+         ERROR("expecting " split_last "-" split_first " to be >=0 but get " peel);
+     (bnest_before,bnest_after)=CleanupBlockSplit1[split_dir=split_dir;loopshap=triloopshap](L_map,bloop_tag,peel,bnest);
+   }
+   else if (bloop : BlockLoopCleanup#((cur=Loop),_)) { 
+     if ((bloop_tag=cur[Loop.tag]) == "") RETURN ("",bnest);
+     peel = 0;
+     bnest_before=""; bnest_after = bnest;
+     repl="";
+     foreach_r (bnest_after : (cur=Nest#(BlockLoopSplitStart#(bloop_tag,_,_),_)) : TRUE)
+         repl=BuildList( (cur,""),repl);
+     bnest_after=REBUILD(REPLACE(repl,bnest_after));
+   }
+   else RETURN ("",bnest);
+
+  if (trace : VAR) { 
+       if (peel >= 0) REPLACE(bnest, bnest_after, trace); 
+       else REPLACE(bnest, bnest_before, trace);
+  }
+  if (trace_cleanup : VAR && peel != 0) {
+      bsplit=(peel > 0)? bnest_before : bnest_after;
+      bsplit = TRACE(bsplit);
+      cur_split = BlockSplit#(bnest,bsplit);
+      REPLACE(ERASE(trace_cleanup), BuildList(cur_split,ERASE(trace_cleanup)),
+               trace_cleanup);
+   }
+  (bnest_before, bnest_after)
+</xform>
+
+<xform CleanupBlockTileEnd pars=(L_map,bnest) trace_cleanup="" tail=0>
+  Nest#((bloop=Loop#(bvar,bstart,bstop,bstep)),bnest_body) = bnest;
+  bloop_tag = bloop[Loop.tag];
+  if (bloop_tag == "" || bstop : INT || bloop[Loop.maxiternum]: 1|"peeled") {
+	  trilooptag = 0; triloopshap = "R";
+	  if (bstart:Bop) {
+		  trilooptag = 1;
+		  triloopshap = "L";
+	  }
+	  if (bstop:Bop) {
+		  if (trilooptag) triloopshap = "B";
+		  else triloopshap = "U";
+	  }
+	  if (tail == 0) {
+		  bnest = ModifyTraceHandle(bnest,Nest[annot=bnest[Nest.annot]]#(bnest[Nest.ctrl], bnest[Nest.body]));
+		  bnest = GenBlockLoopBeforeTileEnd(bloop_tag, bnest);
+		  if (triloopshap:"U") {
+			  bnest = CleanupBoundCheckTriRect(bnest);
+		  } else {
+			  bnest = CleanupBoundCheck[L_map=L_map](bnest);
+		  }
+		  RETURN ("",bnest);
+	  } else {
+		  Nest#(l1=Loop#(lidx,lstart,lstop,lstep),lbody) = bnest;
+		  nloop = BlockLoopCleanup#(bnest[Nest.ctrl],lstop);
+		  nbnest = Nest#(nloop,lbody);
+		  nbnest = GenBlockLoopAfterTileEnd(bloop_tag,nbnest);
+		  RETURN ("",nbnest);
+	  }
+  } 
+  if (Lookup(DELAY{StripmineTileStart#(bloop_tag,_,_)},bnest) || 
+      !Lookup(DELAY{BlockLoopTileEnd#(bloop_tag,_,_)},bnest) ||
+      !(Lookup(CODE.UnrolledLoopCheck, bnest)))
+         RETURN ("",bnest); 
+
+   (bnest_before,bnest_after)=GenBlockLoopCleanup[L_map=L_map](bnest);
+   if (trace_cleanup : VAR) {
+       bnest_after = TRACE(bnest_after);
+       cur_cleanup=BlockCleanup#(bnest, bnest_after);
+       REPLACE(ERASE(trace_cleanup), BuildList(cur_cleanup,ERASE(trace_cleanup)),
+               trace_cleanup);
+   }
+   (bnest_before,bnest_after)
+</xform>
+
+<xform CleanupBlockedNests1 pars=(input) L_map=("","","") ivars="" t="" >
+switch (input)
+{
+case Nest#(ctrl,body):
+     L_map1 = append_ENV(ctrl, L_map); 
+     body1 = CleanupBlockedNests1[L_map=L_map1](body);
+     result = input;
+     if (body1 != body) { 
+           result = ModifyTraceHandle(input,Nest[annot=input[Nest.annot]]#(ctrl,body1));
+      }
+     if ((ctrl : (cur=Loop)|BlockLoopCleanup#((cur=Loop),_)) && cur[Loop.tag] != "")
+     {  
+          (bnest_before,bnest_after) = t(L_map,result);
+          result=BuildList(bnest_before,bnest_after);
+     }
+     result
+case StmtList#cur : StmtList#(CleanupBlockedNests1(cur))
+case OMPPragma#cur : OMPPragma#(CleanupBlockedNests1(cur))
+case OMPParallelBlock#cur : OMPParallelBlock#(CleanupBlockedNests1(cur))
+case (first second): BuildList(CleanupBlockedNests1(first), CleanupBlockedNests1(second))
+case UnrolledFromIvar#(ivar,size,cur): UnrolledFromIvar#(ivar,size,CleanupBlockedNests1(cur))
+case CODE.FunctionDecl|CODE.ExpStmt|CODE.DeclStmt|CODE.AllocateStore|CODE.AllocateStoreWithAlign|CODE.DeleteStore|CODE.OMPSetNumThreads|"": input
+}
+</xform>
+<***********************************************>
+
+<xform CleanupBlockedNests pars=(input) trace_cleanup="" only="" trace=GLOBAL.TRACE_TARGET >
+  switch (only)
+  {
+   case CODE.BlockLoopTileEnd: p = CleanupBlockTileEnd[trace_cleanup=trace_cleanup];
+   case CODE.BlockLoopSplitStart|CODE.BlockLoopTileStart: p = CleanupBlockSplit[trace_cleanup=trace_cleanup];
+   case CODE.BlockLoopSplitStop: p = CleanupBlockSplit[split_dir=-1;trace_cleanup=trace_cleanup];
+   case "": p=((CleanupBlockSplit[split_dir=-1;trace_cleanup=trace_cleanup])
+               ::(CleanupBlockTileEnd[trace_cleanup=trace_cleanup])
+               :: (CleanupBlockSplit[trace_cleanup=trace_cleanup])); 
+  }
+  result = REBUILD(ERASE(input)); <* cleanup any empty stmts/exps *>
+  for ( ;p!=NULL; p = cdr (p)) {
+      t=car(p);
+      result = CleanupBlockedNests1[t=t](result);
+   }
+  result = REBUILD(result);
+  if (trace : VAR)
+      REPLACE(ERASE(input), result, trace);
+  result
+</xform>
+
+
+<*******************************************************
+Adding by Qian, used to delete loop check conditions
+*******************************************************>
+<*******************************
+Remove Integers from $exp$
+*******************************>
+<xform FindVarFromBop pars=(exp)>
+switch (exp) {
+	case ID|CODE.Name: exp;
+	case Bop#(CLEAR op, CLEAR lhs, CLEAR rhs):
+			 nlhs = FindVarFromBop(lhs);
+			 nrhs = FindVarFromBop(rhs);
+			 if ((nlhs != "") && (nrhs != "")) BuildList(nlhs, nrhs);
+			 else if ((nlhs == "") && (nrhs == "")) "";
+			 else if (nlhs != "") nlhs;
+			 else nrhs;
+	case Uop#(_,var):
+			 nvar = FindVarFromBop(var);
+			 nvar;
+	case INT: "";
+	default: PRINT(exp)
+}
+</xform>
+
+<*****************************************************
+$input$ is a blocked rectangular code fragment.
+All the $LoopBound$ conditions can be directly removed
+******************************************************>
+<xform CleanupBoundCheckTriRect pars=(input) >
+Nest#(l1, body1) = input;
+tag = l1[Loop.tag]^"TILE";
+output = COPY(input);
+foreach (body1:Nest#(CLEAR l2,CLEAR body2):FALSE) {
+	if ((l2:Loop) && (l2[Loop.tag] == tag)) {
+		foreach_r (body2:(n2=Nest#(LoopBound,CLEAR body3)):FALSE) {
+			output = REPLACE(n2, body3, output);
+		}
+	}
+}
+output
+</xform>
+
+

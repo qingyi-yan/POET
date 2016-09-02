@@ -1,0 +1,15 @@
+include ExpStmt.incl
+
+<parameter inputFile default="" message="input file name" />
+<parameter outputFile default="" message="output file name" />
+<parameter F95 default=0 type=INT message="whether to use F95"/>
+
+<input cond=(!F95) from=inputFile syntax="Ffront.code" parse=NoParse to=inputCode/>
+
+<input cond=(F95) from=inputFile syntax="F95front.code" parse=NoParse to=inputCode/>
+
+<eval PRINT(inputCode)/>
+
+<output cond=(!F95) syntax="Ffront.code" from=(inputCode) to=outputFile/>
+<output cond=(F95) syntax="F95front.code" from=(inputCode) to=outputFile/>
+

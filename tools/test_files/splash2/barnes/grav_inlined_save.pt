@@ -1,0 +1,36 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+
+<trace Stmt1,Stmt2 />
+<trace Func1 />
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Func1_group1 = (Func1) />
+<trace Func1_ScalarRepl_aref_th3 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("Local","ProcessId"),"dr"),0)) />
+<trace Func1_ScalarRepl_aref_th2 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("Local","ProcessId"),"dr"),1)) />
+<trace Func1_ScalarRepl_aref_th1 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("Local","ProcessId"),"dr"),2)) />
+
+<trace _decl1="" />
+<eval Func1_decl=Func1;
+      if (Func1 : CODE.FunctionDecl) 
+          Func1_decl=Func1[FunctionDecl.body][StmtBlock.stmts];
+      else Func1_decl = Func1;
+      EraseTraceHandle[repl=(_decl1 Func1_decl)](Func1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Func1_ScalarRepl_aref_th3 Func1_ScalarRepl_aref_th2 Func1_ScalarRepl_aref_th1) />
+
+<eval EraseTraceHandle[repl=Func1_group1](Func1,inputCode);
+	RedundancyElimination[redundant_branch_flag=0](1,Stmt1);
+	RedundancyElimination[redundant_branch_flag=1](1,Stmt2);
+	ScalarRepl[data_type="real";init=0;save=0](Func1_ScalarRepl_aref_th3,(""),Func1_group1[FunctionDecl.body]);
+	ScalarRepl[data_type="real";init=0;save=0](Func1_ScalarRepl_aref_th2,(""),Func1_group1[FunctionDecl.body]);
+	ScalarRepl[data_type="real";init=0;save=0](Func1_ScalarRepl_aref_th1,(""),Func1_group1[FunctionDecl.body]); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

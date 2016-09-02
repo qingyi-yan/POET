@@ -1,0 +1,56 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest12 />
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5,Stmt6,Stmt7,Stmt8,Stmt9,Stmt10,Stmt11,Stmt12,Stmt13,Stmt14,Stmt15,Stmt16,Stmt17,Stmt18,Stmt19,Stmt20,Stmt21,Stmt22,Stmt23,Stmt24,Stmt25,Stmt26,Stmt27,Stmt28,Stmt29,Stmt30,Stmt31,Stmt32,Stmt33,Stmt34,Stmt35,Stmt36,Stmt37,Stmt38,Stmt39,Stmt40,Stmt41,Stmt42,Stmt43,Stmt44,Stmt45,Stmt46,Stmt47,Stmt48,Stmt49,Stmt50,Stmt51,Stmt52,Stmt53,Stmt54,Stmt55 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+
+
+<trace _decl1="" />
+<eval Nest12_decl=Nest12;
+      if (Nest12 : CODE.FunctionDecl) 
+          Nest12_decl=Nest12[FunctionDecl.body][StmtBlock.stmts];
+      else Nest12_decl = Nest12;
+      EraseTraceHandle[repl=(_decl1 Nest12_decl)](Nest12_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval ;
+	RedundancyElimination[used_place=(Stmt10)](4,Stmt1);
+	RedundancyElimination[used_place=(Stmt11)](4,Stmt2);
+	RedundancyElimination[used_place=(Stmt12)](4,Stmt3);
+	RedundancyElimination[used_place=(Stmt13)](4,Stmt4);
+	RedundancyElimination[used_place=(Stmt14)](4,Stmt5);
+	RedundancyElimination[used_place=(Stmt15)](4,Stmt6);
+	RedundancyElimination[used_place=(Stmt16)](4,Stmt7);
+	RedundancyElimination[used_place=(Stmt17)](4,Stmt8);
+	RedundancyElimination[used_place=(Stmt18)](4,Stmt9);
+	RedundancyElimination[used_place=(Stmt28)](4,Stmt19);
+	RedundancyElimination[used_place=(Stmt29)](4,Stmt20);
+	RedundancyElimination[used_place=(Stmt30)](4,Stmt21);
+	RedundancyElimination[used_place=(Stmt31)](4,Stmt22);
+	RedundancyElimination[used_place=(Stmt32)](4,Stmt23);
+	RedundancyElimination[used_place=(Stmt33)](4,Stmt24);
+	RedundancyElimination[used_place=(Stmt34)](4,Stmt25);
+	RedundancyElimination[used_place=(Stmt35)](4,Stmt26);
+	RedundancyElimination[used_place=(Stmt36)](4,Stmt27);
+	RedundancyElimination[used_place=(Stmt46)](4,Stmt37);
+	RedundancyElimination[used_place=(Stmt47)](4,Stmt38);
+	RedundancyElimination[used_place=(Stmt48)](4,Stmt39);
+	RedundancyElimination[used_place=(Stmt49)](4,Stmt40);
+	RedundancyElimination[used_place=(Stmt50)](4,Stmt41);
+	RedundancyElimination[used_place=(Stmt51)](4,Stmt42);
+	RedundancyElimination[used_place=(Stmt52)](4,Stmt43);
+	RedundancyElimination[used_place=(Stmt53)](4,Stmt44);
+	RedundancyElimination[used_place=(Stmt54)](4,Stmt45); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

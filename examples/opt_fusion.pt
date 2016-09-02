@@ -1,0 +1,25 @@
+include opt.pi
+
+<code ArrayAccess match=FunctionCall#("arr_ref",((array subscript)))/>
+
+<parameter outfile default="" message="output file location" />
+<parameter fs parse=INT default=1 message="Whether to fuse nest1 and nest2"/>
+<parameter dis parse=INT default=0 message="Whether to distribute the fused nests"/>
+
+<trace inputCode,nest1,nest2/>
+<trace fusedloops=""/>
+<input from="tomcatv.C" syntax="Cfront.code" to=inputCode/>
+
+<eval if (fs) {
+       FuseLoops[trace_fusion=fusedloops;trace=inputCode; move_handle_inside=1]((nest1 nest2), nest1);
+       for ( fs -= 1 ; fs > 0; fs -= 1) {
+          FuseLoops[trace=inputCode; move_handle_inside=1]( (nest1 nest2), nest1);
+       }
+     }
+     if (dis) 
+        DistributeLoops_internal[trace_dist=(nest1 nest2)]((nest1 nest2),fusedloops);
+/>
+
+<output to=outfile syntax="Cfront.code" from=(inputCode)/>
+
+

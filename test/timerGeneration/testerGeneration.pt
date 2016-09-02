@@ -1,0 +1,211 @@
+include utils.incl
+include testerGeneration.incl
+
+<parameter Verbose type=0..1 default=0 
+                  message="Whether to generate verbose output" /> 
+
+<parameter MT type=1.._ default=1 
+                  message="Number of times to test the function" /> 
+
+<parameter RANDSEED type=1.._ default=1
+                  message="Value to seed the random number generator" /> 
+
+<xform GenAllocate pars=(type,name,size,size2,init,spec) 
+                   output=(r_decl,r_alloc,r_init, r_incr)>
+	valueIncr="";
+
+	switch(init) {
+		case INT: value=init;
+		case CODE.Random: value=CODE.TesterRandomVal;
+		case Increment#(begin,incr): value=begin; valueIncr=incr;
+		default: ERROR("Init not handled:" init);
+	}
+
+	if (size2 == 0) {
+		((TesterBufferDecl#(type, name) TesterBufferSizeDecl#(name)),
+		TesterBufferAllocate#(type, name, size),
+		TesterBufferInitialize#(name, value,valueIncr),
+		TesterBufferIncrement#(name))
+
+	}else {
+		((TesterBufferDecl#(type"*", name) Tester2DBufferSizeDecl#(name)),
+		Tester2DBufferAllocate#(type, name, size, size2),
+		Tester2DBufferInitialize#(name, value,valueIncr),
+		TesterBufferIncrement#(name))
+	}
+</xform>
+
+<xform GenStatic pars=(type,name,size,size2,init,spec) 
+		 output=(r_decl,r_alloc,r_init,r_incr)>
+	valueIncr="";
+
+	switch(init) {
+		case INT: value=init;
+		case CODE.Random: value=CODE.TesterRandomVal;
+		default: ERROR("Init not handled:" init);
+	}
+
+	if(size2 == 0) {
+		((TesterStaticBufferDecl#(type, name, size) TesterBufferSizeDecl#(name)),
+		StaticBufferAllocate#(type, name, size),
+		TesterBufferInitialize#(name, value,valueIncr),
+		"")
+	}else {
+		((TesterStatic2DBufferDecl#(type,name,size,size2) Tester2DBufferSizeDecl#(name)),
+		Static2DBufferAllocate#(type, name, size, size2),
+		Tester2DBufferInitialize#(name, value,valueIncr),
+		"")
+	}
+</xform>
+
+<* generate stmt based on the input specification. *>
+<xform GenStmt pars=(input) output=(r_decl,r_allocate,r_init,r_update) >
+	switch(input) {
+	case(head tail):
+		(decl1, alloc1, init1, update1) = GenStmt(head);
+		(decl2, alloc2, init2, update2) = GenStmt(tail);
+		(BuildList(decl1, decl2), BuildList(alloc1, alloc2),
+			BuildList(init1, init2), BuildList(update1, update2))
+
+	case ParameterInitialization#(name, init):
+		switch(init) {
+		case Increment#(begin, incr):
+			("", TesterAssign#(name, begin), "",
+			TesterIncrementVar#(name, incr))
+		case Random:
+			("", TesterAssign#(name, TesterRandomVal),
+			"", TesterAssign#(name, TesterRandomVal))
+		case MacroVal#(macroName, val):
+			("", TesterAssign#(name, macroName), "",
+			"")
+		default:
+			("", TesterAssign#(name, init), "", "")
+		}
+
+	case AllocateVector#(name, type, size, init, spec):
+		(decl, alloc, init, incr) = GenAllocate(type, name, size, 0, init, spec);
+		(decl, alloc, init, incr)
+	case AllocateMatrix#(name,type, row,col,init,spec):
+		(decl, alloc, init, incr) = GenAllocate(type,name,row*col,0,init,spec);
+		(decl, alloc, init, incr)
+	case AllocateArray2D#(name,type,row,col,init,spec):
+		(decl, alloc, init, incr) = GenAllocate(type,name,row,col,init,spec);
+		(decl, alloc, init, incr)
+	case StaticVector#(name,type,size,init,spec):
+		(decl, alloc, init, incr) = GenStatic(type,name,size,0,init,spec);
+		(decl, alloc, init, incr)
+	case StaticMatrix#(name,type,row,col,init,spec):
+		(decl, alloc, init, incr) = GenStatic(type,name,row,col,init,spec);
+		(decl, alloc, init, incr)
+	case "":
+		("", "", "", "")
+	default: ERROR("Unrecognized input:" input);
+	}
+</xform>
+
+<* this transformation will create the code for the timer*>
+<xform TransformCode pars=(inputSpec) 
+	mt=GLOBAL.MT 
+	randseed=GLOBAL.RANDSEED
+	verbose=GLOBAL.Verbose >
+
+	TopSpecification#(incl,routine, _, routineInit, ret,_) = inputSpec;
+        FunctionDecl#(name,params,returnType,body)=routine;
+        if (!(body : CODE.EmptyStmt|"")) {
+             ref=REPLACE(name,name^"_ref",routine); 
+             routine=FunctionDecl#(name,params,returnType,CODE.EmptyStmt);
+        }
+        else ERROR("Missing reference specification!");
+        returnMap=MAP(STRING,INT);
+        returnInit="";
+        for (p_ret=ret; p_ret!=NULL; p_ret=cdr(p_ret)) {
+             name=car(p_ret); col=1;
+	    foreach (routineInit: (cur=AllocateVector#(name,_,CLEAR row,_,_)|
+	                          AllocateMatrix#(name,_,CLEAR row,CLEAR col,_,_)|
+	                    AllocateArray2D#(name,_,CLEAR row,CLEAR col,_,_)): TRUE) 
+            { returnInit=BuildList(REPLACE(name,name^"_comp",cur),returnInit); 
+              returnMap[name]=row*col; 
+              BREAK; }
+        }
+        
+
+	macroDecl = NULL;
+	foreach_r (routineInit : MacroVal#(CLEAR name,CLEAR val): TRUE)
+        {
+          for (p=macroDecl; p != NULL; p=cdr(p)) {
+             if ((car p)[TesterMacroVal.name]==name) BREAK;
+          }
+          if (p == NULL)
+	     macroDecl=BuildList(TesterMacroVal#(name,val),macroDecl);
+        }
+	testerIncl = TesterIncludes#(mt, randseed,
+			BuildList(routine,macroDecl), BuildList(incl,ref));
+
+	<* generate all variable decls for the timer *>
+	declseq = "";
+	<* type declarations for the parameters of routine *>
+	paramNames = ""; <<* extract out a list of parameter names
+	foreach_r(routine[FunctionDecl.params] :
+	    (curDecl = TypeInfo#(CLEAR type, CLEAR name,_)) :
+	    TRUE) {
+
+		declseq = BuildList(TesterVariableDecl#(CODE.TesterBaseType#type, name), declseq);
+		paramNames = BuildList(name, paramNames);
+                if (returnMap[name] != "") {
+		   declseq = BuildList(TesterVariableDecl#(CODE.TesterBaseType#type, name^"_comp"), declseq);
+                }
+	}
+	returnType = routine[FunctionDecl.ret];
+	if(!(returnType : CODE.VoidType)) {
+		returnDecl = TesterVariableDecl#(returnType, CODE.TesterRoutineReturnVar);
+		refDecl = TesterVariableDecl#(returnType, CODE.RefRoutineReturnVar);
+		declseq = declseq::returnDecl::refDecl;
+	}
+
+	<* generate initialization of routine parameters *>
+	(initdecl, alloc, init, update) = GenStmt(BuildList(routineInit,returnInit));
+	mainBody = DeclForTesterVars#(mt, BuildList(declseq, initdecl))
+		::TesterParameterInit#(alloc) :: init;
+
+        paramNames1=paramNames;
+        testerCall1="";
+        for (p_ret=ret; p_ret!=NULL; p_ret=cdr(p_ret)) {
+	   testerCall1 = BuildList(CopyToReturnArray#(car(p_ret)^"_comp", car(p_ret)),testerCall1);
+           paramNames1=REPLACE(car(p_ret), car(p_ret)^"_comp", paramNames1);
+	}
+	testerCall1 = BuildList(testerCall1,TesterFunCall#(routine, paramNames1));
+	testerCall2 = RefFunCall#(ref, paramNames);
+        if (ret !="") {
+          diffCall = "";
+          for (p_ret=ret; p_ret!=NULL; p_ret=cdr(p_ret)) {
+            diffCall = BuildList(ArrayReturnDiff#(car(p_ret)^"_comp", car(p_ret), returnMap[car(p_ret)]), diffCall); 
+          }
+	}
+        else {
+		switch(routine[FunctionDecl.returnType]) {
+		case CODE.IntType: diffCall = NumberReturnDiff#(routine[FunctionDecl.name], ref[FunctionDecl.name]);
+		case CODE.FloatType: diffCall = NumberReturnDiff#(routine[FunctionDecl.name], ref[FunctionDecl.name]);
+		case CODE.DoubleType: diffCall = NumberReturnDiff#(routine[FunctionDecl.name], ref[FunctionDecl.name]);
+		<*case CODE.VoidType: ERROR("void type");*>
+
+		default: diffCall = SimpleReturnDiff#(routine[FunctionDecl.name], ref[FunctionDecl.name]);
+		}
+	}
+
+	testerCall = testerCall1 :: testerCall2 :: diffCall;
+	if (mt > 1)
+		testerCall=MultiTestingLoop#(testerCall); 
+
+	mainBody = mainBody::testerCall;
+        testerIncl :: TesterMainCode#mainBody
+</xform>
+
+<parameter infile message="input file name"/>
+<parameter outLang type=STRING default="Cfront.code" message="file name for output language syntax" />
+<parameter outfile  message="output file name"/>
+
+<input from=(infile) syntax=(outLang "specification.code") to=inputCode/>
+
+<eval resultCode= XFORM.TransformCode(inputCode);  />
+
+<output to=(outfile) syntax=(outLang "testerCodeTemplates.code") from=resultCode/>

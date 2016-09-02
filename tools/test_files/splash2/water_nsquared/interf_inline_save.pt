@@ -1,0 +1,32 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+
+<trace Stmt1,Stmt2,Stmt3 />
+<trace Func1,Func2 />
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+
+
+<trace _decl1="" />
+<eval Func1_decl=Func1;
+      if (Func1 : CODE.FunctionDecl) 
+          Func1_decl=Func1[FunctionDecl.body][StmtBlock.stmts];
+      else Func1_decl = Func1;
+      EraseTraceHandle[repl=(_decl1 Func1_decl)](Func1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval ;
+	InlineFunction[parameters_to_replace=("XA" "XB" "XMA" "XL")](Func1,Stmt1);
+	InlineFunction[parameters_to_replace=("XA" "XB" "XMA" "XL")](Func1,Stmt2);
+	InlineFunction[parameters_to_replace=("XA" "XB" "XMA" "XL")](Func1,Stmt3); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

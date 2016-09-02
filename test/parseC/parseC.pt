@@ -1,0 +1,11 @@
+include ExpStmt.incl
+
+<parameter inputFile default="" message="input file name" />
+<parameter outputFile default="" message="output file name" />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode/>
+
+<eval PRINT(inputCode)/>
+
+<output syntax="Cfront.code" from=(inputCode) to=outputFile/>
+

@@ -1,0 +1,11 @@
+digraph CFG
+{
+  B0[i : int;b : int;c : [float];(i=0)]
+  B1[(i<(b+10))]
+  B2[(b=(b+1));((c[]i)=0.1);++i]
+  B4[]
+  B0->B1
+  B1->B2
+  B1->B4
+  B2->B1
+}

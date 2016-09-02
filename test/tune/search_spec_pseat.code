@@ -1,0 +1,61 @@
+include utils.incl
+
+<**
+ *  Provided by Apan Qasem, 7/2010.
+ *>
+
+<parameter EVAL_NUM type=INT default=500 message="Maximal number of evaluations"/>
+<parameter EVAL_PERF type="MFLOPS"|"LOADS"|"L1"|"L2"|"TLB" default="MFLOPS" message="performance metrics to tune"/>
+<define UNPARSE CODE.PSEAT_TOP/>
+
+<code PSEAT_TOP pars=(content)>
+@len=LEN(FlattenList(content));
+@ONLINE
+@((GLOBAL.EVAL_PERF: "MFLOPS")? "MAX" : "MIN")@
+@GLOBAL.EVAL_PERF@
+@GLOBAL.EVAL_NUM@
+@(len+1)@
+@len@
+@CommandList#content@
+</code>
+
+<code CommandList parse=LIST(ParamDecl|_, "\n")/>
+
+<code IntList parse=LIST(INT," ")/>
+<code MacroVal pars=(val) > @val@ </code>
+
+<code ParamDecl pars=(param,extra)>
+@param@
+</code>
+
+<code NumOfThreads pars=(parName:Name,loopNest:Name, defval:INT)>
+1 @parName@ N 1 16 1 @defval@
+</code>
+
+<code ParBlockFactor pars=(parName:Name, loopNest:Name, defval:IntList) >
+1 @parName@ N 16 256 8 @defval@
+</code>
+
+<code BlockFactor pars=(parName:Name, loopNest:Name, dim:INT, defval:IntList)>
+@dim@ @parName@ N 8 128 8 @defval@
+</code>
+
+<code UnrollJamFactor pars=(parName:Name, loopNest:Name, dim:INT, defval:IntList)>
+@dim@ @parName@ N 2 16 1 @defval@
+</code>
+
+<code UnrollFactor pars=(parName:Name, loopNest:Name, defval:INT)>
+1 @parName@ N 1 32 1 @defval@
+</code>
+
+<code CopyArrayConfig pars=(parName:Name, loopNest:Name, arrayName:Name, defval:INT, extra)>
+1 @parName@ E 3 0 1 2  @defval@
+</code>
+
+<code ScalarReplConfig pars=(parName:Name, loopNest:Name, arrayName:Name, defval:INT)>
+1 @parName@ E 3 0 1 2 @defval@
+</code>
+
+<code OMPScheduleDefault pars=(parName:Name) >
+1 @parName@ E 4 "auto" "static" "dynamic" "runtime" "auto" 
+</code>

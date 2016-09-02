@@ -1,0 +1,59 @@
+include opt.pi
+
+<*****************************************
+insert two coordination handles (outer and inner) for each loop found in the 
+input code, then return
+*****************************************>
+<xform setup_loop_optimizations pars=(input) trace_outerLoops="" trace_innerLoops="" trace_privateVars=""/>
+
+<*****************************************
+Block loops appeared within $input$ and 
+outside of $inner$ according to $factor$.
+$ret_new_vars$ trace new variables generated
+when blocking loops.
+*****************************************>
+<xform invoke_blocking pars=(input) ret_new_vars="" factor="MACRO" inner=NULL/>
+
+<**************************************************************************
+Apply array copy for array $exp$.
+$loops$ provide dim information for $exp$, 
+and $info$ provide information as (WriteRead, Copy, ...).
+and if $info.Copy$ == "copy" means this array need this optimization,
+and then change this state to "copied" after finish this optimization.
+$loc$ provide information about where to apply array copy.
+***************************************************************************>
+<xform invoke_array_copying pars=(exp, loops, loc, info) memalign=16 data_type="" ret_new_vars=""/>
+
+<***********************************************************************
+Apply loop unroll and jam optimization to $loops$ according to $factor$
+***********************************************************************>
+<xform invoke_unroll_and_jam pars=(loops) factor=1/>
+
+<*******************************************************************
+Replace array access $r$ appeared within $loops$ to scalar variables,
+and change conrresponding state in $info$
+*******************************************************************>
+<xform invoke_scalar_repl pars=(r, loops, info) data_type="" ret_new_vars=NULL/>
+
+<******************************************************************
+Vectorize the innermost loop surrounding array references in info, 
+by modifying code inside $scope$, the input code to optimize. 
+*******************************************************************>
+<xform invoke_simd pars=(info, array_name_to_scalars, array_name_to_loop_dimensions, scope) ret_new_vars = "" global_vars="" data_type = ""/>
+
+<*****************************************************************
+reduce $exps$ array references computation. If applied parallelization,
+$outside_loc$ gives position between parallel_loop and outer_loops trace handle.
+******************************************************************>
+<xform invoke_strength_reduction pars=(exps, infos, dims) data_type="" outside_loc="" ret_new_vars="" tag=0/>
+
+<***********************************************
+Apply loop unrolling to $loop$ by $factor$ times
+***********************************************>
+<<*<xform invoke_loop_unrolling pars=(loop) factor=1 />
+
+<*************************************************
+Cleanup unnecessary loop boundary checking conditions
+among $scope$ code region
+*************************************************>
+<xform invoke_loop_splitting pars=(scope) lmap=("","","")/>

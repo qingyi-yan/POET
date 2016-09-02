@@ -1,0 +1,29 @@
+void dgemm_test(const int M,const int N,const int K,const double alpha,const double* A,const int lda,const double* B,const int ldb,const double beta,double* C,const int ldc) {
+   int i;
+   int j;
+   int l;
+   for (i=0; i<M; i+=1) 
+     {
+        for (j=0; j<-1+N; j+=2) 
+          {
+             C[j*ldc+i] = beta*C[j*ldc+i];
+             for (l=0; l<K; l+=1) 
+               {
+                  C[j*ldc+i] = C[j*ldc+i]+alpha*A[l*lda+i]*B[j*ldb+l];
+               }
+             C[i+(ldc+j*ldc)] = beta*C[i+(ldc+j*ldc)];
+             for (l=0; l<K; l+=1) 
+               {
+                  C[i+(ldc+j*ldc)] = C[i+(ldc+j*ldc)]+alpha*A[l*lda+i]*B[l+(ldb+j*ldb)];
+               }
+          }
+        for (j=j; j<N; j+=1) 
+          {
+             C[j*ldc+i] = beta*C[j*ldc+i];
+             for (l=0; l<K; l+=1) 
+               {
+                  C[j*ldc+i] = C[j*ldc+i]+alpha*A[l*lda+i]*B[j*ldb+l];
+               }
+          }
+     }
+}

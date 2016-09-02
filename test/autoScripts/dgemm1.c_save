@@ -1,0 +1,49 @@
+#define max(a,b) (((a) < (b))? (b) : (a))
+#define min(a,b) (((a) < (b))? (a) : (b))
+
+void dgemm_test(const int M,const int N,const int K,const double alpha,const double* A,const int lda,const double* B,const int ldb,const double beta,double* C,const int ldc) {
+   int i;
+   int j;
+   int l;
+   int j_par;
+   int l_bk;
+   int i_bk;
+   int j_bk;
+   for (j_bk=0; j_bk<N; j_bk+=16) 
+     {
+        for (i_bk=0; i_bk<M; i_bk+=16) 
+          {
+             if ((l_bk=0)<K)  
+               {
+                  for (j=0; j<min(16,N-j_bk); j+=1) 
+                    {
+                       for (i=0; i<min(16,M-i_bk); i+=1) 
+                         {
+                            if ((l=0)<min(16,K))  
+                              {
+                                 C[i+(i_bk+(j_bk*ldc+j*ldc))] = beta*C[i+(i_bk+(j_bk*ldc+j*ldc))];
+                                 C[i+(i_bk+(j_bk*ldc+j*ldc))] = C[i+(i_bk+(j_bk*ldc+j*ldc))]+alpha*A[i+(i_bk+(l_bk*lda+l*lda))]*B[l+(l_bk+(j_bk*ldb+j*ldb))];
+                              }
+                            for (l=1; l<min(16,K); l+=1) 
+                              {
+                                 C[i+(i_bk+(j_bk*ldc+j*ldc))] = C[i+(i_bk+(j_bk*ldc+j*ldc))]+alpha*A[i+(i_bk+(l_bk*lda+l*lda))]*B[l+(l_bk+(j_bk*ldb+j*ldb))];
+                              }
+                         }
+                    }
+               }
+             for (l_bk=16; l_bk<K; l_bk+=16) 
+               {
+                  for (j=0; j<min(16,N-j_bk); j+=1) 
+                    {
+                       for (i=0; i<min(16,M-i_bk); i+=1) 
+                         {
+                            for (l=0; l<min(16,K-l_bk); l+=1) 
+                              {
+                                 C[i+(i_bk+(j_bk*ldc+j*ldc))] = C[i+(i_bk+(j_bk*ldc+j*ldc))]+alpha*A[i+(i_bk+(l_bk*lda+l*lda))]*B[l+(l_bk+(j_bk*ldb+j*ldb))];
+                              }
+                         }
+                    }
+               }
+          }
+     }
+}

@@ -1,0 +1,83 @@
+#include <atlas_prefetch.h>
+void ATL_zger1_a1_x1_yX(const int M,const int N,const double* alpha,const double* X,const int incX,const double* Y,const int incY,double* A,const int lda) {
+   int i;int j;
+   double _x_buf_0;
+   double _x_buf_1;
+   double _y_buf_0_0;
+   double _y_buf_0_1;
+   double _x_buf_0__split;
+   double _x_buf_1__split;
+   double* _pA_0;
+   double* _pA_1;
+   double* _pA_0_0;
+   double* _pA_1_0;
+   double* _pX_0;
+   double* _pY_0;
+   double* _pY_1;
+   const double* _prefA_0;
+   const double* _prefA_0_0;
+   _pA_0 = A;
+   _pA_1 = _pA_0+lda;
+   _pY_0 = Y;
+   _pY_1 = _pY_0+incY;
+   _prefA_0 = A+2*lda;
+   for (j=0; j<2*N; j+=2) 
+     {
+        _y_buf_0_0 = *_pY_0;
+        _y_buf_0_1 = *(1+_pY_0);
+        _y_buf_1_0 = *_pY_1;
+        _y_buf_1_1 = *(1+_pY_1);
+        _pA_0_0 = _pA_0;
+        _pA_1_0 = _pA_1;
+        _pX_0 = X;
+        _prefA_0_0 = _prefA_0;
+        for (i=0; i<-5+2*M; i+=6) 
+          {
+             ATL_pfl1R(_prefA_0_0);
+             _prefA_0_0 = 6+_prefA_0_0;
+             _x_buf_0 = *_pX_0;
+             _x_buf_1 = *(1+_pX_0);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_0;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_1;
+             *_pA_0_0 = -_x_buf_1__split+(*_pA_0_0+_x_buf_0__split);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_1;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_0;
+             *(1+_pA_0_0) = _x_buf_1__split+(*(1+_pA_0_0)+_x_buf_0__split);
+             _x_buf_0 = *(2+_pX_0);
+             _x_buf_1 = *(3+_pX_0);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_0;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_1;
+             *(2+_pA_0_0) = -_x_buf_1__split+(*(2+_pA_0_0)+_x_buf_0__split);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_1;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_0;
+             *(3+_pA_0_0) = _x_buf_1__split+(*(3+_pA_0_0)+_x_buf_0__split);
+             _x_buf_0 = *(4+_pX_0);
+             _x_buf_1 = *(5+_pX_0);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_0;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_1;
+             *(4+_pA_0_0) = -_x_buf_1__split+(*(4+_pA_0_0)+_x_buf_0__split);
+             _x_buf_0__split = _x_buf_0*_y_buf_0_1;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_0;
+             *(5+_pA_0_0) = _x_buf_1__split+(*(5+_pA_0_0)+_x_buf_0__split);
+             _pA_0_0 = _pA_0_0+6;
+             _pA_1_0 = _pA_1_0+6;
+             _pX_0 = _pX_0+6;
+          }
+        for (i=i; i<2*M; i+=2) 
+          {
+             _x_buf_0 = *(X+i);
+             _x_buf_1 = *(X+(1+i));
+             _x_buf_0__split = _x_buf_0*_y_buf_0_0;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_1;
+             *(_pA_0+i) = *(_pA_0+i)+_x_buf_0__split-_x_buf_1__split;
+             _x_buf_0__split = _x_buf_0*_y_buf_0_1;
+             _x_buf_1__split = _x_buf_1*_y_buf_0_0;
+             *(_pA_0+(1+i)) = *(_pA_0+(1+i))+_x_buf_0__split+_x_buf_1__split;
+          }
+        _pA_0 = _pA_1+lda;
+        _pA_1 = _pA_0+lda;
+        _pY_0 = _pY_1+incY;
+        _pY_1 = _pY_0+incY;
+        _prefA_0 = _prefA_0+2*lda;
+     }
+}

@@ -1,0 +1,92 @@
+<parameter infile message="input file name"/>
+<parameter outfile message="output file name"/>
+
+<*========== reading the input code ============*>
+<* parse the in File using syntax defined in file "compiler_input_4.code"; 
+   save the parsing result (the abstract syntax tree) to ast variable *>
+<input from=(infile) syntax="compiler_input_4.code" to=ast/>
+
+<*============== control flow graph IR and management =====*>
+<define cfg_nodes NULL/> <* resulting CFG nodes generated *>
+<define cfg_edges NULL/> <* resulting CFG edges generated *>
+<define label_index 0/>  <* index of new basic blocks created *>
+
+<* a function that returns a new label *>
+<xform new_label > GLOBAL.label_index=GLOBAL.label_index+1; GLOBAL.label_index </xform>
+
+<* basic block IR date structure *>
+<code BasicBlock pars=(label, stmts)>
+B@label@[@CODE.print_list#(stmts,"")@]
+</code>
+
+<* CFG edge IR date structure *>
+<code Flow pars=(from, to)>
+B@from@->B@to@
+</code>
+
+<code CFG pars=(nodes, edges)>
+digraph CFG
+{
+  @CODE.print_list#(nodes,"\n")@
+  @CODE.print_list#(edges,"\n")@
+}
+
+</code>
+<* print out the content backward *> 
+<code print_list pars=(content,sep)>
+@((TAIL(content) : NULL)? HEAD(content) : 
+  (print_list#(TAIL(content),sep) sep HEAD(content)))@
+</code>
+
+<* a function for generate a new basic block *>
+<xform new_basicblock pars=(stmts)>
+label = GLOBAL.label_index;
+GLOBAL.cfg_nodes = BasicBlock#(label, stmts) :: GLOBAL.cfg_nodes;
+GLOBAL.label_index = GLOBAL.label_index + 1;
+label
+</xform>
+
+<* a function for generate a new cfg edge *>
+<xform new_flow pars=(from, to)>
+GLOBAL.cfg_edges = Flow#(from, to) :: GLOBAL.cfg_edges;
+</xform>
+<****translation schemes for control flow graph contruction **************>
+<* implement translation scheme for all productions of non-terminal Goal *>
+<xform BuildCFG__Goal pars=(input, begin)>
+  CODE.Goal#(block) = input;
+  for (p = block; p != NULL; p = TAIL(p)) {
+    cur = HEAD(p);
+    switch (cur) {
+    case CODE.For : begin = XFORM.BuildCFG__For(cur,begin);
+    case CODE.Decl : begin = cur :: begin;
+    case CODE.ExpStmt: begin=cur :: begin;
+    }
+  }
+  begin
+</xform>
+
+<* implement translation scheme for all productions of non-terminal For *>
+<xform BuildCFG__For pars=(input,begin)>
+  For#(var,lb,ub,incr,body) = input;
+  b_init = new_basicblock(CODE.Bop#("=",var,lb) :: begin); <* wrap up the previous basic block *>
+  b_test = new_basicblock(Bop#("<",var,ub)); <* new basic block for test *>
+  body_label= GLOBAL.label_index; <* label for the first basic block of body *>
+  body_next = XFORM.BuildCFG__Goal(body,""); <* lable of the last basic block from loop body *>
+  body_last = new_basicblock(incr::body_next); <* last basic block from loop body*>
+  exit_label = new_label(); <* exit label for the loop*>
+  <* new generate cfg edges *>
+  new_flow(b_init, b_test);
+  new_flow(b_test, body_label);
+  new_flow(b_test, exit_label);
+  new_flow(body_last, b_test);
+  "" <* the exit block is currently empty*>
+</xform>
+
+<*===================== driver code ===================*>
+<* start evaluation *>
+<eval last = BuildCFG__Goal(ast, "");
+       new_basicblock(""); <* generate the last basic block *> 
+/>
+
+<* write the 3-address ir to the given output file*>
+<output from=(CFG#(cfg_nodes, cfg_edges)) syntax="compiler_input_4.code" to=outfile />

@@ -1,0 +1,280 @@
+#define VOID            void
+#define FALSE           0
+#define TRUE            1
+#define HUGE_REAL       1e+32
+#define ISECT_MAX       2
+#define NAME_LEN        30
+#define RAYEPS          1e-07
+#define MAX_SUBDIV_LEVEL 3
+#define MAX_RAYINFO     (MAX_SUBDIV_LEVEL + 1)
+#define VecDot(A, B)    ( A[0]*B[0] + A[1]*B[1] + A[2]*B[2] )
+#define ABS(A)                  ( (A) > 0.0 ? (A) : -(A) )
+#define IsectAdd(hit, tval, P)  { (hit)->t = tval;  \
+                                  (hit)->pelem = P; }
+#define X_NORM                  1
+#define Y_NORM                  2
+#define Z_NORM                  3
+#define CLOCKWISE               1
+#define COUNTER_CLOCKWISE       2
+#define INSIDE(x, a)            (((a) <= 0.0 && (x) >= (a) && (x) <= 0.0) || \
+                                ((a)  >  0.0 && (x) >= 0.0 && (x) <= (a)))
+typedef char CHAR;
+typedef long INT;
+typedef unsigned long UINT;
+typedef unsigned long BOOL;
+typedef long LONG;
+typedef float R32;
+typedef double REAL;
+typedef REAL VEC3[3];
+typedef VEC3 COLOR;
+typedef struct pprocs{
+  CHAR* (*name)() ;
+  VOID (*print)() ;
+  VOID (*read)() ;
+  VOID (*binread)() ;
+  VOID (*transform)() ;
+  INT (*intersect)() ;
+  INT (*pe_intersect)() ;
+  VOID (*normal)() ;
+  VOID (*normalize)() ;
+  VOID (*bbox)() ;
+} PPROCS;
+typedef struct surf{
+  COLOR fcolor;
+  COLOR bcolor;
+  REAL kdiff;
+  REAL kspec;
+  REAL ktran;
+  REAL refrindex;
+  REAL kspecn;
+} SURF;
+typedef struct bbox{
+  REAL dnear[3];
+  REAL dfar[3];
+} BBOX;
+typedef struct element{
+  INT index;
+  BBOX bv;
+  struct object* parent;
+  CHAR* data;
+} ELEMENT;
+typedef struct object{
+  INT index;
+  CHAR name[NAME_LEN];
+  BBOX bv;
+  ELEMENT* pelem;
+  INT numelements;
+  PPROCS* procs;
+  SURF* surf;
+  struct object* next;
+} OBJECT;
+typedef struct voxel{
+  INT id;
+  CHAR* cell;
+  CHAR celltype;
+  INT numelements;
+  struct voxel* next;
+} VOXEL;
+typedef struct btnode{
+  ELEMENT** pe;
+  REAL p[3];
+  INT nprims;
+  INT n[3];
+  INT i[3];
+  INT axis;
+  INT totalPrimsAllocated;
+  struct btnode* btn[2];
+} BTNODE;
+typedef struct grid{
+  INT id;
+  VOXEL** hashtable;
+  UINT* emptycells;
+  ELEMENT** pepa;
+  INT num_prims;
+  INT indx_inc[3];
+  INT num_buckets;
+  REAL min[3];
+  REAL cellsize[3];
+  INT subdiv_level;
+  BTNODE* bintree;
+  struct grid* next;
+} GRID;
+typedef struct rayinfo{
+  GRID* grid;
+  REAL d[3];
+  INT entry_plane;
+  REAL t_in;
+  INT exit_plane;
+  REAL t_out;
+  REAL delta[3];
+  INT index3D[3];
+  INT index1D;
+  INT indx_inc1D[3];
+  struct rayinfo* next;
+} RAYINFO;
+typedef struct ray{
+  LONG id;
+  INT x;INT y;
+  VEC3 P;
+  VEC3 D;
+  INT level;
+  R32 weight;
+  INT indx_inc3D[3];
+  RAYINFO* ri;
+  INT ri_indx;
+  RAYINFO rinfo[MAX_RAYINFO+1];
+} RAY;
+typedef struct irecord{
+  REAL t;
+  ELEMENT* pelem;
+  REAL b1;
+  REAL b2;
+  REAL b3;
+} IRECORD;
+typedef struct tri{
+  VEC3 norm;
+  REAL d;
+  VEC3* vptr;
+  VEC3* nptr;
+  INT vindex[3];
+  INT indx;
+  BOOL norminterp;
+  BOOL vorder;
+} TRI;
+INT TriPeIntersect(pr,pe,hit) RAY* pr;ELEMENT* pe;IRECORD* hit;{
+   INT i;
+   REAL Rd_dot_Pn;
+   REAL Ro_dot_Pn;
+   REAL q1;REAL q2;
+   REAL tval;
+   VEC3* v1;VEC3* v2;VEC3* v3;
+   VEC3 e1;VEC3 e2;VEC3 e3;
+   TRI* pt;
+   pt = (TRI*)(pe->data);
+   Rd_dot_Pn = VecDot(pt->norm,pr->D);
+   if (ABS(Rd_dot_Pn)<RAYEPS)  
+     {
+        return 0;
+     }
+   Ro_dot_Pn = VecDot(pt->norm,pr->P);
+   tval = -(pt->d+Ro_dot_Pn)/Rd_dot_Pn;
+   if (tval<RAYEPS)  
+     {
+        return 0;
+     }
+   v1 = pt->vptr+pt->vindex[0];
+   if (pt->vorder==COUNTER_CLOCKWISE)  
+     {
+        v2 = pt->vptr+pt->vindex[2];
+        v3 = pt->vptr+pt->vindex[1];
+     }
+   else  
+     {
+        v2 = pt->vptr+pt->vindex[1];
+        v3 = pt->vptr+pt->vindex[2];
+     }
+   e1[0] = (*v2)[0]-(*v1)[0];
+   e1[1] = (*v2)[1]-(*v1)[1];
+   e1[2] = (*v2)[2]-(*v1)[2];
+   e2[0] = (*v3)[0]-(*v2)[0];
+   e2[1] = (*v3)[1]-(*v2)[1];
+   e2[2] = (*v3)[2]-(*v2)[2];
+   e3[0] = (*v1)[0]-(*v3)[0];
+   e3[1] = (*v1)[1]-(*v3)[1];
+   e3[2] = (*v1)[2]-(*v3)[2];
+   switch (pt->indx)
+   {
+     case X_NORM:
+       q1 = pr->P[1]+tval*pr->D[1];
+       q2 = pr->P[2]+tval*pr->D[2];
+       hit->b1 = e2[1]*(q2-(*v2)[2])-e2[2]*(q1-(*v2)[1]);
+       if (!INSIDE(hit->b1,pt->norm[0]))  
+         {
+            return 0;
+         }
+       hit->b2 = e3[1]*(q2-(*v3)[2])-e3[2]*(q1-(*v3)[1]);
+       if (!INSIDE(hit->b2,pt->norm[0]))  
+         {
+            return 0;
+         }
+       hit->b3 = e1[1]*(q2-(*v1)[2])-e1[2]*(q1-(*v1)[1]);
+       if (!INSIDE(hit->b3,pt->norm[0]))  
+         {
+            return 0;
+         }
+       break;
+     case Y_NORM:
+       q1 = pr->P[0]+tval*pr->D[0];
+       q2 = pr->P[2]+tval*pr->D[2];
+       hit->b1 = e2[2]*(q1-(*v2)[0])-e2[0]*(q2-(*v2)[2]);
+       if (!INSIDE(hit->b1,pt->norm[1]))  
+         {
+            return 0;
+         }
+       hit->b2 = e3[2]*(q1-(*v3)[0])-e3[0]*(q2-(*v3)[2]);
+       if (!INSIDE(hit->b2,pt->norm[1]))  
+         {
+            return 0;
+         }
+       hit->b3 = e1[2]*(q1-(*v1)[0])-e1[0]*(q2-(*v1)[2]);
+       if (!INSIDE(hit->b3,pt->norm[1]))  
+         {
+            return 0;
+         }
+       break;
+     case Z_NORM:
+       q1 = pr->P[0]+tval*pr->D[0];
+       q2 = pr->P[1]+tval*pr->D[1];
+       hit->b1 = e2[0]*(q2-(*v2)[1])-e2[1]*(q1-(*v2)[0]);
+       if (!INSIDE(hit->b1,pt->norm[2]))  
+         {
+            return 0;
+         }
+       hit->b2 = e3[0]*(q2-(*v3)[1])-e3[1]*(q1-(*v3)[0]);
+       if (!INSIDE(hit->b2,pt->norm[2]))  
+         {
+            return 0;
+         }
+       hit->b3 = e1[0]*(q2-(*v1)[1])-e1[1]*(q1-(*v1)[0]);
+       if (!INSIDE(hit->b3,pt->norm[2]))  
+         {
+            return 0;
+         }
+       break;
+   }
+   IsectAdd(hit,tval,pe);
+   return 1;
+}
+VOID IntersectHuniformPrimlist(intersectPrim,hit,v,r,pid) INT* intersectPrim;IRECORD* hit;VOXEL* v;RAY* r;INT pid;{
+   ELEMENT** pptr;
+   OBJECT* peParent;
+   ELEMENT* pe;
+   IRECORD newhit[ISECT_MAX];
+   INT hitcode;INT i;
+   REAL t_out;
+   t_out = r->ri->t_out;
+   hit[0].t = HUGE_REAL;
+   pptr = (ELEMENT**)(v->cell);
+   for (i=0; i<v->numelements; i+=1) 
+     {
+        pe = pptr[i];
+        peParent = pe->parent;
+        hitcode = (*peParent->procs->pe_intersect)(r,pe,newhit);
+        hitcode = TriPeIntersect(r,pe,newhit);
+        if (hitcode)  
+          {
+             if (newhit[0].t<hit[0].t&&newhit[0].t<t_out)  
+               {
+                  hit[0] = newhit[0];
+               }
+          }
+     }
+   if (hit[0].t<HUGE_REAL)  
+     {
+        *intersectPrim = TRUE;
+     }
+   else  
+     {
+        *intersectPrim = FALSE;
+     }
+}

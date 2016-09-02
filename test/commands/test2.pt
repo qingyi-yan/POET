@@ -1,0 +1,65 @@
+include ExpStmt.incl
+include Loops.incl
+<* code templates *>
+<code foo pars=(abc) >
+  FOO abc
+</code>
+
+<eval DEBUG{
+    3 : FLOAT;
+    "3.3" : FLOAT;
+}/>
+
+<input syntax="Cfront.code" to=result >
+  int b; //this is comment
+  /* what is this */
+  int main() {}
+</input>
+
+<input syntax="Cfront.code" to=result parse=_ >
+    -3 //@ =>EXP
+    -3 //@ =>EXP|""
+    3.2e5 //@ =>EXP
+    3.2a5 //@ => (EXP,_)
+    3.2 //@ =>EXP
+    .1 //@ =>EXP
+    int abc[3]; //@=>Stmt
+    static char listname_base[MAXLINE]; //@=>Stmt
+    ABC abc; //@=>Stmt
+    ABC (*p)(); //@ =>Stmt
+    a+b-c //@=>EXP;
+    beta * C[j*ldc+i] //@ => EXP;
+    for(i=0;i<100;i+=2) //@ => var=Loop; 
+    -1+N //@ => EXP
+    3.7 //@ => EXP
+    mat[0][i] != 0 //@ => EXP
+</input>
+<eval PRINT("parsing result=" result); />
+
+<eval DEBUG{
+    if (("GOO" "abc") ==> cur1=foo) foo#(x) = cur1;
+    if (("FOO" "abc") ==> cur2=foo) foo#(x) = cur2;
+    a = Stmt#"abdc";
+    Stmt#a = a; 
+    a = ("a" "b" "c");
+    b = (a "d");
+    REPLACE(a,b,a);
+    SPLIT("","for(i=0;i<100;i+=2)");
+    SPLIT("","(abc def)") => LIST(STRING,""); 
+    PERMUTE((3 2 1), ("a" "b" "c"));
+    SPLIT("","a+b-c");
+    REPLACE("x","y", SPLIT("","x*x-2")); 
+    REPLACE( (("a",1) ("b",2) ("c",3)), SPLIT("","a+b-c"));
+    1 * ArrayAccess#("A","i"*70+"l");
+}/>
+
+<eval DEBUG{
+    input = Stmt#"var";
+    DUPLICATE("var", (1 2 3), input);
+
+    input : Stmt#_;
+    Stmt#input : Stmt#_;
+    Stmt#input : Stmt#newvar;
+    Stmt#123 : Stmt#newvar;
+}/>
+

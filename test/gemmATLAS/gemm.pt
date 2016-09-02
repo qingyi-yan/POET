@@ -1,0 +1,62 @@
+include opt.pi
+<parameter orig type=0|1 default=0 message="output original code"/>
+<parameter inputFile default="" message="input file name"/>
+<parameter pre type="s"|"d" default="d" message="Whether to compute at single- or double- precision"/>
+<parameter alpha type=0|1 default=0 message="Whether the value of alpha is non-zero for the computation of alpha*A*B"/>
+<parameter NB type=1.._ default=62 message="Blocking size of the matrices"/>
+<parameter MB type=1.._ default=72 message="Blocking size of the matrices"/>
+<parameter KB type=1.._ default=72 message="Blocking size of the matrices"/>
+<parameter SP type=0..1 default=1 message="Whether or not to specialize the kernel for the given matrix size"/>
+
+<code Stmt/>
+<code Loop/>
+<code Nest/>
+<trace gemm,gemmDecl,gemmBody,nest3,nest2,nest1/>
+<trace gemmIncl/>
+<trace ftype/>
+
+<input to=gemm syntax="Cfront.code">
+void ATL_USERMM(const int M, const int N, const int K, 
+          const double alpha, const double *A, const int lda, 
+          const double *B, const int ldb, const double beta, 
+          double *C, const int ldc) 			
+{  
+   int i,j,l;     						//@=>gemmDecl=Stmt
+   for (j = 0; j < N; j += 1) 					//@=>loopJ=Loop BEGIN(nest3=Nest) BEGIN(gemmBody=Nest) 
+   { 	                                  		
+      for (i = 0; i < M; i += 1)  				//@=>loopI=Loop BEGIN(nest2=Nest) 
+      { 							
+         C[j*ldc+i] = beta * C[j*ldc+i]; 			//@  =>ExpStmt 
+         for (l = 0; l < K; l +=1) 				//@=>loopL=Loop BEGIN(nest1=Nest)
+         { 							
+            C[j*ldc+i] += alpha * A[i*lda+l]*B[j*ldb+l];	//@ =>Stmt
+         }      						
+     }    							
+   } 						
+} 
+</input>
+
+
+<eval 
+   ftype =(pre=="d")?"double" : "float";
+   gemm = (pre != "d")? REPLACE("double",ftype, gemm) : gemm; 
+   <* APPLY Specialize; *>
+    if (SP) {
+       REPLACE(("N",NB),nest3); 
+       REPLACE(("M",MB),nest2); 
+       REPLACE(("K",KB),nest1);
+       REPLACE("lda",KB, gemmBody);
+       REPLACE("ldb",KB, gemmBody);
+       if (alpha == 0)  
+          REPLACE("alpha",1, gemmBody);
+   }
+   gemmIncl="";
+   REPLACE(ERASE(gemm), (gemmIncl::ERASE(gemm)), gemm);
+/>
+
+<output to="dgemm_kernel.c" cond=(orig) syntax="Cfront.code" from=gemm/>
+
+<trace codegen_gemm_kernel/>
+<input cond=(!orig) parse=POET to=POET from="gemmKernel.pt"/>
+<output to="dgemm_kernel.c" cond=(!orig) syntax="Cfront.code" 
+                            from=(APPLY {codegen_gemm_kernel})/>

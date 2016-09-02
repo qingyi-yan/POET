@@ -1,0 +1,28 @@
+void dgemm_test(const int M,const int N,const int K,const double alpha,const double* A,const int lda,const double* B,const int ldb,const double beta,double* C,const int ldc) {
+   int i;
+   int j;
+   int l;
+   int B_cp_index;
+   double* B_cp;
+   double _C_scalar;
+   B_cp=(double*)malloc((K)*sizeof(double));
+   for (j=0; j<N; j+=1) 
+     {
+        B_cp_index = 0;
+        for (l=0; l<K; l+=1) 
+          {
+             B_cp[B_cp_index++] = B[j*ldb+l];
+          }
+        for (i=0; i<M; i+=1) 
+          {
+             _C_scalar = C[j*ldc+i];
+             _C_scalar = beta*_C_scalar;
+             for (l=0; l<K; l+=1) 
+               {
+                  _C_scalar = C[j*ldc+i]+alpha*A[l*lda+i]*B_cp[l];
+               }
+             C[j*ldc+i] = _C_scalar;
+          }
+     }
+   free(B_cp);
+}

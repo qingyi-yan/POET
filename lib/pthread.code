@@ -1,0 +1,117 @@
+<code WorkGroupDecl pars=(name) >
+struct @name@_WorkGroup_Type {
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  int ready;
+} *@name@_workgroup;
+</code>
+
+<code WorkBlockParamTypeDecl pars=(name, members : LIST(CODE.ExpStmt,"\n")) >
+struct @name@_Params_Type {
+  @members@;
+};
+</code>
+
+<code WorkBlockTypeDecl pars=(name)>
+struct @name@_WorkBlock_Type {
+  struct @name@_Params_Type* params;
+  int begin,end;
+};
+</code>
+
+<code pipeline_signal pars=(obj,ready)>
+pthread_mutex_lock(@obj@.mutex);
+@obj@.ready = @ready@; 
+pthread_cond_signal(@obj@.cond);
+pthread_mutex_unlock(@obj@.mutex);
+</code>
+
+<code pipeline_global pars=(name,params)>
+@WorkGroupDecl#(name)@
+void* @name@_pipeline(void *input); 
+</code>
+
+<xform gen_WorkBlockParamInit pars=(name,params,obj)>
+res = NULL;
+foreach_r (params : CODE.TypeInfo#(CLEAR t,CLEAR n,_) : TRUE) {
+    res = CODE.ExpStmt#(CODE.Assign#(CODE.ObjAccess#(obj,n),CODE.CastExp#(t,"",n))) :: res;
+}
+res
+</xform>
+
+<xform gen_WorkBlockParamExtract pars=(name,params,obj)>
+res = NULL;
+foreach_r (params : CODE.TypeInfo#(CLEAR t,CLEAR n,_) : TRUE) {
+  res = CODE.DeclStmt#(CODE.TypeInfo#(t, n,CODE.VarInit#(CODE.PtrAccess#(obj,n)))) :: res;
+}
+res
+</xform>
+
+<code pipeline_main pars=(name, params:LIST(CODE.TypeInfo,","), num_locks, num_threads) >
+  int ___i;
+  @name@_workgroup = (struct @name@_WorkGroup_Type*)malloc(@num_locks@*sizeof(struct @name@_WorkGroup_Type));
+  for(___i=0;___i<@num_locks@; ___i++) {
+      struct @name@_WorkGroup_Type* cur = @name@_workgroup+___i;
+      pthread_mutex_init(&cur->mutex, NULL);
+      pthread_cond_init(&cur->cond, NULL);
+      cur->ready = -1;
+  }
+  @WorkBlockParamTypeDecl#(name,params)@
+  @WorkBlockTypeDecl#(name)@
+
+  struct @name@_Params_Type @name@_params;
+  @CODE.StmtList#(gen_WorkBlockParamInit(name,params,(name"_params")))@
+
+  pthread_t *thread_id = (pthread_t*)malloc(sizeof(pthread_t) * @num_threads@);
+  unsigned worksize = (@num_locks@) / @num_threads@ + 1;
+  for(___i=0; ___i < @num_threads@; ___i++) {
+     struct @name@_WorkBlock_Type *cur = (struct @name@_WorkBlock_Type*)malloc(sizeof(struct @name@_WorkBlock_Type));
+     cur->params = &@name@_params;
+     cur->begin = ___i * worksize; cur->end = cur->begin + worksize;
+     pthread_create(&thread_id[___i], NULL, @name@_pipeline, (void *)cur);
+  }
+
+  for(___i=0; ___i < @num_threads@;___i++) {
+     pthread_join(thread_id[___i], NULL);
+  }
+
+  for(___i=0;___i<@num_locks@; ___i++) {
+      struct @name@_WorkGroup_Type* cur = @name@_workgroup + ___i;
+      pthread_mutex_destroy(&cur->mutex);
+      pthread_cond_destroy(&cur->cond);
+  }
+</code>
+
+<code pipeline_stage pars=(name, params, body:LIST(_,"\n"))>
+void* @name@_pipeline(void *input) {
+  @WorkBlockParamTypeDecl#(name,params)@
+  @WorkBlockTypeDecl#(name)@
+  struct @name@_WorkBlock_Type *cur = (struct @name@_WorkBlock_Type *)input;
+  int ___BEGIN=cur->begin; int ___END=cur->end;
+  struct @name@_Params_Type *cur_params = cur->params;
+  @CODE.StmtList#(gen_WorkBlockParamExtract(name,params,"cur_params"))@
+  @body@
+}
+</code>
+
+<code pipeline_release pars=(name, lock_pos)>
+{
+  struct @name@_WorkGroup_Type* cur = @name@_workgroup + @lock_pos@;
+  pthread_mutex_lock(&cur->mutex);
+  cur->ready ++;
+  pthread_cond_signal(&cur->cond);
+  pthread_mutex_unlock(&cur->mutex);
+}
+</code>
+
+<code pipeline_wait pars=(name, lock_pos, lock_val)>
+{
+  struct @name@_WorkGroup_Type* cur = @name@_workgroup + @lock_pos@;
+  pthread_mutex_lock(&cur->mutex);
+  while (cur->ready < @lock_val@)
+     pthread_cond_wait(&cur->cond, &cur->mutex);
+  pthread_mutex_unlock(&cur->mutex);
+}
+</code>
+
+

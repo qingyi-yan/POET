@@ -1,0 +1,15 @@
+include opt.pi
+
+<parameter outfile default="" message="Output file name"/>
+<parameter bk parse=LIST(INT," ") default=1 message="blocking factor for nest1"/>
+
+<trace inputCode,decl,nest1,nest3,nest2/>
+<input from="dgemm_test.C" syntax="Cfront.code" to=inputCode/>
+
+<eval BlockLoops[factor=bk;nonPerfect=nest2;trace_decl=decl;
+                 cleanup=1; trace=inputCode](nest2, nest1);
+      />
+
+<output to=outfile syntax="Cfront.code" from=(inputCode)/>
+
+

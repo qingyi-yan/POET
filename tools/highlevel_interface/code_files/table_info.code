@@ -1,0 +1,166 @@
+<define PARSE CODE.Input />
+<define UNPARSE CODE.Input />
+
+<code Input pars=(input:CODE.Statements)>
+@input@
+</code>
+
+<code Statements pars=(precomments:CODE.Comment, includes:LIST(CODE.Include, "\n"), statements:LIST(CODE.Statement, "\n")) >
+@precomments@
+@includes@
+@statements@
+</code>
+
+<code Include pars=(file:CODE.IncludeFileName)>
+include @file@
+</code>
+
+<code IncludeFileName pars=(name:ID, extension:CODE.Extension|"")>
+@name@@extension@
+</code>
+
+<code Extension pars=(name:ID) >
+.@name@
+</code>
+
+<code Statement pars=(statement:CODE.Comment|CODE.ObjectDeclaration|CODE.Interference)>
+@statement@
+</code>
+
+<code ObjectDeclaration pars=(type:ID, name:ID|"", configurations:CODE.ConfigurationList|CODE.IDList) >
+@type@ @name@ {@configurations@}
+</code>
+
+<code ConfigurationList pars=(configuration:CODE.Configuration, configurations:LIST(CODE.Configuration, "\n")) >
+@configuration@@configurations@
+</code>
+
+<code Configuration pars=(configuration:CODE.TransformationParameters|CODE.GroupTransformations|CODE.TransformationAdjustments) >
+@configuration@
+</code>
+
+<code IDList pars=(ids:LIST(ID, ",")) >
+@ids@
+</code>
+
+<code TransformationParameters pars=(parameters:LIST(CODE.TransformationParameter, "\n")) >
+parameters:@parameters@
+</code>
+
+<code TransformationParameter pars=(modifier:CODE.ParameterModifier|"", type:CODE.ParameterType, assignments:LIST(CODE.ParameterAssignment, ",")) >
+@modifier@ @type@ @assignments@;
+</code>
+
+<code ParameterAssignment pars=(name:ID, value:CODE.ParameterValue|"")>
+@name@@value@
+</code>
+
+<code ParameterValue pars=(value:CODE.Function)>
+=@value@
+</code>
+
+<code ParameterModifier pars=(name:"required"|"optional"|"tuning"|"internal")>
+@name@
+</code>
+
+<code ParameterType pars=(type:CODE.PrimitiveType|CODE.ListType)>
+@type@
+</code>
+
+<code ListType pars=(type:CODE.PrimitiveType)>
+list(@type@)
+</code>
+
+<code PrimitiveType pars=(type:"int"|"id"|"string"|"handle"|"bop"|"block")>
+@type@
+</code>
+
+<code GroupTransformations pars=(transformations:LIST(ID, ","))>
+transformations:@transformations@;
+</code>
+
+<code TransformationAdjustments pars=(location:"BEGIN"|"END", adjustments:LIST(CODE.InnerStatement,"\n"))>
+@location@:@adjustments@
+</code>
+
+<code InnerStatement pars=(statement:CODE.Function)>
+@statement@;
+</code>
+
+<code Function pars=(name:ID, parameters:LIST(CODE.FunctionParameter, ","))>
+@name@(@parameters@)
+</code>
+
+<code FunctionParameter pars=(parameter:CODE.Transformation|CODE.Accessor|ID|INT)>
+@parameter@
+</code>
+
+<code Transformation pars=(name:ID, optional_parameters:CODE.OptionalParameters|"", required_parameters:LIST(CODE.SetParameter, ","))>
+@name@@optional_parameters@(@required_parameters@)
+</code>
+
+<code OptionalParameters pars=(parameters:LIST(CODE.SetParameter, ",")) >
+[@parameters@]
+</code>
+
+<code SetParameter pars=(name:CODE.ExternalValue|ID, value:CODE.SetParameterValue) >
+@name@=@value@
+</code>
+
+<code SetParameterValue pars=(value:CODE.GroupList|CODE.ExternalValue)>
+@value@
+</code>
+
+<code ExternalValue pars=(transformation:ID, parameter:CODE.ParameterInfo)>
+@transformation@.@parameter@
+</code>
+
+<code ParameterInfo pars=(parameter:CODE.NestWithAccessor|ID)>
+@parameter@
+</code>
+
+<code NestWithAccessor pars=(nest:ID, accessor:CODE.Accessor|ID)>
+@nest@[@accessor@]
+</code>
+
+<code Accessor pars=(before:ID, after:ID)>
+@before@.@after@
+</code>
+
+<code GroupList pars=(value:CODE.ExternalValue|CODE.Literal)>
+group_list(@value@)
+</code>
+
+<code Literal pars=(value:ID)>
+"@value@"
+</code>
+
+<define TOKEN (("/" "*") ("*" "/")) />
+<code Comment pars=(content:(~"*/")...)>
+/*@content@*/
+</code>
+
+<code Interference pars=(used:CODE.InterferenceTransformation, interfering:CODE.InterferenceTransformation)>
+interference(@used@,@interfering@);
+</code>
+
+<code InterferenceTransformation pars=(name:ID, parameters:CODE.InterferenceParameters|"", configurations:CODE.InterferenceConfigurations|"") >
+@name@@parameters@@configurations@
+</code>
+
+<code InterferenceParameters pars=(parameters:CODE.IDList)>
+(@parameters@)
+</code>
+
+<code InterferenceConfigurations pars=(configurations:LIST(CODE.InterferenceConfiguration, ",")) >
+{@configurations@}
+</code>
+
+<code InterferenceConfiguration pars=(type:"before"|"after"|"configuration",fixes:LIST(CODE.ConfigurationFix, ","))>
+@type@(@fixes@)
+</code>
+
+<code ConfigurationFix pars=(fix:CODE.SetParameter|CODE.Transformation)>
+@fix@
+</code>
+

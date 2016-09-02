@@ -1,0 +1,172 @@
+#include <atlas_prefetch.h>
+#define SSE2
+#include <ASMHead.h>
+#include <stdlib.h>
+void ATL_dger1_a1_x1_yX(const int M,const int N,const double alpha,const double* X,const int incX,const double* Y,const int incY,double* A,const int lda) {
+   int i;int j;
+   double _a_buf_0_0;
+   double _y_buf_0;
+   double _y_buf_1;
+   double _x_buf_0;
+   double _x_buf_0__split;
+   size_t alignA;
+   double* _pA_0;
+   double* _pA_1;
+   double* _pA_0_0;
+   double* _pA_1_0;
+   double* _pX_0;
+   double* _pY_0;
+   double* _pY_1;
+   const double* _prefA_0;
+   const double* _prefA_0_0;
+   _pA_0 = A;
+   _pA_1 = _pA_0+lda;
+   _pY_0 = Y;
+   _pY_1 = _pY_0+incY;
+   _prefA_0 = A+2*lda;
+   for (j=0; j<-1+N; j+=2) 
+     {
+        vec_splat(&_y_buf_1,reg2);
+        vec_splat(&_y_buf_0,reg1);
+        vec_mov_mr(&_x_buf_0__split,reg4);
+        vec_mov_mr(&_x_buf_0,reg3);
+        vec_splat(_pY_0,reg1);
+        vec_splat(_pY_1,reg2);
+        alignA = (8 - (((size_t)(_pA_0)) & 0xF) / 8) ;
+        for (i=0; i<alignA; i+=1) 
+          {
+             vec_mov_mr_1(X+i,reg3);
+             vec_mov_mr_1(_pA_0+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_1(reg0,_pA_0+i);
+             vec_mov_mr_1(_pA_1+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_1(reg0,_pA_1+i);
+          }
+        _pA_0_0 = _pA_0+alignA;
+        _pA_1_0 = _pA_1+alignA;
+        _pX_0 = X+alignA;
+        _prefA_0_0 = _prefA_0;
+        for (i=alignA; i<-11+M; i+=12) 
+          {
+             ATL_pfl1R(_prefA_0_0);
+             _prefA_0_0 = 12+_prefA_0_0;
+             vec_mov_mr(_pX_0,reg3);
+             vec_mov_mr_a(_pA_0+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,_pA_0+i);
+             vec_mov_mr(_pA_1+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,_pA_1+i);
+             vec_mov_mr(2+_pX_0,reg3);
+             vec_mov_mr_a(2+_pA_0_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,2+_pA_0_0);
+             vec_mov_mr(2+_pA_1_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,2+_pA_1_0);
+             vec_mov_mr(4+_pX_0,reg3);
+             vec_mov_mr_a(4+_pA_0_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,4+_pA_0_0);
+             vec_mov_mr(4+_pA_1_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,4+_pA_1_0);
+             vec_mov_mr(6+_pX_0,reg3);
+             vec_mov_mr_a(6+_pA_0_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,6+_pA_0_0);
+             vec_mov_mr(6+_pA_1_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,6+_pA_1_0);
+             vec_mov_mr(8+_pX_0,reg3);
+             vec_mov_mr_a(8+_pA_0_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,8+_pA_0_0);
+             vec_mov_mr(8+_pA_1_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,8+_pA_1_0);
+             vec_mov_mr(10+_pX_0,reg3);
+             vec_mov_mr_a(10+_pA_0_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,10+_pA_0_0);
+             vec_mov_mr(10+_pA_1_0,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,10+_pA_1_0);
+             _pA_0_0 = _pA_0_0+12;
+             _pA_1_0 = _pA_1_0+12;
+             _pX_0 = _pX_0+12;
+          }
+        for (i=i; i<-1+M; i+=2) 
+          {
+             vec_mov_mr(X+i,reg3);
+             vec_mov_mr_a(A+(i+j*lda),reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_a(reg0,A+(i+j*lda));
+             vec_mov_mr(A+(i+(lda+j*lda)),reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm(reg0,A+(i+(lda+j*lda)));
+          }
+        for (i=i; i<M; i+=1) 
+          {
+             vec_mov_mr_1(X+i,reg3);
+             vec_mov_mr_1(_pA_0+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg1,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_1(reg0,_pA_0+i);
+             vec_mov_mr_1(_pA_1+i,reg0);
+             vec_mov_rr(reg3,reg4);
+             vec_mul_rr(reg2,reg4);
+             vec_add_rr(reg4,reg0);
+             vec_mov_rm_1(reg0,_pA_1+i);
+          }
+        vec_mov_rm(reg0,&_a_buf_0_0);
+        _pA_0 = _pA_1+lda;
+        _pA_1 = _pA_0+lda;
+        _pY_0 = _pY_1+incY;
+        _pY_1 = _pY_0+incY;
+        _prefA_0 = _prefA_0+2*lda;
+     }
+   for (j=j; j<N; j+=1) 
+     {
+        for (i=0; i<M; i+=1) 
+          {
+             _a_buf_0_0 = A[i+j*lda];
+             _a_buf_0_0 = _a_buf_0_0+X[i]*Y[j*incY];
+             A[i+j*lda] = _a_buf_0_0;
+          }
+     }
+}

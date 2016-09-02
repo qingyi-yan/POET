@@ -1,0 +1,13 @@
+include opt.pi
+
+<parameter outfile default="" message="output file location" />
+<parameter ur parse=INT default=2 message="Loop unrolling factor for target"/>
+
+<trace inputCode,target/>
+<input from="mgrid.f" syntax="Ffront.code" to=inputCode/>
+
+<eval UnrollLoops[factor=ur;trace=inputCode](target[Nest.body],target); />
+
+<output to=outfile syntax="Ffront.code" from=(inputCode)/>
+
+

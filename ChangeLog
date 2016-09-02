@@ -1,0 +1,331 @@
+**** poet-1.10:
+ TODO: fix search engine scripts and add tuning to POET release
+ TODO: change pcg main function to automatically check the include directories of POET, using the make install directories first and the original install directory, including POET/include
+*** poet-1.05.03
+Apr 8, 2016: fix the lost of surrounding lists when passing them as parameters
+Mar 3, 2016: fix POETInputList::set_next bug which causes tokenizer infinite recursion
+Mar 2, 2016: fix CopyRepl/ReplExp bug for negative loop ivars in subscripts
+Jan 15, 2016: fix bug in returning value for the ==> operator
+Dec 22, 2015: further fix parsing of C++ template type and lookahead matching
+Nov 17, 2015: fix parsing of C++ template type and lookahead matching
+Oct 9, 2015: added the assert operator
+Sep 7, 2015: added foreach var=pat \in reverse(input) do ... enddo syntax
+Aug 16, 2015: added foreach var=pat \in input do ... enddo syntax
+Aug 10, 2015: fix right recursion in yacc parsing for inputBase; added POETInputList to allow appending of input strings.
+Aug 5, 2015: extend pattern matching to allow multiple code template name specification
+July 27, 2015: change/fix the parsing of if/else and fix function inlining
+May 1, 2015: fix array copy error
+Apr 27, 2015: fix match attribute to allow arbitrary code;
+Apr 27, 2015: allow Scalar repl to take a array name as input and to replace all of its references.
+Apr 24, 2015: fix castExp parsing in Cfront.code; fix applying uop to string before defining the uop operator--- seg fault
+Apr 21, 2015: add rebuild invocation to offset calc in array copy optimization
+Apr 20, 2015: fix parameter checking of lib/CopyRepl
+Apr 17, 2015: extend member access to consider match attr;
+Apr 16, 2015: extend match support to allow extraction of subtype object members;
+Mar 7, 2015: change compiler examples; modify documents. 
+Mar 4, 2015: Changed how the match attribute of code template works; added EXP_MATCH macro
+*** poet-1.05.02
+Feb 22, 2015: revise parsing specifications in Cfront.code, changed AST repr
+Feb 15, 2015: revise poet tutorial; make both break and continue keywords.
+Feb 15, 2015: fix POET interpreter so that lookahead can be computed correctly for (t=Type) in Decl
+               Make blocking factors a macro instead constant in generated code from GUI;
+         Make both print and return keywards (like PRINT and RETURN);    
+Feb 4, 2015: fix bug in parsing a single integer type
+Feb 4, 2015: add type checking support for parameters and stmt blocks
+Feb 2, 2015: Make #threads a macro instead of constant in generated code;
+Jan 28,2015: add type checking support to Cfront/Ffront and move code to analysis.pt
+Jan 27,2015: fix pattern matching of lists so that the value of an empty list  is NULL instead of empty string.
+**** poet-1.05.01:
+*Jan 18,2015: extend use of NULL so that cdr returns NUL instead of empty, forbid invoking car/cdr on NULL;
+*Ja 2, 2015: add support for C++ comments
+Nov 25: extend parallelizeloop impl in POET/lib with the model=VEC
+Oct 15: fix cleanup of blocking (only done with unrolling)
+Aug 12: add auto generation of testers and timers in tools/testfiles
+Aug 10: add test in timerGeneration and auto-generation of specifications for tester/timer
+ July 2: add the tools directory
+ July 1: moved auto_poet.code in test/tune to lib/auto_tune.code
+ June 30: fix triangular loop recoginition in cleanup, among others;
+ June 25: fix BlockLoops to handle empty statements inside bodies (add RebuildNest)
+ June 24: fix BlockLoops to allow a single blocking factor specified
+ June 20: fix findNonPerfect loop to skip empty statement
+ June 5: add move-handle-inside option to fuseLoops.
+ June 4: add command-line option -t to support printout of tracing handles
+ May 6: fix error in matching NULL with LIST
+ May 2: fix syntax issues for parsing C/C++
+ Apr 24: fix bug in matching lookahead for multiple tokens
+**** poet-1.04.01:
+Apr 3: allow xform parameter to be empty
+Apr 2: add example code for compiler tutorial.
+Apr 2: add support for FLOAT as a built in TOKEN/type
+Apr 2: add support for inherited attribute during parsing
+Mar 31, Change BACKTRACK to have default value false
+Mar 30. Fix parsing of input when not saving the input program. 
+Mar 30 Revise tutorial-compiler (parsing and AST construction).
+Mar 29,2014 fix uses of NULL as the end when constructing list
+. fix POETProgram class to check the emptiness of filename.
+. extend opt.pt to improve applicability and quality of loop optimizations
+**** poet.1.03.13:
+Dec 9,2013: extend support for external AST from the ROSE compiler
+Oct 10: added peephole optimization opt file and 3-address assembly code
+generation support
+Oct 1: added support for multiple references in FiniteDiff, ReplExp, array copying and scalar repl.
+Sep 25: fixed bug in get_coeff when applying array copy to precompute expressions.
+**** poet-1.03.12:
+Sep 22: add support for cleanup of BlockSplitStop in BlockingCleanup.pt
+Sep 17: taken blocking cleanup code into a separate file. Added support for cleanup for Stripmine start code with blocked loop peeling, needed for blocked triangular loops
+Sep 5: extend FiniteDiff to handle stripmined loops starting from bvar for already copied arrays.
+Sep 2: Add triangular copy copy support
+Sep 1: Split CopyRepl into a separate ArrayCopying file. Modify opt to skip lower matrix for copying triangular matrices.
+Aug 31: split Stripmine routine to separate out different components; move loop blocking code into separate file in lib/LoopBlocking.pt.
+Aug 30: fixed everything to be correct and up-to-date (the old commit did not succeed)
+Aug 25: extended array copying for selectively blocked loops.
+Aug 22: fix array copying for multi-dimensional array.
+Aug 19: add alignment support for array copying (malloc)
+Aug 18: fix syntax for multi-dimensional arrays in Cfront.code; fix FiniteDiff to operate correctly for multi-dimensional arrays.
+**** poet-1.03.11:
+Aug 7: Revise SplitStmt to avoid over splitting; fix prefetching in FiniteDiff to take prefetching distance as parameter; fix issues when multiple cleanup has been done in transformations
+Aug 5:  Fix handling of nested tracing handles in utils.incl and opt.pt
+Aug 1: fixed trace_newvars so that it adds new variables in their order of creation.
+July 31: fix interface issues in SplitStmt
+July 30: added prefetch_arr support in FiniteDiff (strength reduction);
+July 26: Fix strength reduction (FiniteDiff) to take outside loops as parameter. 
+  Make sure it works correct for multiple blocked dimensions
+**** poet-1.03.10:
+. July 25: fixed FiniteDiff in lib/opt to automatically extract expression dimensions to apply strength reduction. Fix flatting of >2 dimensions
+**** poet-1.03.09:
+. July 21: fix array copying bugs when the array size does not devide block size for multi-level blocking
+. July 20: modify tuning specification generation to allow more flexible parameter specifications
+. July 20: Added keyword NULL as representation for an empty list, so an element e can be converted to a list using e::NULL
+**** poet-1.03.08:
+. July 16: extend array copy to work with multi-level blocking; added automatic support for permuting dimensions in replexp
+. July 3: fix the tokenizer to correctly handle matching of empty string at the end
+. July 2: fix copy dimension construction from loops
+. June 28: changed unparsing of unary operators to make sure parentheses are added when the operand is a binary operator
+. June 21: add functions for simplifying boolean expressions in lib/ExpStmt.incl
+. June 19: allow empty to be matched against the LIST operators
+. June 19: change the default configuration of deep_search in LookTable of utils.incl to be true
+. June 13: revise copyrepl implementation.
+. June 9: add tuple access support (for creating code templates of predefined attribute) in parsing annotations.
+      change copy repl checking of adding var decl
+. June 7: change the trace_incl default value to TRACE_INCL in lib/opt.pt
+     Fix CopyRepl to check for emptiness of strings before replacing.
+. May 28: apply left factoring to the parsing of variable declaration and expression statement in Cfront.code.
+. May 18-24: change visit of parameters and list elements in code generation.
+. May 19: fix manual email addresses for POET
+**** poet-1.03.07:
+. May 7, 2013: change splitting of strings: no longer convert substrings to integers
+. May 7, 2013: fix: not treating type as a keyword in eval bodies.
+. May 7,2013: fix bug: not skipping windowns line breaks inside the bodies of code template definitions. 
+ . May 6, 2013: Fixed segmentation error when reading an empty input file
+ . changed User error report to not report the trace of execution
+**** poet-1.03.06:
+Apr 28,2013: Fix bug in creation of integer constant (negative integers overwriting positive ones)
+
+**** poet-1.03.05: 
+. changed opt_all.pt to add cleanup support.
+
+****
+2013: poet-1.03.04: fix REPLACE issue
+***
+2012: poet-1.03.03
+July 16: extended Cfront.code to support additional C syntax such as using "," as bop. Modified parsing of expressions in parse.cpp so that () can be used with special meanings in EXP_BASE and are processed by ParseExp only when EXP_BASE parsing failed.
+July 4: Fix cleanup of SplitStart after multi-level blocking
+July 2: Fix cleanup of BlockTileEnd after multi-level blocking
+July 1: added cleanup of SplitStart for BlockLoopCleanup codes
+June 30: Fixed naming of unspecified blocked loop ivar which leads to error in cleanup code
+June 28: add cleanup check for constant loop bound (after multi-level blocking)
+*****
+ 2012: poet-1.03.02
+June 27: changed cleanup code generation to eliminate unrolling when conditional checks cannot be removed
+June 21: fix bug in cleanup code of BlockLoops
+May 24: revise support for tuning OMP_SCHEDULE
+Apr 5: fix bug on using the wrong lexState when reading multiple files in a list
+       add tunning for OMP Schedule in test/tune.
+Mar 30: fix normalization of for loops in Cfront.code
+Mar 21: fix unroll&jam symbolic loop bound error
+Mar 20: fix parser of POET so that a+-b is accepted
+Mar 16: changed code in test/autoscripts
+*****
+  2012 : poet-1.03.01
+Feb 23: reimplement cleanup code for loop blocking
+          TODO: cleanup is not applied when unrolling is done without blocking 
+            needs to be fixed
+Feb 23: Remove POET/test/gemm directory, as the old mechanism for connecting gemm kernel optimizations with higher level optimizations no longer works with the new cleanup code
+Jan 8, 2012: fixed bug in loop cleanup when bsize=usize. add dgemm test case
+Jan 5, 2012: add kernel trmm to test/autoScripts
+Jan 4, 2012: fix error in macro def for chfac.c. Remove assert in interpreter
+            add chfac to autoscripts benchmarks and timer generation.
+Jan 2,2012: enhanced support for multiple nonperfectly nested loops in blocking
+Dec 29,2011: added F2C translation for chfac.f to examples directory
+Dec 26,2011: added type checking support to Ffront.code and support for translating chfac.f to C
+Dec 13,2011: fixed interfering redefinitions  for expression parsing. Reset ParseExp when parsing each input file.
+Dec 8,2011: changed parameter names in pt files in POET/examples; add type checking code in lib/ExpStmt.incl
+Nov 29,2011: change define syntax to allow parsing specification as value;
+        fixed parsing error with pre-parsed tagged code. 
+        change Fortran syntax
+===
+  : poet-1.02.07.02
+Nov 28: extend Cfront.code
+Nov 11: fixed parsing of POET annotations in no annot mode ==> no longer interfer with regular parsing.
+Sep 25: revised SSE VectorizeExpression implementation in lib/opt.pt
+Sep 16: change tracing declaration syntax to avoid confusion.
+        change AppendVar to check whether trace is EXP
+        fix replacement of code template attributes
+===
+  : poet-1.02.07.01
+Sep 8: allow MAP alone to be used as a specifier
+Sep 1, 2011: Add support for checking conditions that much be satisfied among command-line parameters.
+===
+Aug 17: poet-1.02.06.13
+. change REPLACE Operator so it does not erase tracing handles of the AST being replaced.
+Aug 14, 2011 (Qing Yi)
+. simplify opt library interfaces
+. Fix bug in pattern matching (not able to extract tracing handle in CleanupBlockedNests
+. Changed interface of AppendDecl; allow using global macros to configure opt
+. Fixed bug in losing tracing handles when using RETURN to break out of an AST traversl
+. changed default cleanup value to be 0. Added UnrollLoop routine. Changed names of code templates from UnrollLoop => UnrolledLoop. 
+. changed FiniteDiff and Prefetch interface in lib/opt.pt;
+===
+poet-1.02.06.12
+. Renamed head file names in POET/src
+. Removed reliance on POET_LIB environment variable
+. Trace handles used to tag the input code are now immediately inserted inside the input AST. No INSERT option is required.
+===
+poet-1.02.06.11
+. Fixed unparsing of expressions like A-B (used to be unparsed as A+-b)
+. revised reading input files so that the input code is not wrapped inside a eval declaration, to coordinate with PREP specification properly
+. revised unparsing so that the LIST parsing specifier can be used to directly affect unparsing without having to be embedded inside the parse attribute of a code template
+. small fixes. removed inappropriate definitions in library files
+====
+May 27, 2011: poet-1.02.06.10
+. Add example of copy array and scalar repl
+. Modify the interface of TraceNest
+. Modify and cleanup interface of CopyRepl and ScalarRepl
+. Modify and cleanup interface of BlockLoops and ParallelizeLoops
+===
+May 24, 2011: poet-1.02.06.09
+
+. Fixed implementation of list cdr/tail to handle nested lists properly
+. Modify FuseLoops and DistributeLoops in lib/opt.pt and created the new opt_fusion.pt example.
+. Modify pcg so that the default lib directory no longer need to be specified;
+  modified the makefiles in test and examples directoris accordingly.
+===
+May 19, 2011: poet-1.02.06.08
+
+. Modified interface of VectorizeCode
+. Modified interface and implementation of SkewLoops;
+. Modify code to accommodate warnings from gcc.
+. Modify Makefile to automate alternative distribution in the ROSE compiler
+
+===
+May 1, 2011: poet-1.02.06.07
+Extended syntax for Fortran and F95
+
+Apr 22, 2011 poet-1.02.06.06
+Apr 22, 2011: extended POET/lib/Ffront.code to hande the fortran code in POET/test/parseF/example1.f. Modified apply_tokenFilter in POET/src/parse.cpp to check whether input is null before proceeding.
+Mar 29, 2011: added example to selectively parse and transform only portions of an input code without annotations. (right now the empty spaces starting each new line are lost).
+Jan 27, 2011: Modified error reporting for user-invoked errors: no longer report the trace of it being triggered, as this is assumed not to be a POET script error.
+==== 
+Oct 9, 2010 poet-1.02.06.05
+. Added support for inherited attribute (macro INHERIT) in parsing, which
+  contains the previous AST being built.
+. Added keyword NONE which specifies no parsing for a code template
+Feb 8,09: Changed syntax of nested input annotations to require the same 
+    specification in both BEGIN and END. Removed the pair of {} surrounding
+    assignments in the => operator.
+. Add support for configuration of pattern matching for code templates.
+  : added the "match" attribute in code template declarations to specify
+    a routine to invoke when comparing the arguments of code templates in pattern matching.
+. modified TranslatorDriver.pt and code in example directory. Moved TranslatorDriver to lib directory.
+  simplified ways to write translators (using TranslatorDriver.pt)
+. Allow using CODE.name and XFORM.name to avoid forward decl of code/xform 
+.Added configuration macro PREP to replace the original PARSE,
+  use PARSE to specify the goal of parsing.
+  PREP specifies a filter for lexical analyzer.
+  PARSE specifies GOAL,
+  UNPARSE specifies output
+  PREP specifies TOKEN filter
+  TOKEN specifies tokenizer.
+.Improved the handling of macro definitions. Used global macros in defining 
+  optional parameters of xform routines.
+.Fixed the case of CONTINUE within FOREACH causing match to always return true.
+.Fixed error reporting when output file name is empty (should output to stdout).
+.when parse = "" in a code template def., only pattern matching is done in parsing
+.Added the keyword RANGE which can be used to define a range value type.
+==== poet.1.02.03 Oct 28, 2008
+. Oct 28: fixed incorrect error reporting when xform parameters are used access maps.
+. Oct 15: fixed the resetting of syntax definitions for code templates that do not have bodies.
+====================
+poet1.02.02 Qing Yi Oct 13 2008.
+. Oct 13: fixed premature termination in parsing of lists
+. Oct 7: fixed null pointer dereference when both components of a list are empty
+. Oct 2: fixed reseting of trace variables when loops broken out (break/cont).
+. Oct 2: fixed some syntax definitions in CFront.code 
+. Oct 2: fixed the bug that modifies xform handles when they are invoked.. 
+. Oct 2: changed/added formatting of AST in PRINT.
+. Oct 1: allow global macro names to be multiply-defined 
+. Sep 30: fixed lib/Loops.incl:TraceNest so that "car tNests" is not applied if tNest is a tracing variable (that may have previous values).
+========================
+poet1.02.01 Qing Yi  Sep 2008
+. Aug 27 change INSERT operator to insert trace handles
+. Aug 25 changed syntax for parameters and parsing. Added TOKEN configuration
+. Aug 22: INT and STRING no longer serve type conversion. needs to use "=>"
+       Change the syntax of parse to remove variable annot syntax and use assignment
+. Aug 13: added output configuration to code templates
+. Aug 8: added PARSE and UNPARSE configuration
+. July 26: for input, allow reading poet files by setting type = POET
+. July23: changed output/input syntax to 
+    < output syntax=? from=? to=?/>
+    < input syntax=? to=? debug=? type=?  from=?/>
+. July 22: changed parseType specification. 
+     To specify a tuple type, do TUPLE(elem1Type, elem2Type,...,elemmType).
+     To specify a list type, do LIST(elemType, sep-string).
+     Except for code template parameters, the syntax (type1,type2,...) as a list of alternative
+    types(values) is no longer acceptable.
+. June 30: changed syntax for input declaration
+. June 30: Added the :: operator for lists
+. June 29: Added the optional config integer for DEBUG.
+           config > 0 : the level of function calls to debug (aside stmts);
+           config > 10: debug AST matching
+. June 29: changed the construction of lists to end with a NULL list.
+. June 29: added the "eval" global declaration
+. May 16: added DEBUG operator
+. May 15: added BREAK, CONTINUE, and RETURN support
+. May 11: tightened syntax for built-in operator invocations. 
+          overloaded operators require using () to surround arguments;
+          TRACE,UNTRACE,SPLIT,DUPLICATE are no longer overloaded.
+          SAVE and RESTORE now process a single nested trace handle
+. May 6: removed :: operator. tightened syntax parsing for config of xform
+. May 4: changed parsing syntax definitions in poet_yacc.y s.t.
+       1.  the //@ annot applies to a single line only.
+       2.  The type or operator "|" is used to specify type definitions.
+. Apr 22: added operator "|" which stands for alternative type specifications;
+          used "|" to replace the overloaded "||" operator in types.
+. Apr 12: modified OP_LEN to return the length of constant strings
+. Mar 26: modified poet_yacc.y to allow {} to denote empty stmt
+   manual==>  modified poet_lex.l to allow @@ be used to adjust starting alignment in code template defs 
+             (examples in commands/test2.pt)
+. Mar 24, modified lib/Cfront.code to incorporate more syntax info for functionDefn, Nest, etc.
+. Mar 24, modified poet_yacc.y to 
+     . fixed problems in defining input without syntax annotations
+. Mar 24, modified driver.cpp to fix the error reporting when processing "include"
+. Mar 18, modified parse.cpp to fix the case of matching STRING with empty.
+. Feb 26, added support for strings that contain "\\n".
+====================
+poet1.01  Aug 13, 2007   Qing  Yi
+. Added transformations: ShiftLoop, ScaleLoop, ValueRepl.
+. Updated comments for each transformation in opt.pi.
+. Splitted opt.pt into two files: opt.pt and utils.pt. 
+. Fixed CodeReplOperator to allow identity replacement in specifications.
+. Added command-line options
+. Added many more extensions
+=====================
+poet1.0  Jun 10, 2007   Qing  Yi
+The existing library can successfully optimize gemm, gemv (Transpose and Non-transpose)
+and ger routines from ATLAS library. The POET opt.pt/pi library uses header files
+from the ATLAS package and were tested and timed using ATLAS testers and timers.
+The header files will be included as part of POET once POET can automatically generate
+testers and timers for these routines.
+
+The syntax of the POET language should be relatively stable now. A stable release
+should be available once the language manual is developed.

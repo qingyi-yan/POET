@@ -1,0 +1,23 @@
+include opt.pi
+
+<parameter outfile default="" message="Output file name"/>
+<parameter cp parse=INT default=1 message="whether to copy array B"/>
+<parameter scalar parse=INT default=1 message="whether to scalar repl C"/>
+
+<trace inputCode,decl,nest1,nest3,nest2/>
+<input from="dgemm_test.C" syntax="Cfront.code" to=inputCode/>
+
+<eval if (cp)
+        CopyRepl[prefix="B_cp";data_type="double";init_loc=nest3;
+                 delete_loc=nest1;trace=inputCode;trace_decl=decl]
+          (ArrayAccess#("B","j"*"ldb"+"l"), CopyDim#("l",0,"K",1), nest1);
+      if (scalar)
+        ScalarRepl[prefix="C_scalar";data_type="double";
+                   init_loc=nest3[Nest.body]; save_loc=nest3[Nest.body]; 
+                   trace=inputCode;trace_decl=decl]
+          (ArrayAccess#("C","j"*"ldc"+"i"), "", nest3[Nest.body]);
+      />
+
+<output to=outfile syntax="Cfront.code" from=(inputCode)/>
+
+

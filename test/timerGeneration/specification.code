@@ -1,0 +1,101 @@
+include utils.incl
+
+<**** skip comments ***>
+<define TOKEN_patterns  (Comment,"")/>
+
+<code TopSpecification pars=(incl:CODE.IncludeSpec|"",
+                               routine:CODE.RoutineSpec|"",
+                               checkpoint:CODE.CheckpointSpec|"",
+                               init:CODE.RoutineInitSpec,
+			       returns:CODE.ReturnSpec|"",
+                               mflops:CODE.MFLOPS_spec|"")>
+@incl@
+@routine@
+@checkpoint@
+@init@
+@returns@
+@mflops@
+</code>
+
+<define PARSE TopSpecification/>
+<define BACKTRACK TRUE/>
+
+<********** Specification-syntax definitions **********> 
+
+<code IncludeSpec pars=(content:CODE.Stmt)>
+include=@content@
+</code>
+
+<code ReturnSpec pars=(result:NameList) rebuild=(result)>
+returns(@result@);
+</code>
+
+<code MFLOPS_spec pars=(exp:String) rebuild=(exp[String.content])>
+flop = @exp@;
+</code>
+
+<code RoutineSpec pars=(routine:CODE.FunctionDecl|CODE.SubroutineDecl) rebuild=routine>
+routine = @routine@
+</code>
+
+<code CheckpointSpec pars=(file:String) >
+checkpoint = @file@
+</code>
+
+<code SpecificationList parse=LIST(CODE.AllocateMatrix|CODE.AllocateArray2D|CODE.AllocateVector|CODE.StaticVector|CODE.StaticMatrix|CODE.ParameterInitialization,"\n") />
+
+<code RoutineInitSpec pars=(init:SpecificationList) rebuild=init>
+init = {
+  @init@
+};
+</code>
+
+<code Random>
+RANDOM
+</code>
+
+<code Flush>
+flush
+</code>
+
+<code Align pars=(byte:INT)>
+align(@byte@)
+</code>
+
+<code AllocSpec pars=(spec) parse=LIST(Flush|Align,"|") rebuild=spec>
+@spec@
+</code>
+
+<code Increment pars=(begin:INT,incr:INT)>
+Range(@begin@,@incr@)
+</code>
+
+<code MacroVal pars=(name:STRING,val:INT)>
+Macro(@name@,@val@)
+</code>
+
+<code InitVal parse=INT|FLOAT|String|Random|MacroVal|Increment|Name />
+
+<code ParameterInitialization pars=(paramName : Name, init : InitVal)>
+@paramName@ = @init@;
+</code>
+
+<code AllocateVector pars = (name:Name, type:Type, size:EXP, init:InitVal, spec:AllocSpec) >
+@name@ = Vector(@type@,@init@,@spec@,@size@);
+</code>
+
+<code AllocateMatrix pars = (name:Name, type:Type, row:INT|Name, col:INT|Name, init:InitVal, spec:AllocSpec) >
+@name@ = Matrix(@type@,@row@,@col@,@init@,@spec@);
+</code>
+
+<code AllocateArray2D pars = (name:Name, type:Type, row:INT|Name, col:INT|Name, init:InitVal, spec:AllocSpec) >
+@name@ = Array2D(@type@,@row@,@col@,@init@,@spec@);
+</code>
+
+<code StaticVector pars = (name:Name, type:Type, size:INT|Name, init:InitVal, spec:AllocSpec) >
+@name@ = SVector(@type@,@size@,@init@,@spec@);
+</code>
+
+<code StaticMatrix pars = (name:Name, type:Type, row:INT|Name, col:INT|Name, init:InitVal, spec:AllocSpec) >
+@name@ = SMatrix(@type@,@row@,@col@,@init@,@spec@);
+</code>

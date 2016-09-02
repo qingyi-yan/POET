@@ -1,0 +1,42 @@
+include opt.pi
+
+<parameter outfile default="" message="Output file name"/>
+<parameter par parse=INT default=2 message="# of threads to run nest1"/>
+<parameter par_bk parse=INT default=256 message="# of iterations to run on each thread"/>
+<parameter cache_bk parse=LIST(INT," ") default=(32 32 32) message="blocking factor for nest1"/>
+<parameter cp parse=INT default=0 message="whether to copy array A"/>
+<parameter uj parse=LIST(INT," ") default=(2 2) message="Unroll&jam factor for nest1"/>
+<parameter ur parse=INT default=2 message="Unroll factor for nest2"/>
+<parameter scalar parse=INT default=1 message="whether to scalar repl A"/>
+
+<trace inputCode,decl,nest1,nest3,nest2/>
+<trace nest1_private = ("j" "i" "l")/>
+<trace nest1_cleanup=nest1/>
+<trace A_ref =(ArrayAccess#("A","l"*"lda"+"i"))/>
+
+<define TRACE_DECL decl/>
+<define TRACE_INCL inputCode/>
+<define TRACE_EXP  A_ref/>
+<define TRACE_TARGET inputCode />
+<define TRACE_VARS nest1_private/>
+<define ARRAY_ELEM_TYPE "double"/>
+
+<input from="dgemm_test.C" syntax="Cfront.code" to=inputCode/>
+<eval 
+print inputCode;
+      BlockLoops[factor=par_bk](nest1[Nest.body], nest1);
+      ParallelizeLoop[threads=par;private=nest1_private](nest1);
+      TraceNestedLoops(nest1, nest1[Nest.body]);
+      REPLACE(nest1, (nest1_cleanup=nest1),inputCode);
+      BlockLoops[factor=cache_bk](nest2, nest1);
+      if (cp) CopyRepl[init_loc=nest1; delete_loc=nest1;
+                       permute=(2 1)](A_ref, (nest3 nest2), nest1);
+      TraceNestedLoops((nest1 nest3 nest2),nest2[Nest.body]);
+      UnrollJam[factor=uj](nest2,nest1);
+      UnrollLoop[factor=ur](nest2); 
+      if (scalar) ScalarRepl[init_loc=nest2[Nest.body]]
+                            (A_ref, (nest3 nest2), nest2[Nest.body]);
+      CleanupBlockedNests(nest1_cleanup);/>
+<output to=outfile syntax="Cfront.code" from=(inputCode)/>
+
+

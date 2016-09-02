@@ -1,0 +1,1323 @@
+include LoopBlocking.pt
+include LoopParallel.pt
+include ReplExp.pt
+include ArrayCopying.pt
+include BlockingCleanup.pt
+include peephole_opt.pt
+include normalize.pt
+
+<*
+   POET : Parameterized Optimizations for Empirical Tuning
+   Copyright (c)  2008,  Qing Yi.  All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+ 3. Neither the name of UTSA nor the names of its contributors may be used to
+    endorse or promote products derived from this software without specific
+    prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+OF THE POSSIBILITY OF SUCH DAMAGE.
+*>
+
+<define NEED_MIN_MAX MIN|MAX|CODE.StripmineTileStart|CODE.BlockLoopTileEnd|CODE.UnrolledLoopCheck  />
+
+<***********************************************>
+<code Loop pars=(i,start,stop,step) maxiternum="" tag="" origstep="" origivar=""/>
+
+<code Nest pars=(ctrl, body) 
+           rebuild=(BuildNest[annot=annot](ctrl,body))/>
+
+<code CopyIvarName pars=(buf) match=CODE.Name>
+@buf@_index
+</code>
+
+<code UnrollIvarName pars=(ivar) match=CODE.Name>
+@ivar@_unroll
+</code>
+
+<code BufferPtr pars=(buf) match=CODE.Name>
+@buf@_ptr
+</code>
+
+<code UnrolledFromIvar pars=(index, size, stmt)> @StmtList#stmt@ </code>
+
+<***********************************************>
+
+
+<xform PermuteLoops pars=(inner,input) order=0 trace=GLOBAL.TRACE_TARGET>
+  (order == 0)? input
+  : (! (input : Nest#(loop,body)) )?  ( ERROR("Input is not a loop nest!") ) 
+  : ( 
+      (loops,nests) = FindLoopsInNest(inner, input);
+      if (LEN(loops) != LEN(order)) 
+         ERROR("Incorrect reordering indices: " order "\n Loops are: " loops);
+      nloops = PERMUTE (order, loops);
+      res = BuildNest(nloops, inner);
+      res = TraceNestedLoops[trace=input](nests, res);
+      if (trace : VAR) REPLACE(ERASE(input), res, trace);
+  )
+</xform>
+
+<***********************************************>
+<xform EmbedStmtHelp pars=(nest,input) >
+  if (input : (stmt1 stmt2)) {
+     if (stmt1 == nest) {
+       Nest#( (loop=(Loop#(ivar,lb,_,_,_))),body) = nest;
+       Nest#( loop, (body Nest#( If#(Bop#("==", ivar,lb)), stmt2)));
+     }
+     else {
+       resOfStmt2 = EmbedStmtHelp(nest,stmt2);
+       Nest#( loop=(Loop#(ivar,lb,_,_,_)),body) = resOfStmt2;
+       Nest#( loop, (Nest#( If#(Bop#("==", ivar,lb)), stmt1) body));
+    }
+  }
+  else if (input == nest)  { input }
+  else ERROR( "Expecting input to be a sequence: " input);
+</xform>
+
+<xform EmbedStmts pars=(nest,input) trace=GLOBAL.TRACE_TARGET >
+  res = EmbedStmtHelp(nest,input);
+  if (trace == "") trace = input;
+  REPLACE(ERASE(input), res, trace);
+  res
+</xform>
+
+<xform DistributeLoops_internal pars=(bodiesToDist, input) trace_dist="" trace=GLOBAL.TRACE_TARGET>
+  if  (bodiesToDist == "") RETURN input;
+
+  res = NULL; cur_input=input;
+  for ( split2 = bodiesToDist; (cur_input != "" && split2 != NULL); ) {
+      split1 = car(split2); split2 = cdr(split2); 
+      (before, inner, after) = FissionHelp(split1,cur_input);
+      if (before != "") res = before :: res;
+      if (inner != "") res = inner :: res;
+      cur_input = after;
+  }
+  if (cur_input != "") res = cur_input :: res;
+  res = ReverseList(res); <<* reverse the original res, which was built backward
+  for ( (p_res=res; p_dist = trace_dist); 
+         p_dist != NULL; (p_res = cdr(p_res); p_dist = cdr(p_dist))) {
+       cur_res = car(p_res); cur_dist = car(p_dist);
+       cur_handle=ModifyTraceHandle(cur_dist, cur_res);
+       res = REPLACE(cur_res, cur_handle, res);
+  } 
+  if (trace == "") trace = input;
+  REPLACE(ERASE(input),res,trace);
+  res
+</xform>
+
+<xform DistributeLoop pars=(statement, input)
+      trace_dist="" trace=GLOBAL.TRACE_TARGET 
+      outer_nest="" statement_to_split="" private=NULL private_size="" data_type=GLOBAL.ARRAY_ELEM_TYPE>
+  if (input : Nest#(Loop#(dim,min,max,step),loop_body)) {
+    if (min : ID | INT)
+        size = Bop#("-", max, min);
+    else size = private_size;
+  } else {
+    ERROR ("Unsupported array size in DistributeLoop");
+  }
+
+  element_arr = MAP(_,_);  
+  for (ets = private; ets != NULL; ets = cdr(ets)) {
+      cur_ets = car(ets);
+      element_arr[Name#(cur_ets)] = Name#(cur_ets "_array");
+  }
+
+  new_loop_body = NULL;
+  for (p_res = loop_body; p_res != NULL; p_res = cdr(p_res)) {
+    cur_res = car(p_res);
+    if (cur_res == statement) {
+      if (private == NULL) {
+        if (statement_to_split : ExpStmt#(Assign#(CLEAR left, CLEAR right))) {
+            if(left : ArrayAccess#(CLEAR arr, CLEAR sub)) name = Name#(arr "_array");
+            new_loop_body = ExpStmt#(Assign#(ArrayAccess#(name,dim), right)) :: new_loop_body;
+            new_statement = ExpStmt#(Assign#(left, ArrayAccess#(name,dim)));
+            new_loop_body = new_statement :: new_loop_body;
+            element_arr[Name#(arr)] = name;
+        } else {
+            new_statement = cur_res;
+            new_loop_body = new_statement :: new_loop_body;
+        }
+        CONTINUE;
+      }
+      for (p_ets = private; p_ets != NULL; p_ets = cdr(p_ets)) {
+        cur_ets = car(p_ets); cur_ea = element_arr[Name#(cur_ets)];
+        new_loop_body = ExpStmt#(Assign#(ArrayAccess#(cur_ea,dim),cur_ets)) :: new_loop_body;
+      }
+      first=1;
+      for (p_ets = private; p_ets != NULL; p_ets = cdr(p_ets)) {
+        cur_ets = car(p_ets); cur_ea = element_arr[Name#(cur_ets)];
+        if (first) {
+          new_statement = ExpStmt#(Assign#(cur_ets, ArrayAccess#(cur_ea,dim)));
+          new_loop_body = new_statement :: new_loop_body;
+          first = 0;
+        } else {
+          new_loop_body = ExpStmt#(Assign#(cur_ets, ArrayAccess#(cur_ea,dim))) :: new_loop_body;
+        }
+      }
+    }
+    new_loop_body = cur_res :: new_loop_body;
+  }
+  new_loop_body = ReverseList(new_loop_body);
+
+  res = DistributeLoops_internal(new_statement, Nest#(Loop#(dim,min,max,step),new_loop_body));
+  new_res = NULL;
+  cur_res = "";
+  for (p_res = res; p_res != NULL; p_res = cdr(p_res)) {
+    cur_res = car(p_res);
+    next_res = ((cdr p_res)==NULL)? "" : car(cdr(p_res));
+    if (cur_res : Nest#(CLEAR loop, CLEAR body)) {
+      if (body == new_statement) {
+        if(next_res : Nest#(CLEAR loop_next, CLEAR body_next)) {
+          next_nest = Nest#(loop_next, body::body_next);
+          new_res = next_nest :: new_res;
+        } else if((LEN(res) == 1) || (LEN(res) == 2)) {
+          new_res = cur_res :: new_res;
+        } else {
+          ERROR("Unsupported Loop Nest in DistributeLoop");
+        }
+        BREAK; 
+      } else {
+        new_res = cur_res :: new_res;
+      } 
+    } else {
+      ERROR ("Unsupported cur_res Type in DistributeLoop");
+    }
+  }
+  res = ReverseList(new_res);
+
+  Append_Include[trace=trace](Include_Allocate);
+
+  for ( (p_res=res; p_dist = trace_dist);
+         p_dist != NULL; (p_res = cdr(p_res); p_dist = cdr(p_dist))) {
+       cur_res = car(p_res); cur_dist = car(p_dist);
+       cur_handle=ModifyTraceHandle(cur_dist, cur_res);
+       res = REPLACE(cur_res, cur_handle, res);
+  }
+
+  if (trace == "") trace = input;
+
+  if (outer_nest != "") {
+    foreach (element_arr : (CLEAR from, CLEAR to) : FALSE) {
+      res2 = AllocateStore[init0=0]#(to, data_type, size) :: outer_nest;
+      res2 = DeclStmt#(CODE.TypeInfo#(PtrType#data_type, to,"")) :: res2;
+      res2 = res2 :: DeleteStore#(to, size);
+    }
+    REPLACE(input, res, trace);
+    REPLACE(outer_nest, res2, trace);
+  } else {
+    foreach (element_arr : (CLEAR from, CLEAR to) : FALSE) {
+      res = AllocateStore[init0=0]#(to, data_type, size) :: res;
+      res = DeclStmt#(CODE.TypeInfo#(PtrType#data_type, to,"")) :: res;
+      res = res :: DeleteStore#(to, size);
+    }
+    REPLACE(ERASE(input), res, trace);
+  }
+  res
+</xform>
+
+<xform InlineFunction pars=(function_definition, input) parameters_to_replace="" trace=GLOBAL.TRACE_TARGET>
+  if (function_definition : CODE.TemplateDecl#(template_par=_, tmp=_)) 
+       function_definition = tmp;
+  else template_par = NULL; 
+  if (function_definition : CODE.InlineDecl#(tmp=_)) function_definition=tmp;
+  FunctionDecl#(fname, CLEAR fpara, CLEAR ftype, CLEAR fbody) = function_definition;
+  if (fname : CODE.ScopedName#a) fname = car(cdr(a));
+  if (input : CODE.ExpStmt#e|CODE.StmtBlock#e) { call_stmt=input; input=e; }
+  else {
+    call_stmt="";
+    foreach c=CODE.Stmt \in ERASE(trace) s.t. FALSE do
+      if (Lookup(input, c)) { call_stmt=c; }
+    enddo
+  }
+  if (input : CODE.Assign#(ret_orig=_,c)) { input = c; ret_decl=""; }
+  else if (call_stmt : ExpStmt#input) { ret_orig = ""; ret_decl=""; }
+  else { 
+         (t,v) = gen_default_init(ftype);
+         ret_orig = gen_return_var(""); ret_decl=DeclStmt#(TypeInfo#(t,ret_orig, v)); }
+
+  FunctionCall#(fname2, function_para)=input;
+  if (fname2 : CODE.TypeName#(fname, CODE.TemplateInstantiation#arg)) {
+      assert(template_par != NULL);
+      for ( (p1=template_par; p2=arg); p1 != NULL; (p1=cdr(p1);p2=cdr(p2))) {
+         TemplateParameterDecl#(_,n1) = car p1;
+         fbody = REPLACE(n1, car p2, fbody);      
+      }
+  }
+  else assert (fname2 == fname); 
+  if (call_stmt == "") { print ("Error: cannot find " input " to inline!"); return ""; }
+  res1=NULL;
+  para_map = MAP(_,_);
+  if (fpara != "") {
+    for ((para = ReverseList(fpara); rpara = ReverseList(function_para));
+       (para != NULL && rpara != NULL);
+       (para = cdr(para); rpara = cdr(rpara))) {
+    cpara = car(para); crpara = car(rpara);
+    CODE.TypeInfo#(CLEAR type, CLEAR var, _) = cpara;
+    if (type : ArrayType#(t1=_, (CODE.ArrayDim#"" NULL))) 
+       type = PtrType#t1;
+    if (LookupList(var, parameters_to_replace) == FALSE) {
+      if (var != crpara) 
+        res1 = CODE.DeclStmt#(CODE.TypeInfo#(type, var, CODE.VarInit#crpara))::res1;
+    } else {
+        para_map[var] = crpara;
+    }
+   }
+  }
+
+  res = eliminate_early_return[var=ret_orig](fbody[StmtBlock.stmts],ftype);
+  if (ret_decl != "") res = ret_decl :: res;
+  <* there should be only one return now *> 
+  foreach (COPY(res) : (cur=CODE.Return#(CLEAR exp)) : TRUE) {
+    if (ret_orig == "" || exp == ret_orig)  
+       res=REPLACE(cur, "", res);
+    else {
+       res=REPLACE(cur, CODE.ExpStmt#(CODE.Assign#(ret_orig,exp)), res);
+    }
+  }
+
+  for (para = parameters_to_replace; para != NULL; para = cdr(para)) {
+    cpara = car(para);
+    res = REPLACE(cpara, para_map[cpara], res);
+  }
+
+  if (res1 != NULL) res = AppendList(res1, res);
+
+  if (ret_orig == "") REPLACE(call_stmt, StmtBlock#res, trace);
+  else if (call_stmt : CODE.DeclStmt) {
+    foreach TypeInfo#(t=_,v=_,init=CODE.VarInit) \in call_stmt do
+      if (Lookup(input, init)) {
+        (t,init2) = gen_default_init(t);         
+        nc1=REPLACE(init, init2, call_stmt);
+        nc2=ExpStmt#(Assign#(v, ret_orig));
+        REPLACE(call_stmt, nc1 :: StmtBlock#(res nc2), trace); 
+      }
+    enddo
+  }
+  else {
+    nc = REPLACE(input,ret_orig, call_stmt);
+    REPLACE(call_stmt, StmtBlock#(res nc), trace);
+  }
+  res
+</xform>
+
+<xform SRTwoFPDivisions pars=(fp_division, appendix, input) trace=GLOBAL.TRACE_TARGET>
+  if (input : ExpStmt#(Assign#(CLEAR left1, CLEAR div1))){
+    if (!(div1 : Bop#("/", CLEAR numberator1, CLEAR denominator1))) {
+      ERROR("[SRTwoFPDivisions] Not a float point division: " div1);
+    }
+  } else {
+    ERROR("[SRTwoFPDivisions] Not an assign statement: " input);
+  }
+
+  if (fp_division : ExpStmt#(Assign#(CLEAR left2, CLEAR div2))){
+    if (!(div2 : Bop#("/", CLEAR numberator2, CLEAR denominator2))) {
+      ERROR("[SRTwoFPDivisions] Not a float point division: " div2);
+    }
+  } else {
+    ERROR("[SRTwoFPDivisions] Not an assign statement: " fp_division);
+  }
+
+  if (left2 == numberator1) {
+    res = ExpStmt#(Assign#(left1, Bop#("/", numberator2, Bop#("*", denominator2, denominator1))));
+  } else if (left2 == denominator1){
+    res = ExpStmt#(Assign#(left1, Bop#("/", numberator1, Bop#("*", numberator2, denominator2))));
+  } else {
+    ERROR("[SRTwoFPDivisions] Cannot find pattern for strength reduction");
+  }
+
+  if (appendix != "") {
+    if (appendix : ExpStmt#(Assign#(CLEAR left3, CLEAR right3))) {
+      if (!(right3 : Bop#(CLEAR op, CLEAR optor1, CLEAR optor2))) {
+        ERROR("[SRTwoFPDivisions] Unsupported appendix statement type: " appendix);
+      }
+    } else {
+      ERROR("[SRTwoFPDivisions] Not an assign statement: " appendix);
+    }
+    if (optor1 : Uop#(_,_)) Uop#(_, CLEAR optor1) = optor1;
+    if (optor2 : Uop#(_,_)) Uop#(_, CLEAR optor2) = optor2;
+    if ((optor1 == left2) || (optor2 == left2)) {
+      if (left2 == numberator1) {
+        res = res :: ExpStmt#(Assign#(left2, Bop#("*", left1, denominator1)));
+      } else {
+        ERROR("[SRTwoFPDivisions] Cannot apply the optimization");
+      }
+    }
+  }
+  REPLACE(ERASE(fp_division), res, fp_division);
+  REPLACE(ERASE(input), "", input);
+</xform>
+
+<xform SRModuloOperation pars=(input) minus_result="">
+    if (input : Nest#(If#(Bop#(CLEAR op, CLEAR left, CLEAR right)), CLEAR body)) {
+        if (left : Bop#("%", CLEAR var, CLEAR num)) {
+            switch (num) {
+                case 2: new_left = Bop#("&", var, "0x1");
+                default: ERROR("[SRModuloOperation] Unsupported modulo number - 1: " num);
+            }
+            res = Nest#(If#(Bop#(op, new_left, right)), body);
+        } else if (right : Bop#("%", CLEAR var, CLEAR num)){
+            switch (num) {
+                case 2: new_right = Bop#("&", var, "0x1");
+                default: ERROR("[SRModuloOperation] Unsupported modulo number - 2: " num);
+            }
+            res = Nest#(If#(Bop#(op, left, new_right)), body);
+        } else if (body : ExpStmt#(Assign#(CLEAR bleft, CLEAR bright))) {
+            if (bright : Bop#("%", CLEAR var, CLEAR num)) {
+                if (minus_result == "")
+                    res = ExpStmt#(Assign#(bleft, Bop#("&", var, Bop#("-", num, 1))));
+                else
+                    res = ExpStmt#(Assign#(bleft, Bop#("&", var, minus_result)));
+            }
+        } else
+            ERROR ("[SRModuloOperation] Cannot find modulo operation: " left right body);
+    } else
+        ERROR("[SRModuloOperation] Unsupported statement type: " input);
+
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<define SubVarIndex 0/>
+<xform SRSubexpression pars=(sube, data_type, input) trace=GLOBAL.TRACE_TARGET>
+    var = Name#("_subexpression_var_"Name#SubVarIndex);
+    SubVarIndex = SubVarIndex + 1;
+    stmt = CODE.DeclStmt#(CODE.TypeInfo#(data_type, var, VarInit#sube));
+    rinput = ReverseList(input);
+    if (input : Nest#(Loop#(CLEAR index, CLEAR start, CLEAR end, CLEAR step), CLEAR body)) {
+        body = REPLACE(sube, var, body);
+        body = stmt :: body;
+        res = Nest#(Loop#(index, start, end, step), body);
+    } else if (input : Nest#(CODE.While#(CLEAR cond), CLEAR body)) {
+        body = REPLACE(sube, var, body);
+        res = stmt :: Nest#(While#(cond), body);
+    } else if (car(rinput) : Nest#(CODE.While#(CLEAR cond), CLEAR body)) {
+        body = REPLACE(sube, var, body);
+        res = stmt :: REPLACE(car(rinput), Nest#(While#(cond), body), input);
+    } else
+        ERROR("[SRSubexpression] Unsupported target type: " input);
+
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<define FloatConstantIndex 0/>
+<xform SRFloatconstant pars=(constant, data_type, input) trace=GLOBAL.TRACE_TARGET>
+    var = Name#("_float_constant_"Name#FloatConstantIndex);
+    FloatConstantIndex = FloatConstantIndex + 1;
+    res = CODE.DeclStmt#(CODE.TypeInfo#(data_type, var, VarInit#(CODE.CastExp#(data_type, NULL, constant))));
+    REPLACE(ERASE(constant), var, input);
+    res = res :: input;
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<define ShiftArrayIndex 0/>
+<xform SRShiftOperation pars=(shift_statement, data_type, input) >
+    array = Name#("_shift_array_"Name#ShiftArrayIndex);
+    ShiftArrayIndex = ShiftArrayIndex + 1;
+    switch (data_type) {
+        case "long":
+            res = CODE.DeclStmt#(TypeInfo#(ArrayType#("unsigned char", CODE.ArrayDim#""), array, CODE.ArrayInit#(CODE.INT_0x#"1"CODE.INT_0x#"2"CODE.INT_0x#"4"CODE.INT_0x#"8"CODE.INT_0x#"10"CODE.INT_0x#"20"CODE.INT_0x#"40"CODE.INT_0x#"80")));
+        default:
+            ERROR("[SRShiftOperation] Unsupported data type: " data_type);
+    }
+
+    sstmts = "";
+    for (pstmt1 = shift_statement; pstmt1 != NULL; pstmt1 = cdr(pstmt1)) {
+        cstmt = car(pstmt1);
+        flag = 1;
+        for (pstmt2 = sstmts; pstmt2 != NULL; pstmt2 = cdr(pstmt2)) {
+            if (cstmt == car(pstmt2)) {
+                flag = 0;
+                break;
+            }
+        }
+        if (flag)
+            sstmts = BuildList(sstmts, cstmt);
+    }
+    for (pstmt = sstmts; pstmt != NULL; pstmt = cdr(pstmt)) {
+        cstmt = car(pstmt);
+        ExpStmt#(Assign#(CLEAR left, CLEAR right)) = cstmt;
+        if (right : Bop#(CLEAR op1, CLEAR opd1, CLEAR opd2)) {
+            if (op1 != "&")
+                ERROR ("[SRShiftOperation] Unsupported operation: " op1);
+            if (opd2 != 1)
+                ERROR ("[SRShiftOperation] Unsupported operand: " opd2);
+            Bop#(CLEAR op2, CLEAR opd11, CLEAR opd22) = opd1;
+            if (op2 != ">>")
+                ERROR ("[SRShiftOperation] Unsupported shift operation: " op2);
+            tres = CODE.ExpStmt#(Assign#(left, Bop#("&", opd11, ArrayAccess#(array, opd22))));
+            REPLACE(ERASE(cstmt), tres, input);
+        } else 
+            ERROR("[SRShiftOperation] Unsupported expression type: " right);
+    }
+    res = res :: input;
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<xform StrengthReduction pars=(type, input) fp_division="" appendix="" subexpression="" constant="" data_type="" shift_statement="" minus_result="" trace=GLOBAL.TRACE_TARGET>
+  switch (type) {
+    case 1: <* Replace two division operations with one division and one multiplication *>
+      SRTwoFPDivisions(fp_division, appendix, input);
+    case 2: <* Replace modulo operation with logical AND operation, e.g. x%2=>x&0x1 *>
+      SRModuloOperation[minus_result=minus_result](input);
+    case 3: <* Replace common subexpression *>
+      SRSubexpression(subexpression, data_type, input);
+    case 4: <* Replace float constant *>
+      SRFloatconstant(constant, data_type, input);
+    case 5: <* Replace shift operation with logical AND operation *>
+      SRShiftOperation(shift_statement, data_type, input);
+    case 6: <* Replace other expensive operations, to be added *>
+      ERROR("[StrengthReduction] Unsupported strength reduction type: " type);
+    default:
+      ERROR("[StrengthReduction] Unsupported type of strength reduction optimization " type);
+  }
+</xform>
+
+<xform REBranchNeverTaken pars=(redundant_branch_flag, else_branch, input) trace=GLOBAL.TRACE_TARGET>
+  if (!(input : Nest#(If#(_), CLEAR if_body)))
+    ERROR("[REBranchNeverTaken] Not a if branch statement: " input);
+
+  if (redundant_branch_flag == 0) {
+    res = CODE.StmtBlock#if_body;
+  } else if (redundant_branch_flag == 1) {
+    if (else_branch : Nest#(CODE.Else, CLEAR else_body))
+      res = CODE.StmtBlock#else_body;
+    else
+      res = "";
+  } else 
+    ERROR("[REBranchNeverTaken] Unsupported redudant branch flag: " redundant_branch_flag);
+
+  REPLACE(ERASE(input), res, input);
+  if (else_branch)
+    REPLACE(ERASE(else_branch), "", else_branch);
+</xform>
+
+<xform REDeadCode pars=(input)>
+    REPLACE(ERASE(input), "", input);
+</xform>
+
+<xform REFunctionCall pars=(function_definition, ret_statement, input)>
+    FunctionDecl#(CLEAR dname, CLEAR args, _, _) = function_definition;
+
+    target_type = 0;
+    if (input : Nest#(If#(CLEAR exp), CLEAR body)) {
+        target_type = 1;
+        if (exp : FunctionCall#(CLEAR rname, CLEAR rarg_list)) {
+            if (rname != dname)
+                ERROR ("[REFunctionCall] Did not find wanted function call - 1 " exp);
+        } else
+            ERROR ("[REFunctionCall] Unsupported expression type " exp);
+    } else if (input : Return#(FunctionCall#(CLEAR rname, CLEAR rarg_list))) {
+        target_type = 2;
+        if (rname != dname)
+            ERROR ("[REFunctionCall] Did not find wanted function call - 2 " exp);
+    } else
+        ERROR ("[REFunctionCall] Unsupported target statement type " input);
+
+    args_index = 0;
+    if (ret_statement : Nest#(If#(Bop#(CLEAR op, CLEAR left, CLEAR right)), CLEAR body)) {
+        if (body : Return#(CLEAR dnum)) {
+            if (dnum != 0)
+                ERROR("[REFunctionCall] Unsupported return value " dnum);
+        } else
+            ERROR("[REFunctionCall] Unsupported body type " body);
+        switch(op) {
+            case "==": rop = "!=";
+            default: ERROR("[REFunctionCall] Unsupported operation type " op);
+        }
+        left_flag = 0; right_flag = 1;
+        for (pargs=args; pargs!=NULL; pargs=cdr(pargs)) {
+            carg = car(pargs);
+            args_index+=1;
+            TypeInfo#(_,CLEAR var,_) = carg;
+            if (var == left) {
+                left_flag = 1;
+                break;
+            }
+            if (var == right) {
+                right_flag = 1;
+                break;
+            }
+        }
+        if (args_index == 0)
+            ERROR("[REFunctionCall] Didn't find argument in return statement" ret_statement);
+        for (pargs=rarg_list; pargs!=NULL; pargs=cdr(pargs)){
+            carg = car(pargs);
+            args_index -= 1;
+            if (args_index == 0)
+                break;
+        }
+        switch (target_type) {
+            case 1:
+                if (left_flag == 1)
+                    res = Nest#(If#(Bop#(rop, carg, right)), input);
+                else if (right_flag == 1)
+                    res = Nest#(If#(Bop#(rop, left, carg)), input);
+            case 2:
+                if (left_flag == 1)
+                    res = Nest#((prev=If#(Bop#(op, carg, right))), body);
+                else if (right_flag == 1)
+                    res = Nest#((prev=If#(Bop#(op, left, carg))), body);
+                res = res :: Nest#(Else#("",prev), input);
+        }
+    } else
+        ERROR ("[REFunctionCall] Unsupported return statement type" ret_statement);
+
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<xform REPartialStmt pars=(used_place, input) erase_flag="" trace=GLOBAL.TRACE_TARGET>
+  cpstmts = "";
+  for (cps = input; cps != NULL; cps = cdr(cps)) {
+    ccp = car(cps);
+    switch (ccp) {
+      case ExpStmt#(CLEAR cpstmt): cpstmt = ExpStmt#(cpstmt);
+      case CODE.VarDeclStmt#(CLEAR cpstmt): cpstmt = CODE.VarDeclStmt#(cpstmt);
+      case CODE.Nest#(CLEAR cpstmt): cpstmt = CODE.Nest#(cpstmt);
+      case CODE.DeclStmt#(CLEAR cpstmt): cpstmt = CODE.DeclStmt#(cpstmt);
+      default: ERROR("[REPartialStmt] Unsupported statement type 1 ", ccp);
+    }
+    cpstmts = BuildList(cpstmt, cpstmts);
+  }
+  place_length = LEN(used_place);
+  places = used_place;
+  for (i = 0; i < place_length; i += 1) {
+    cplace = car(places);
+    caplace = car(cplace);
+    places = cdr(places);
+    if (caplace : CODE.ExpStmt#(_) || caplace : CODE.Nest#(_)) {
+        res = cpstmts :: cplace;
+        EraseTraceHandle[repl=res](cplace,trace);
+    } else if (caplace : CODE.StmtBlock#(CLEAR cb)) {
+        ccpstmts = CODE.StmtBlock#(cb :: cpstmts);
+        if (place_length == 1)
+            res = ccpstmts;
+        else
+            res = ccpstmts :: cdr(cplace);
+        REPLACE(ERASE(cplace), res, trace);
+    } else
+        ERROR("[REPartialStmt] Unsupported statement type 2 " caplace);
+  }
+  if (erase_flag != "") {
+    for ((cps = input; er = erase_flag;);
+         (cps != NULL; er != NULL;);
+         (cps = cdr(cps); er = cdr(er))) {
+      ccp = car(cps); cer = car(er);
+      if (cer == 1) {
+        REPLACE(ERASE(ccp), "", ccp);
+      }
+    }
+  } else {
+    for (cps = input; cps != NULL; cps = cdr(cps)) {
+      ccp = car(cps);
+      REPLACE(ERASE(ccp), "", ccp);
+    }
+  }
+</xform>
+
+<xform REPartialNest pars=(used_place, input) erase_flag="" index_start="" trace=GLOBAL.TRACE_TARGET>
+    Nest#(Loop#(CLEAR index, CLEAR start, CLEAR end, CLEAR step), CLEAR body) = input;
+    nest1 = Nest#(Loop#(index, start, index_start, step), body);
+    nest2 = Nest#(Loop#(index, index_start, end, step), body);
+    place_length = LEN(used_place);
+    places = used_place;
+    for (i = 0; i < place_length; i += 1) {
+        cplace = car(places);
+        caplace = car(cplace);
+        places = cdr(places);
+        if ((caplace : CODE.ExpStmt#(_)) || (caplace : CODE.Nest#(_))) {
+            res = nest2 :: cplace;
+            EraseTraceHandle[repl=res](cplace, trace);
+        } else if (caplace : CODE.StmtBlock#(CLEAR cb)) {
+            ccpnest = CODE.StmtBlock#(cb :: nest2);
+            if (place_length == 1)
+                res = ccpnest;
+            else
+                res = ccpnest :: cdr(cplace);
+            REPLACE(ERASE(cplace), res, trace);
+        } else
+            ERROR("[REPartialNest] Unsupported statement type 2 " caplace);
+    }
+    REPLACE(ERASE(input), nest1, input);
+</xform>
+
+<xform REPartialCode pars=(used_place, input) erase_flag="" index_start="" trace=GLOBAL.TRACE_TARGET>
+    if ((input : ExpStmt#(_)) || (input : DeclStmt#(_)) || (input : Nest#(If#(_),_)))
+        REPartialStmt[erase_flag=erase_flag;trace=trace](used_place, input);
+    else if (input : Nest#(Loop#(_),_))
+        REPartialNest[erase_flag=erase_flag;index_start=index_start;trace=trace](used_place, input);
+    else
+        ERROR("[REPartialCode] Unsupported statement type: " input);
+</xform>
+
+<xform REBranches_ExtractExp pars=(exp) >
+    if (exp : Bop#(":", CLEAR cond1, CLEAR second)) {
+        if (cond1 : Bop#("?", CLEAR cond2, CLEAR first)) {
+            Bop#(_, CLEAR left, CLEAR right) = cond2;
+            if (left : Bop#(_,_,_)) {
+                REBranches_ExtractExp(left);
+            } else if (right : Bop#(_,_,_)) {
+                REBranches_ExtractExp(right);
+            } else {
+                exp
+            }
+        } else 
+            ERROR("[REBranches_ExtractExp] Unsupported type: " cond1);
+    } else {
+        ERROR("[REBranches_ExtractExp] Unsupported expression type: " exp);
+    }
+</xform>
+
+<xform REBranches_CheckExp pars=(exp1, exp2) >
+    Bop#(":", CLEAR cond1, CLEAR second1) = exp1;
+    Bop#(":", CLEAR cond2, CLEAR second2) = exp2;
+
+    if (second1 != second2)
+        ERROR ("[REBranches_CheckExp] Not match in second position: " second1 second2);
+
+    Bop#("?", CLEAR cond11, CLEAR first1) = cond1;
+    Bop#("?", CLEAR cond22, CLEAR first2) = cond2;
+
+    if (first1 != first2)
+        ERROR ("[REBranches_CheckExp] Not match in first position: " first1 first2);
+
+    Bop#(CLEAR op1, CLEAR left1, CLEAR right1) = cond11;
+    Bop#(CLEAR op2, CLEAR left2, CLEAR right2) = cond22;
+
+    if ((left1 != left2) || (right1 != right2))
+        ERROR ("[REBranches_CheckExp] Not match in compare position: " left1 left2 right1 right2);
+
+    if (op1 == op2) {
+        1
+    } else {
+        0
+    } 
+</xform>
+
+<xform REBranches pars=(branch_statement, input) >
+    ExpStmt#(Assign#(CLEAR left1, CLEAR right1)) = input;
+    exp1 = REBranches_ExtractExp(right1);
+
+    ExpStmt#(Assign#(CLEAR left2, CLEAR right2)) = branch_statement;
+    exp2 = REBranches_ExtractExp(right2);
+
+    same = REBranches_CheckExp(exp1, exp2);
+
+    Bop#(":", Bop#("?", Bop#(CLEAR op, CLEAR left, CLEAR right), CLEAR first), CLEAR second) = exp1;
+
+    stmt1 = ExpStmt#(Assign#(left1, right1)); 
+    stmt2 = ExpStmt#(Assign#(left2, right2));
+
+    t1 = REPLACE(ERASE(exp1), first, stmt1);
+    if (same == 1)
+        t2 = REPLACE(ERASE(exp2), first, stmt2);
+    else
+        t2 = REPLACE(ERASE(exp2), second, stmt2);
+
+    stmt1 = ExpStmt#(Assign#(left1, right1));
+    stmt2 = ExpStmt#(Assign#(left2, right2));
+
+    t3 = REPLACE(ERASE(exp1), second, stmt1);
+    if (same == 1)
+        t4 = REPLACE(ERASE(exp2), second, stmt2);
+    else
+        t4 = REPLACE(ERASE(exp2), first, stmt2); 
+
+    res = Nest#( (prev=If#(Bop#(op, left, right))), t1::t2);
+    res = res :: Nest#(Else#("",prev), t3::t4);
+
+    REPLACE(ERASE(branch_statement), "", branch_statement);
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<define RELoopVarIndex 0/>
+<xform RELoop pars=(expression, data_type, input) trace=GLOBAL.TRACE_TARGET>
+    var = Name#("_loop_invariant_"Name#RELoopVarIndex);
+    RELoopVarIndex = RELoopVarIndex + 1;
+    res = CODE.DeclStmt#(CODE.TypeInfo#(data_type, var, VarInit#(expression)));
+    REPLACE(ERASE(expression), var, input);
+    EraseTraceHandle[repl=res::input](input, trace);
+</xform>
+
+<xform RedundancyElimination pars=(type, input) redundant_branch_flag="" else_branch="" function_definition="" ret_statement="" used_place="" erase_flag="" index_start="" branch_statement="" expression="" data_type="" trace=GLOBAL.TRACE_TARGET>
+  switch (type) {
+    case 1: <* Eliminate branches that never take true or false *>
+      REBranchNeverTaken(redundant_branch_flag, else_branch, input);
+    case 2: <* Eliminate dead code that produce never used results *>
+      REDeadCode(input);
+    case 3: <* Eliminate redundant function calls *>
+      REFunctionCall(function_definition, ret_statement, input);
+    case 4: <* Eliminate redundant code that produce results only used in specific branches *>
+      REPartialCode[erase_flag=erase_flag;index_start=index_start;trace=trace](used_place, input);
+    case 5: <* Eliminate redundant branches that has been calculated before *>
+      REBranches(branch_statement, input);
+    case 6: <* Eliminate redundant expression in loop and hoist it out of loop *>
+      RELoop[trace=trace](expression, data_type, input);
+    default:
+      ERROR("[RedundancyElimination] Unsupported type of redundancy elimination optimization " type);
+  }
+</xform>
+
+<xform SoftwarePrefetch pars=(address, input) rw="" locality="" hint="" compiler="" trace=GLOBAL.TRACE_TARGET>
+    if ((compiler == "") || (compiler == "GCC") || (compiler == "gcc") || (compiler == "Gcc"))
+        compiler = "GCC";
+    if ((compiler == "ICC") || (compiler == "icc") || (compiler == "Icc"))
+        compiler = "ICC";
+
+    if (compiler == "GCC") {
+        if (rw == "") rw = 0;
+        if (locality == "") locality = 1;
+        res = GccPrefetch#(address, rw, locality)::input;
+    } else if (compiler == "ICC") {
+        if (hint == "") hint = "_MM_HINT_T1";
+        if (car(input) == IccPrefetchInclude)
+            res = car(input) :: IccPrefetch#(address, hint) :: cdr(input);
+        else
+            res = IccPrefetchInclude :: IccPrefetch#(address, hint) :: input;
+    } else
+        ERROR("[SoftwarePrefetch] Unsupported compiler: " compiler);
+
+    REPLACE(ERASE(input), res, input);
+</xform>
+
+<xform SwapLoopOutside pars=(ivar,input) outside=NULL >
+  switch (input) {
+  case Nest#((loop=CODE.Loop#(ivar,_,_,_)),body) : 
+          for (p = outside; p != NULL; p = cdr p) { body = Nest#(car p, body); }
+          MoveTraceHandle(input,Nest#(loop, body))
+  case Nest#(ctrl,body) : 
+          MoveTraceHandle(input,SwapLoopOutside[outside=BuildList(ctrl,outside)](ivar,body))
+  case (first second) : 
+       SwapLoopOutside(ivar,first)::SwapLoopOutside(ivar,second)
+  default: 
+       for (p = outside; p != NULL; p = cdr p) { input = Nest#(car p, input); }
+       input
+  }
+</xform>
+
+<xform LowerLoopBound pars=(lb1,lb2)>
+if (lb1 == lb2) RETURN (lb1,"","");
+switch (lb1)
+{
+  case StripmineTileStart#(btag,bvar,tstart):
+       StripmineTileStart#(_,bvar,tstart2) = lb2;
+       (r1,r2,r3) = LowerLoopBound(tstart,tstart2);
+       (StripmineTileStart#(btag,bvar,r1),r2,r3)
+  case MIN#(d1,d2): 
+       (l1,l2,l3) = LowerLoopBound(d1,lb2);
+       (r1,r2,r3) = LowerLoopBound(d2,lb2);
+       (l2 == "" || r2 == "")? (l1,"",lb2)
+        : (RebuildBop(MIN,l1,r1),lb1, lb2)
+  case MAX#(d1,d2): 
+       (l1,l2,l3) = LowerLoopBound(d1,lb2);
+       (r1,r2,r3) = LowerLoopBound(d2,lb2);
+       (l3 == "" || r3 == "")? (lb2,lb1,"")
+        : (RebuildBop(MAX,l1,r1),lb1, lb2)
+  default: 
+       if(lb2 : MIN|MAX) 
+          { (r1,r2,r3)=(LowerLoopBound(lb2,lb1)); RETURN (r1,r3,r2);}
+      (RebuildBop(MIN,lb1,lb2),lb1,lb2)
+}
+</xform>
+
+<xform UpperLoopBound pars=(ub1,ub2)>
+switch (ub1)
+{
+  case BlockLoopTileEnd#(btag,bvar,stop):
+       BlockLoopTileEnd#(_,bvar,stop2) = ub2;
+       (BlockLoopTileEnd#(btag,bvar,RebuildBop(MAX, stop,stop2)),stop,stop2) 
+  default: (RebuildBop(MAX,ub1,ub2),ub1,ub2)
+}
+</xform>
+
+<xform CheckNest pars=(input1, input2)>
+    res = NULL;
+    if (input1 : Nest#(Loop#(CLEAR index1, CLEAR start1, CLEAR stop1, CLEAR step1), CLEAR body1)) {
+        if (input2 : Nest#(Loop#(CLEAR index2, CLEAR start2, CLEAR stop2, CLEAR step2) , CLEAR body2)) {
+            if ((start1 != start2) && (stop1 == stop2) && (step1 == step2) && (step1 > 1)) {
+                res = BuildList((index1, start1, stop1, step1), res);
+                (CLEAR cflag, CLEAR cnt) = CheckNest(body1, body2);
+                if (cflag == 1) {
+                    if (cnt != NULL) res = AppendList(res, cnt);
+                    (1, res)
+                } else { (0, res) }
+            } else { (0, res) }
+        } else { (0, res) }
+    } else if (LEN(input1) > 1) {
+        if (LEN(input2) == LEN(input1)) {
+            flag = 1;
+            for ((pbody1 = input1; pbody2 = input2);
+                 (pbody1 != NULL; pbody2 != NULL);
+                 (pbody1 = cdr(pbody1); pbody2 = cdr(pbody2))) {
+                cbody1 = car(pbody1); cbody2 = car(pbody2);
+                (CLEAR cflag, CLEAR cnt) = CheckNest(cbody1, cbody2);
+                if (cflag == 1) {
+                    if (cnt != NULL) res = AppendList(res, cnt);
+                } else {
+                    flag = 0; break;
+                }
+            }
+            (flag, res)
+        } else { (0, res) }
+    } else { (1, res) }
+</xform>
+
+<xform CheckBody pars=(input1, input2)>
+    if (input1 : Nest#(Loop#(_,_,_,_), CLEAR body1)) {
+        if (input2 : Nest#(Loop#(_,_,_,_), CLEAR body2)) {
+            CheckBody(body1, body2)
+        } else { 0 }
+    } else if (input1 : Nest#(If#(CLEAR cond1), CLEAR body1)) {
+        if (input2 : Nest#(If#(CLEAR cond2), CLEAR body2)) {
+            if (cond1 != cond2) {0} else {CheckBody(body1, body2)}
+        } else { 0 }
+    } else if (input1 : ExpStmt#(CLEAR stmt1)) { 
+        if (input2 : ExpStmt#(CLEAR stmt2)) {
+            if (stmt1 == stmt2) {1} else {0}
+        } else { 0 }
+    } else if (input1 : DeclStmt#(CLEAR stmt1)) {
+        if (input2 : DeclStmt#(CLEAR stmt2)) {
+            if (stmt1 == stmt2) {1} else {0}
+        } else { 0 }
+    } else if (LEN(input1) > 1) {
+        if (LEN(input2) == LEN(input1)) {
+            flag = 1;
+            for ((pbody1 = input1; pbody2 = input2);
+                 (pbody1 != NULL; pbody2 != NULL);
+                 (pbody1 = cdr(pbody1); pbody2 = cdr(pbody2))) {
+                cbody1 = car(pbody1); cbody2 = car(pbody2);
+                if (CheckBody(cbody1, cbody2) == 0) {
+                    flag = 0; break;
+                }
+            }
+            flag
+        } else { 0 }
+    } else  ERROR("[CheckBody] Unsupported input type " input1 input2);
+</xform>
+
+<xform ReplaceNest pars=(input, nest_info, index_start, outermost_flag)>
+    if (input : Nest#(Loop#(_,_,_,_), CLEAR body)) {
+        (CLEAR index, CLEAR start, CLEAR stop, CLEAR incr) = car(nest_info);
+        start_info = car(index_start);
+        nest_info = cdr(nest_info);
+        index_start = cdr(index_start);
+        if ((outermost_flag == 1) && (incr > 1)) incr = incr / 2;
+        Nest#(Loop#(index, start_info, stop, incr), ReplaceNest(body, nest_info, index_start, 0))
+    } else if (LEN(input) > 1) {
+        res = "";
+        for (pbody = input; pbody != NULL; pbody = cdr(pbody)) {
+            cbody = car(pbody);
+            if (cbody : Nest#(Loop#(_,_,_,_),_)) {
+                res = BuildList(ReplaceNest(cbody, nest_info, index_start, 0), res);
+                nest_info = cdr(nest_info); index_start = cdr(index_start);
+            }
+            else
+                res = BuildList(cbody, res);
+        }
+        res = ReverseList(res);
+        res
+    } else ERROR("[ReplaceNest] Unsupported input type " input);
+</xform>
+
+<xform FuseLoops pars=(nestsToFuse, pivot) index_start="" reserve_target=0
+          trace_fusion="" trace=GLOBAL.TRACE_TARGET move_handle_inside=0>
+
+<*  Wenwen: Fuse too loops with same body but different dimensions:
+    pivot: 1, 3, 5, 7 ...
+    nestsToFuse: 2, 4, 6, 8 ...
+    res: 1, 2, 3, 4, 5, 6, 7, 8 ...
+*>
+(flag1, nest_info) = CheckNest(nestsToFuse, pivot);
+flag2 = CheckBody(nestsToFuse, pivot);
+if ((flag1 == 1) && (flag2 == 1)) {
+    res = ReplaceNest(pivot, nest_info, index_start, 1);
+    REPLACE(ERASE(nestsToFuse), "", trace);
+    REPLACE(ERASE(pivot), res, trace);
+    return 0;
+}
+if ((nestsToFuse:CODE.Nest && !Lookup(pivot,nestsToFuse)) || (reserve_target == 1))
+{ <* fuse two loop nests, including pivot *>
+   nestsToFuse=nestsToFuse :: pivot;
+}
+Nest#((pivotLoop=Loop#(pi,plb, pub,_)),_) = pivot;
+(plb_orig,pub_orig) = (plb,pub);
+if (trace == "") trace = pivot;
+fuseBody = "";
+nestsToFuse=SwapLoopOutside(pi, nestsToFuse);
+nestsToFuse=FlattenList(nestsToFuse);
+for (nestp = nestsToFuse; nestp != NULL; ) {
+     curNest=car nestp; nestp = cdr(nestp);  
+     Nest#((curLoop=Loop#(ci,clb,cub,_)), curBody) = curNest;
+     if (ci != pi) ERROR("Could not find loop " pi " in " curNest);
+    <* QY: need to modify nestp here to avoid side effects from trace handles *>
+    if (clb != plb) (plb,plb2,clb) = LowerLoopBound(plb,clb); else plb2=clb="";
+    if (cub != pub) (pub,pub2,cub) = UpperLoopBound(pub,cub); else pub2=cub="";
+    if (clb != "" || cub != "") {
+        curBody=Nest#(LoopBound#(pi,clb,cub),curBody);
+        fuseBody=Nest#(LoopBound#(pi,plb2,pub2), fuseBody);
+    }
+    if (curNest != pivot) {
+       (_,trace)=EraseTraceHandle[repl=""](curNest, trace);
+       curNest=MoveTraceHandle(curNest,curBody);
+    }
+    else { curNest = curBody; pivotBody=curBody; }
+    fuseBody = BuildList(fuseBody,curNest);
+}
+if (plb_orig != plb) pivotLoop=REPLACE(plb_orig,plb,pivotLoop);
+if (pub_orig != pub) pivotLoop=REPLACE(pub_orig,pub,pivotLoop);
+res = Nest#(pivotLoop, fuseBody);
+if (trace_fusion : VAR) REPLACE(ERASE(trace_fusion), res, trace_fusion);
+else trace_fusion = res;
+REPLACE(ERASE(pivot), trace_fusion, trace);
+if (move_handle_inside) { 
+  MoveTraceHandle[trace=trace;nested_handle=0](pivot, pivotBody);
+}
+res
+</xform>
+
+<***********************************************>
+
+<xform ArrayAccess2PtrRef pars=(input) trace=GLOBAL.TRACE_TARGET arrays="" >
+  if (arrays == "") arrays=DELAY{_};
+  res = input;
+  for (p = arrays; p != NULL; p = cdr (p)) {
+    parr = car(p);
+    repl="";
+    foreach_r (res : (d = ArrayAccess#((arr=parr),CLEAR sub)) : FALSE) {
+      cur = (d, Uop#("*",Bop#("+",arr,sub))) ;
+      repl = BuildList(cur, repl);
+    }
+    if (repl != "") res = REPLACE(repl, res);
+  } 
+  if (trace : VAR) REPLACE(input,res,trace);
+res
+</xform>
+
+
+<***********************************************>
+<define prefix_index 1 />
+
+<xform SplitStmt_buildname  pars=(v) prefix="" iReuse=0 >
+              if (prefix=="") {
+                 switch (v) {
+                 case Name#(CLEAR str):  prefix1 = str; 
+                 case ID: prefix1 = v;
+                 case ArrayAccess#(CLEAR arr, CLEAR sub): 
+                      prefix1 = arr;
+                 }
+              }
+              else prefix1=prefix;
+              rv = iReuse? v : BuildName(prefix1 "_split");
+   rv
+</xform>
+
+<xform SplitStmt pars=(vars,input) trace_newVars=GLOBAL.TRACE_VARS iReuse=0  prefix="" trace_decl=GLOBAL.TRACE_DECL var_type="" trace=GLOBAL.TRACE_TARGET new="">
+if(new == "") {
+  repl=""; nvars = "";
+  foreach_r ( input : (cur=ExpStmt#Assign#(CLEAR lhs, CLEAR rhs)) : TRUE) {
+    repl1 = ""; insert=""; append=""; rv_lhs = "";
+    if (rhs : Bop#(_, lhs, CLEAR rhs1) | Bop#(_, CLEAR rhs1, lhs)) {
+       if (lhs : CODE.ArrayAccess#(CLEAR arr,_))  {
+          rv_lhs = SplitStmt_buildname[prefix=prefix;iReuse=iReuse](arr);
+       }
+       rhs = rhs1;
+    }
+    foreach_r ( rhs : (cop=Bop#((CLEAR op),(CLEAR opd1),(CLEAR opd2))): FALSE) {
+       for ( p = vars; p != NULL; p = cdr p) {
+            v = car p;
+            if ( (v == opd1) || (v == opd2)) { 
+              rv = SplitStmt_buildname[prefix=prefix;iReuse=iReuse](v);
+              if (rv != v && !Lookup(rv,nvars)) nvars = BuildList(rv,nvars);
+              repl1=BuildList( (cop,rv),repl1); 
+              if (v : CODE.ArrayAccess) {
+                 cop = REPLACE(v, rv, cop);  
+                 insert=ExpStmt#(Assign#(rv,v))::BuildList(ExpStmt#(Assign#(rv,cop)), insert);
+              }
+              else {
+                 insert=BuildList(ExpStmt#(Assign#(rv,cop)), insert);
+              }
+           }
+           
+       }
+    }
+    if (rv_lhs != "") {
+          nvars = BuildList(rv_lhs, nvars);
+          repl1= (lhs,rv_lhs)::BuildList((lhs,rv_lhs), repl1);
+          insert=BuildList(ExpStmt#(Assign#(rv_lhs,lhs)),insert);
+          append=BuildList(ExpStmt#(Assign#(lhs,rv_lhs)),append);
+    } 
+    if (insert != "" || append != "") {
+       repl = BuildList( (cur, BuildList(insert,BuildList(REPLACE(repl1,cur),append))), repl);
+    }
+  }
+  repl? (
+      AppendVar[trace=trace_newVars](nvars);
+      if (var_type != "") {
+        AppendDecl[trace=trace_decl](var_type, nvars);
+      }
+      if (trace == "") trace = input;
+      REPLACE(repl, trace);
+  )
+  : input
+} else {
+  repl="";
+  nvars="";
+  vars="";
+  i=0;
+  foreach_r (input : (cur = ExpStmt#_) : TRUE) {
+    value = (cur : ExpStmt#(Assign#(Name#(CLEAR str),(Uop#("*",CLEAR bop)))))? bop : "";
+    if(value)  
+      CONTINUE;
+    
+    repl1=""; insert="";
+    
+    insert = cur;
+    <<*i = (i==1)? 0:1;
+    TRACE((insert nvars),TransformThreeAddress[counter=i;nvars=nvars](insert));
+    TRACE(insert,TransformTwoAddress(insert));
+
+    if(insert) {
+      repl = BuildList( (cur, insert), repl);
+    }
+  }
+  
+  if(nvars != "") AppendVar[trace=trace_newVars](nvars);
+  if(var_type != "") {
+    AppendDecl[trace=trace_decl](var_type,nvars);
+  }
+
+  if (trace == "") trace = input;
+  REPLACE(repl,trace);
+}
+</xform>
+<***********************************************>
+<xform TransformTwoAddress pars=(input) trace=GLOBAL.TRACE_TARGET>
+  repl = "";
+  
+  foreach_r ( input : (cur = ExpStmt#Assign#((CLEAR name),(CLEAR bop))): TRUE) {
+    insert = "";
+    curbop = (bop: Bop#((CLEAR op),(CLEAR opd1),(CLEAR opd2)));
+
+    insert = BuildList(ExpStmt#(Assign#(name,RebuildBop(op,name,opd2))),insert);
+    
+    if(name != opd1)
+      insert = BuildList(ExpStmt#(Assign#(name,opd1)),insert);
+    
+    if(insert) {
+      repl = BuildList((cur,insert),repl);
+    }
+    
+  }
+  
+  if(trace == "") trace = input;
+  
+  REPLACE(repl,trace);
+  
+</xform>
+<***********************************************>
+<xform TransformThreeAddress pars=(input) counter=0 nvars="" trace=GLOBAL.TRACE_TARGET >
+
+  input: ExpStmt#(Assign#((CLEAR lhs),(CLEAR rhs)));
+  
+  input2 = ExpStmt#(Assign#(lhs,rhs));
+  nvars2 = nvars;
+  cur = "";
+  stack = "";
+  foreach(rhs: (cur = Bop) : FALSE) {
+    stack = (stack == "") ? cur : BuildList(cur,stack);
+  }
+  
+  end = LEN(stack);
+  stack2="";
+  j = counter;
+  
+  nameList = "";
+
+  for(i = 0; i < end; i = i + 1) {
+    HEAD(stack) : (cur = Bop);
+    
+    if(cur != rhs) {
+      name = BuildName("temp"j);
+      temp = ExpStmt#(Assign#(BuildName("temp"j),cur));
+      nameList = (nameList == "") ? name : BuildList(name,nameList);
+      j = j + 1;
+    } else {
+      temp = ExpStmt#(Assign#(lhs,cur));
+    }
+
+    stack2 = (stack2 == "") ? temp : BuildList(temp,stack2);
+
+    stack = TAIL(stack);
+  }
+
+  insert = "";
+  foreach_r(stack2:(cur = ExpStmt#(Assign#((CLEAR lhs),(CLEAR rhs)))) : FALSE) {
+    
+    isBop = "";
+    rhs : (isBop = Bop#((CLEAR op),(CLEAR opd1),(CLEAR opd2)));
+    
+    if(isBop == "")
+      CONTINUE;
+      
+    if(!(opd1 : Bop) && !(opd2 : Bop)) {
+      temp = cur;
+    } else if((opd1 : Bop) && !(opd2 : Bop)) {
+      foreach_r(stack2 : ExpStmt#(Assign#((CLEAR lhs_2),(CLEAR rhs_2))) : FALSE) {
+        if(rhs_2 == opd1) {
+          temp = ExpStmt#(Assign#(lhs,RebuildBop(op,lhs_2,opd2)));
+          BREAK;
+        }
+      }
+    } else if(!(opd1 : Bop) && (opd2 : Bop)) {
+      foreach_r(stack2 : ExpStmt#(Assign#((CLEAR lhs_2),(CLEAR rhs_2))) : FALSE) {
+        if(rhs_2 == opd2) {
+          temp = ExpStmt#(Assign#(lhs,RebuildBop(op,opd1,lhs_2)));
+          BREAK;
+        }
+      }
+    } else {
+      foreach_r(stack2 : ExpStmt#(Assign#((CLEAR lhs_2),(CLEAR rhs_2))) : FALSE) {
+        if(rhs_2 == opd1) {
+          nopd1 = lhs_2;
+          BREAK;
+        }
+      }
+      foreach_r(stack2 : ExpStmt#(Assign#((CLEAR lhs_2),(CLEAR rhs_2))) : FALSE) {
+        if(rhs_2 == opd2) {
+          nopd2 = lhs_2;
+          BREAK;
+        }
+      }
+      temp = ExpStmt#(Assign#(lhs,RebuildBop(op,nopd1,nopd2)));
+    }
+    
+    if(insert == "") {
+      insert = temp;
+    } else {
+      insert = insert::temp;
+    }
+  }
+  
+  if(trace == "")
+    trace = input;
+  
+  REPLACE(ERASE(trace),insert,trace);
+  REPLACE(ERASE(nvars),nameList,nvars);
+</xform>
+
+<***********************************************>
+<xform PrefetchHelp pars=(var, addr, nests, dist) 
+                    pref=0 output=(_res,_nvar) trace=GLOBAL.TRACE_TARGET >
+  switch (nests) {
+  case (first rest):   {
+     dist1 = car dist;
+     (res,nvar1) =PrefetchHelp [pref=0] (var, addr, first, car dist);
+     if (nvar1=="") 
+         ERROR( "Incorrect configuration for prefetch:" first);
+     (res,nvar2) =PrefetchHelp[pref=1](nvar1, nvar1, rest, cdr dist);
+     res = (res, BuildList(nvar1, nvar2))
+   }
+   case (pinit,pincr): {
+     if (dist=="") 
+        ERROR("parameter mismatch. dist should not be empty");
+     for ((init=pinit; incr=pincr; nvar = ""; pvar=var; paddr=addr); 
+           paddr!=NULL; (pvar=cdr pvar; paddr=cdr paddr)) {
+        cvar = BuildName( (car pvar) 0); 
+        caddr = car paddr;
+        init = BuildList(ExpStmt#(Assign#(cvar, caddr)), init);
+        if (pref) {
+            incr = BuildList( ExpStmt#(Assign#(cvar, REBUILD(cvar+ dist))), incr);
+            incr = BuildList( ExpStmt#(AddrPrefetch#cvar), incr);
+        }
+        else 
+           incr = BuildList( incr, ExpStmt#(Assign#(cvar, REBUILD(cvar+ dist))));
+     }
+     res = REPLACE(pinit,init,trace);
+     if (incr != pincr) {
+        res = REPLACE(pincr, incr, res);
+     }
+     res = (res,cvar)
+  }
+  case CODE.Nest#(_,body):
+      PrefetchHelp(var, addr, (nests,body), dist);
+  default: {
+     res = BuildList(ExpStmt#(AddrPrefetch#addr), nests);
+     res = REPLACE(nests, res, trace);
+     res = (res,"")
+  }
+ }
+res
+</xform> 
+
+<***********************************************>
+<xform Prefetch pars=(addr, nests, dist) 
+                trace=GLOBAL.TRACE_TARGET trace_include=GLOBAL.TRACE_INCL  trace_decl=GLOBAL.TRACE_DECL data_type=GLOBAL.ARRAY_ELEM_TYPE  var="">
+  if (var == "") var="pref";
+  (res,nvar) = PrefetchHelp[pref=1;trace=trace](var,addr,nests,dist);
+  Append_Include[trace=trace_include](InclPrefetch);
+  if (data_type != "") 
+     AppendDecl[trace=trace_decl](data_type, nvar);
+  res
+</xform> 
+
+<xform ReplString pars=(n1,n2,input)>
+   repl="";
+   foreach_r (input : (cur = (Name#_ | n1)) : TRUE) {
+      if (cur == n1) 
+        repl=BuildList( (cur, n2), repl);
+      else
+        repl=BuildList( (cur, cur), repl);
+   }
+   (repl != "")?
+      REBUILD(REPLACE(repl, input)) 
+   : input
+</xform>
+
+<xform ScaleLoop pars=(time, nest)>
+repl="";
+if (nest : Nest#(Loop#(i,start,stop,step),body)) {
+   repl = ((start, REBUILD(start/time)) 
+          (stop, REBUILD(stop/time)) 
+          (step, REBUILD(step/time))
+          (body, ReplString(i, REBUILD(i*time),body)));
+}
+(repl == "")? nest : REPLACE(repl,nest)
+</xform>
+
+<xform ShiftLoop pars=(offset, nest)>
+repl="";
+if (nest : Nest#(Loop#(i,start,stop,step),body)) {
+  repl = ((start, REBUILD(start-offset)) 
+          (stop, REBUILD(stop-offset)) 
+          (body, ReplString(i,REBUILD(i+offset),body)));
+}
+(repl == "")? nest : REPLACE(repl,nest)
+</xform>
+
+<xform SkewLoops pars=(inner, outer) factor=1  trace=GLOBAL.TRACE_TARGET >
+      if (factor == 0) RETURN outer;
+
+      l1=Loop#(i,start1,stop1,step1) = outer[Nest.ctrl];
+      Nest#((l2=Loop#(j,start2,stop2,step2)),body2) = inner;
+
+      new_l2 = REPLACE(stop2, stop2+(stop1-start1)*factor, l2);
+      new_l1 = Loop#(i,RebuildBop(CODE.MAX,start1,(j-stop2+1+(factor-1))/factor), RebuildBop(CODE.MIN,stop1,(j-start2+1+factor-1)/factor),step1);
+      new_body2=REPLACE(j, Bop#("-",j,i*factor),body2);
+      new_inner=REPLACE(inner, new_body2, outer);
+      new_inner=REPLACE(l1,new_l1, new_inner);
+      new_outer=REPLACE(ERASE(inner), Nest#(new_l2, new_inner),inner);
+      res = new_outer;
+      EraseTraceHandle[repl=res](outer,trace);
+</xform>
+

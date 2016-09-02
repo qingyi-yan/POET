@@ -1,0 +1,402 @@
+include opt.pi
+include OptHighLevel.pi
+
+<**** Pattern optimizer *******>
+<code MM_pat/>
+<code BlockConfig pars=(content:LIST(INT," ")) rebuild=content> @content@ </code>
+<code BlockFactor pars=(content:LIST(INT|BlockDim," ")) rebuild=content> 
+@content@ </code>
+<code Loop_r pars=(i:ID,start:EXP, stop:EXP, step:EXP) />
+<parameter oc type=INT default=1 message="whether to optimize cleanup code"/>
+<parameter sr type=INT default=1 message="whether to apply strength reduction"/>
+<parameter tr type=0|1 default=0 message="whether to apply triangular array copying optimization"/>
+
+<parameter cpth type=INT default=0 message="whether to copy array outside and if yes, how many threads to use"/>
+<parameter sse default=0 message="whether to Assembly code with sse vectorization"/>
+<parameter in message="input file name"/>
+<parameter out message="output file name"/>
+<parameter opt type=0|1 default=1 message="whether to apply optimizations"/>
+<parameter pa type=0|1 default=1 message="whether to recognize pattern annotations"/>
+
+<parameter th type=1.._ default=2 message="number of threads to parallelize loop target"
+parse=LIST(INT,";") />
+<parameter tbk type=1.._ default=288 message="number of loop iterations to run by different threads for target" parse=LIST(INT,";")/>
+<parameter bk1 type=(INT)... default=((72)::NULL) message="Blocking factor for loop nest target" parse=LIST(CODE.BlockConfig,";")/>
+<parameter bk2 type=(INT)... default=((1)::NULL) message="Blocking factor for loop nest target" parse=LIST(CODE.BlockConfig,";")/>
+<parameter cp type=0..2 default=2 message="configuration for copy array at loop target" parse=LIST(INT,";") />
+<parameter pref type=0..5 default=2 message="configuration for prefetching array at loop target" />
+<parameter pref_dist type=0.._ default=12 message="distance for prefetching array at loop target" />
+<parameter uj type=(INT INT)... default=((2 2)::NULL) message="Unroll and Jam factor for loop nest target" parse=LIST(BlockFactor,";") />
+<parameter ur type=1.._ default=4 message="Unroll factor for loop target" parse=LIST(INT,";") />
+<parameter scalar type=0..5 default=4 message="scalar replacement configuration" parse=LIST(INT,";") />
+
+<parameter reusereg type=0|1 default=0 message="whether to reuse registers before unroll&jam"/>
+<parameter permuteOptOrder type=(INT,INT,INT,INT,INT,INT,INT) parse=TUPLE("(" INT "," INT "," INT "," INT "," INT "," INT "," INT")") default=(1,2,3,4,5,6,7)/>
+
+<***move to a transformation library ***>
+
+<code ICC_SSE_pragma > 
+#pragma ivdep
+#pragma vector always
+
+</code>
+
+<trace XFORM_ARRAY_SCALARS=""/>
+<trace XFORM_PRIVATE_VARS = XFORM_ARRAY_SCALARS />
+
+<eval XFORM_LOOP_NON_PERFECT = ""/>
+<eval XFORM_PAR_SIZE=""; XFORM_PTNUM=""; XFORM_TILE_SIZE=""; XFORM_UNROLL_SIZE="";/>
+<eval XFORM_PAR_TOP=XFORM_PAR_LOOP=XFORM_LOOP_OUTMOST=XFORM_LOOP_CLEANUP="";/>
+<eval XFORM_ARRAY_REFS=MAP{}; XFORM_DIMS_IN=MAP{}; XFORM_DIMS_OUT=MAP{}; XFORM_REF_INFO=MAP{}; XFORM_ARRAY_COPY=MAP{}; XFORM_SCALAR_INFO=MAP{}/>
+<eval XFORM_LOOPS_INNER = ""; XFORM_LOOPS_OUTER=""; XFORM_ETYPE="";/> 
+
+<trace target/>
+<trace var_incl_files=""/>
+<trace trace_decl="" />
+
+<define TRACE_TARGET target/>
+<define TRACE_INCL var_incl_files/> 
+<define TRACE_DECL trace_decl/>
+
+<define REG_LEN 32/>
+
+<****************************************************************************************>
+<xform next_configuration pars=(config)>
+         cur_config=car(config); 
+         if (cur_config!=config) config=cdr(config);
+         (cur_config, config)
+</xform>
+
+<xform map_index_vars_to_loops pars=(arr_sub)>
+loops = "";
+for ((p=GLOBAL.XFORM_LOOPS_INNER; q=GLOBAL.XFORM_LOOPS_OUTER); 
+    car(p) != ""; (p = cdr(p); q = cdr(q))) {
+  if (car(p):Nest#(Loop#(CLEAR i,_,_,_),_)) {
+    if (Count(i, arr_sub) > 0) loops = BuildList(car(p), loops);
+  } else if (car(p):Nest#(Loop_r#(CLEAR i,_,_,_),_)) {
+    if (Count(i, arr_sub) > 0) loops = BuildList(car(p), loops);
+  } else {ERROR("Unrecognized Loop type:" car(p));}
+  if (car(q):Nest#(Loop#(CLEAR j,_,_,_),_)) {
+    if (Count(j, arr_sub) > 0) loops = BuildList(car(q), loops);
+  } else if (car(p):Nest#(Loop_r#(CLEAR j,_,_,_),_)) {
+    if (Count(j, arr_sub) > 0) loops = BuildList(car(q), loops);
+  } else {ERROR("Unrecognized Loop type:" car(q));}
+}
+RETURN (loops);
+</xform>
+
+<xform find_loop_handles pars=(loops, loophandles) cpth=0 out="" ref="">
+output = "";
+for (p = loophandles; p != ""; p = cdr(p)) {
+  for (q = loops; q != ""; q = cdr(q)) {
+    if (car(p) == car(q)) {
+      if ((cpth>0)&&(out!="")&&(car(p)==car(loophandles)))
+        output = BuildList(out, output);
+      else{
+        output = BuildList(car(p), output);
+      }
+      BREAK;
+    }
+  }
+}
+RETURN ((ref, ReverseList(output)));
+</xform>
+
+<xform categorize_uses pars=(arr_ref, pattern)>
+arr_ref_map = MAP{};
+foreach (pattern : CODE.Assign#(CLEAR lhs, CLEAR rhs) : FALSE) {
+  if (arr_ref == lhs) 
+    arr_ref_map[lhs] = BuildList("W", arr_ref_map[lhs]);
+  foreach (rhs : (cur=ArrayAccess|ID|CODE.NAME) : FALSE) {
+    if (arr_ref == cur) {
+      arr_ref_map[cur] = BuildList("R", arr_ref_map[cur]);
+    }
+  }
+}
+state = "";
+copy = "";
+simdop = ""; 
+if (arr_ref : ArrayAccess) {
+  copy = "copy";
+  simdop = "vec";
+  if (car(arr_ref_map[arr_ref]) == "R") {
+    state = "R";
+    if (Lookup("W", arr_ref_map[arr_ref])) {
+      state = "RW";
+      simdop = "reduce";
+      <*Given an attribute to enable copy operation for read/write arrays*>
+      if (2 > GLOBAL.cp) copy = "";
+    }
+  }
+} else {
+  state = car(arr_ref_map[arr_ref]);
+} 
+diag = "";
+foreach (pattern:Nest#(CLEAR loop,_):FALSE) {
+  if (loop:Loop#(CLEAR idx,_,_,_)) {
+    i = idx;
+    if (Count(i, arr_ref) == 2)
+      diag = "diag";
+  } else if (loop:Loop_r#(CLEAR idx,_,_,_)){
+    i = idx;
+    if (Count(i, arr_ref) == 2)
+      diag = "diag";
+  }
+}
+(state, copy, simdop, diag); 
+</xform>
+
+<xform find_none_loop_index_vars pars=(input)>
+scalars = "";
+foreach (input : (var=ID) : FALSE) {
+  if (!(Lookup(var, GLOBAL.XFORM_ARRAY_REFS))) {
+    if (var != "double") {<*do not handle other types right now*>
+      flag = 0;
+      for (p = GLOBAL.XFORM_LOOPS_INNER; p != ""; p = cdr(p)) {
+        Nest#(loop, _) = car(p);
+        if (Lookup(var, loop)) {
+          flag = 1;
+          BREAK;
+        }
+      }
+      if (flag == 0) scalars = BuildList(var, scalars);
+    }
+  }
+}
+RETURN (scalars);
+</xform>
+
+<xform insert_handle pars=(pat, handle, input) target=GLOBAL.TRACE_TARGET>
+foreach (input : (exp=ExpStmt#(Assign#(CLEAR lhs, CLEAR rhs))) : FALSE) {
+  nlhs = lhs; nrhs = rhs; flag = 0;
+  if (pat == lhs) {
+    nlhs = handle;
+    flag = 1;
+  } else {
+    foreach (rhs : (arr=ArrayAccess) : FALSE) {
+      if (pat == arr) {
+        nrhs = REPLACE(arr, handle, rhs);
+        flag = 1;
+      }
+    }
+  }
+  if (flag == 1) {
+    nexp = ExpStmt#(Assign#(nlhs, nrhs));
+    REPLACE(exp,nexp,target);
+    BREAK;
+  }
+}
+</xform>
+
+
+<xform setup_loop_opt pars=(pattern) pre_compute=""
+decl=GLOBAL.trace_decl target=GLOBAL.TRACE_TARGET >
+GLOBAL.XFORM_ETYPE = pattern[MM_pat.type];
+if (GLOBAL.XFORM_ETYPE == "") {
+  ERROR("element type of matrices not defined!"); 
+}
+content=pattern[MM_pat.content];
+REPLACE(pattern,content,target);
+outer_loops = ""; 
+inner_loops = ""; 
+private_vars= "";
+pattern_loop = DELAY{l1=Loop#(CLEAR i,_,_,_)|Loop_r#(CLEAR i,_,_,_)};
+foreach (pattern:(cur_loop=Nest#(pattern_loop,_)):FALSE) {
+  t1 = TRACE(cur_loop);
+  inner_loops = BuildList(t1, inner_loops);
+  t2 = TRACE(t1);
+  outer_loops = BuildList(t2, outer_loops);
+  REPLACE(cur_loop, t2, target);
+  if (GLOBAL.scalar > 0) 
+    private_vars = i::private_vars;
+  else
+    private_vars = BuildList(i, private_vars);
+}
+GLOBAL.XFORM_LOOPS_OUTER=ReverseList(outer_loops);
+GLOBAL.XFORM_LOOPS_INNER=ReverseList(inner_loops);
+GLOBAL.XFORM_LOOP_CLEANUP=TRACE((top1=car(GLOBAL.XFORM_LOOPS_OUTER)));
+GLOBAL.XFORM_LOOP_OUTMOST=TRACE(GLOBAL.XFORM_LOOP_CLEANUP);
+top2 = (GLOBAL.XFORM_PAR_LOOP=TRACE(GLOBAL.XFORM_LOOP_CLEANUP));
+top3 = (StmtList#(decl (GLOBAL.XFORM_PAR_TOP=TRACE(top2))));
+EraseTraceHandle[repl=top3](top1,target);
+GLOBAL.XFORM_PRIVATE_VARS = private_vars;
+(cur_psize,tbk) = next_configuration(GLOBAL.tbk);
+GLOBAL.XFORM_PAR_SIZE=cur_psize;
+(cur_ptnum, th) = next_configuration(GLOBAL.th);
+GLOBAL.XFORM_PTNUM=cur_ptnum;
+(cur_bksize, bk) = next_configuration(GLOBAL.bk1);
+GLOBAL.XFORM_TILE_SIZE = cur_bksize;
+(cur_uj, uj) = next_configuration(GLOBAL.uj);
+GLOBAL.XFORM_UNROLL_SIZE = cur_uj;
+<<*GLOBAL.XFORM_LOOP_NON_PERFECT=find_non_perfect_loops(pattern,GLOBAL.XFORM_LOOPS_OUTER);
+</xform>
+
+<xform setup_array_opt pars=(pattern) pre_compute="" target=GLOBAL.TRACE_TARGET cp_tag=0>
+foreach (pattern : (r=ArrayAccess#(CLEAR arr, CLEAR sub)) : FALSE) {
+  if (!(Lookup(r, GLOBAL.XFORM_ARRAY_REFS[arr]))) {
+    loops = map_index_vars_to_loops(sub);
+    h = TRACE(r);
+    GLOBAL.XFORM_ARRAY_REFS[arr] = BuildList(h, GLOBAL.XFORM_ARRAY_REFS[arr]);
+    GLOBAL.XFORM_DIMS_OUT[arr] = BuildList(
+        find_loop_handles[ref=h;cpth=GLOBAL.cpth;out=GLOBAL.XFORM_PAR_LOOP]
+        (loops, GLOBAL.XFORM_LOOPS_OUTER), GLOBAL.XFORM_DIMS_OUT[arr]);
+    GLOBAL.XFORM_DIMS_IN[arr] = BuildList(
+        find_loop_handles[ref=h](loops, GLOBAL.XFORM_LOOPS_INNER), 
+        GLOBAL.XFORM_DIMS_IN[arr]);
+    uses = categorize_uses(r,pattern);
+    GLOBAL.XFORM_REF_INFO[arr] = BuildList(uses, GLOBAL.XFORM_REF_INFO[arr]);
+    for (p=COPY(GLOBAL.XFORM_REF_INFO[arr]); p!=""; p=cdr(p)) {
+      (_,copy,_,_) = car(p);
+      if (copy == "") 
+        GLOBAL.XFORM_REF_INFO[arr] = REPLACE("copy", copy, GLOBAL.XFORM_REF_INFO[arr]);
+    }
+    if (!(Lookup("RW", uses)))
+      REPLACE(r, h, target);
+    else 
+      insert_handle(r, h, pattern);
+  }
+}
+if (cp_tag > 0) {
+  foreach (GLOBAL.XFORM_REF_INFO:(CLEAR arr, CLEAR info) : TRUE) {
+    (_,copy,_,_) = car(info);
+    if (copy == "copy") GLOBAL.XFORM_ARRAY_COPY[arr] = GLOBAL.XFORM_ARRAY_REFS[arr];
+  }
+  foreach (pre_compute : (CLEAR arr, CLEAR exp) : TRUE) {
+    if (GLOBAL.XFORM_ARRAY_COPY[arr] != "") {
+      if (car(cdr(GLOBAL.XFORM_ARRAY_COPY[arr])) == "") {
+        npre = REPLACE(arr, GLOBAL.XFORM_ARRAY_COPY[arr], exp);
+        t=TRACE(npre);
+        GLOBAL.XFORM_ARRAY_COPY[arr] = t;
+        REPLACE(npre, t, target);
+        foreach (GLOBAL.XFORM_ARRAY_REFS:(arr, CLEAR r) : TRUE) {
+          GLOBAL.XFORM_ARRAY_REFS[arr] = t;
+        }
+      }
+    }<*To the arr array name only one reference*>
+  }
+}
+scalars = find_none_loop_index_vars(pattern);
+for (p = scalars; p != ""; p = cdr(p)) {
+  if (!(Lookup(car(p), GLOBAL.XFORM_SCALAR_INFO))) {
+    GLOBAL.XFORM_SCALAR_INFO[car(p)] = uses = categorize_uses(car(p), pattern);
+  }
+}
+</xform>
+
+
+<****** checking the validity of the incoming command-line parameters ******>
+<eval cbk1 = car(car(bk1)); cbk2=car(car(bk2)); uj1 = car(uj); 
+      cuj1=car(uj1); cuj2=car(cdr(uj1));
+      cbk=((cbk2==1)?cbk1 : cbk2);
+      if (cbk == 1) cbk=32; />
+
+<cond (tbk > cbk1 && (cbk1 >= cbk2) && (cbk1 % cbk2 == 0) && 
+   (cbk >= cuj1) && (cbk % cuj1 == 0) && (cbk >= cuj2) && (cbk % cuj2 == 0) 
+   && (cbk >= ur) && (cbk % ur == 0))/>
+
+<****** end of checking the validity of the incoming command-line parameters ******>
+
+<input cond=(pa) to=target syntax="MM_pat.code" annot=FALSE from=in />
+<input cond=(!pa) to=target syntax="MM_pat.code" parse=NoParse from=in />
+<eval 
+  if (!opt) {
+      found = "";
+      foreach (ERASE(target) : (cur=CODE.MM_pat) : TRUE) {
+        found=BuildList(cur,found);
+      }
+  }
+  else {
+      target = ((var_incl_files="") ERASE(target));
+      foreach (ERASE(target) : (cur=CODE.MM_pat) : TRUE) {
+      <*Collect Information*>
+      setup_loop_opt[pre_compute=cur[MM_pat.pre_compute]](cur);
+      setup_array_opt[pre_compute=cur[MM_pat.pre_compute];cp_tag=(GLOBAL.cp/1)](cur);
+      <*Parallelization*>
+      l1 = car(GLOBAL.XFORM_LOOPS_OUTER);
+      if ((GLOBAL.th/1)>1) {
+        invoke_blocking[ret_new_vars=GLOBAL.XFORM_PRIVATE_VARS;factor=GLOBAL.XFORM_PAR_SIZE](l1);
+        ParallelizeLoop[private=XFORM_PRIVATE_VARS;threads=XFORM_PTNUM](XFORM_PAR_LOOP);
+        MoveTraceHandle(l1, l1[Nest.body]);
+        MoveTraceHandle(XFORM_LOOP_CLEANUP, l1);
+      }
+      <*Loop Blocking*>
+      if (car(cdr(XFORM_LOOPS_OUTER)) != "") {
+        invoke_blocking[inner=XFORM_LOOPS_INNER;
+        ret_new_vars=GLOBAL.XFORM_PRIVATE_VARS;
+        factor=GLOBAL.XFORM_TILE_SIZE]
+          (XFORM_LOOPS_OUTER);
+      }
+      APPLY{
+      PERMUTE(permuteOptOrder,
+      DELAY{
+      <*Array Copying*>
+      if (GLOBAL.cp > 0) {
+        foreach (XFORM_ARRAY_COPY: (r=(CLEAR arr, CLEAR exp)) : TRUE) {
+          loops = XFORM_DIMS_OUT[arr];
+          info = XFORM_REF_INFO[arr];
+          (GLOBAL.tr == 1)?(loc = XFORM_PAR_TOP; vars = "";):(loc = l1; vars = XFORM_PRIVATE_VARS;);
+          (GLOBAL.cpth == 1)?(loc = XFORM_PAR_TOP; vars = "";):(loc = l1; vars = XFORM_PRIVATE_VARS;);
+          info1=invoke_array_copying[data_type=XFORM_ETYPE;ret_new_vars=vars]
+            (exp, loops, loc, info);
+          XFORM_REF_INFO[arr]=info1;
+        }
+      }}
+      DELAY{
+      <*Loop Unroll&Jam*>
+      if (car(cdr(XFORM_LOOPS_INNER)) != "") {
+        invoke_unroll_and_jam[factor=GLOBAL.XFORM_UNROLL_SIZE](XFORM_LOOPS_INNER);
+      } else {
+        inner = XFORM_LOOPS_INNER[Nest.body];
+        REPLACE(inner, COPY(inner), XFORM_LOOPS_INNER);
+      }}
+      DELAY{
+      <*Scalar Replacement*>
+      svars = MAP{};
+      foreach (XFORM_ARRAY_REFS: (CLEAR rname, CLEAR exp) : TRUE) {
+        vars = "";
+        loops = XFORM_DIMS_IN[rname];
+        info = XFORM_REF_INFO[rname];
+        vars = invoke_scalar_repl[data_type=XFORM_ETYPE;ret_new_vars=vars](exp, loops, info);
+        for (p=vars; p!=""; p=cdr(p)) {
+          (_,pvars) = car(p);
+          XFORM_PRIVATE_VARS=pvars::ERASE(XFORM_PRIVATE_VARS);
+        }
+        svars[rname] = vars;
+      }}
+      DELAY{
+      <*SIMD Vectorization*>
+      if ((GLOBAL.sse)/1 == 1) {
+        scope = XFORM_LOOPS_INNER;
+        for (p=XFORM_LOOPS_INNER; car(cdr(p))!=""; p=cdr(p)) {scope = p;}
+        invoke_simd[ret_new_vars=XFORM_PRIVATE_VARS;global_vars=XFORM_SCALAR_INFO;data_type=XFORM_ETYPE]
+          (XFORM_REF_INFO, svars, scope, XFORM_DIMS_IN);
+      }}
+      DELAY{
+      <*Strenght Reduction*>
+      if ((GLOBAL.sr/1)>0) {
+      foreach (XFORM_ARRAY_REFS: (CLEAR arr, CLEAR exp) : TRUE) {
+        info = XFORM_REF_INFO[arr];
+        if (car(GLOBAL.XFORM_LOOPS_OUTER) != car(GLOBAL.XFORM_LOOPS_INNER))
+          dim=AppendList(GLOBAL.XFORM_LOOPS_OUTER,GLOBAL.XFORM_LOOPS_INNER); 
+        else dim=GLOBAL.XFORM_LOOPS_OUTER; 
+        if ((GLOBAL.th/1)>1) threads_offset=XFORM_PAR_LOOP;
+        else threads_offset="";
+        invoke_strength_reduction[tag=GLOBAL.sse;data_type=XFORM_ETYPE;outside_loc=threads_offset;
+            ret_new_vars=GLOBAL.XFORM_PRIVATE_VARS](exp, info, dim);
+      }}}
+      <*Loop unrolling*>
+      DELAY{
+      invoke_loop_unrolling[factor=GLOBAL.ur](XFORM_LOOPS_INNER);
+      }
+      DELAY{
+      res=invoke_loop_splitting(GLOBAL.XFORM_LOOP_CLEANUP);
+      });};
+      REPLACE(ERASE(GLOBAL.XFORM_LOOP_CLEANUP),REBUILD(res),GLOBAL.TRACE_TARGET);
+      peephole_optimization(GLOBAL.XFORM_LOOP_CLEANUP);
+    }
+    }
+/>
+<output cond=(opt) from=(target) syntax="MM_pat.code" to=out/>
+<output cond=(!opt) from=(found) syntax="MM_pat.code" to=out/>
+
+

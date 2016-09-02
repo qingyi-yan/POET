@@ -1,0 +1,15 @@
+include utils.incl
+<code Program/>
+<define COLLECT_CALLS  "" />
+
+<parameter in type=STRING default="" message="input file name" />
+<parameter out type=STRING default="" message="optimized output file name" />
+<parameter call type=STRING default="" message = "call graph file name"/>
+
+<eval ext=car(ReverseList(SPLIT(".",in))); PRINT("File Type:" ext);/> 
+
+<input cond=(ext : "C"|"c"|"cpp") from=in to=inputCode syntax=("FindLoops.code") />
+<input cond=(ext : "F"|"f") from=in to=inputCode syntax=("FindLoops_F.code") />
+<output cond=(ext : "C"|"c"|"cpp") to=out syntax=("FindLoops.code") from=(Program#inputCode)/>
+<output cond=(ext : "F"|"f") to=out syntax=("FindLoops_F.code") from=(Program#inputCode)/>
+<output cond=(COLLECT_CALLS!="") to=call syntax="FindLoops.code" from = (CODE.CallGraph#COLLECT_CALLS) />

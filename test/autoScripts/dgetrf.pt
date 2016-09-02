@@ -1,0 +1,70 @@
+include opt.pi
+<code ArrayAccess match=FunctionCall#("arr_ref",((array subscript)))/>
+<trace target/>
+<input to=target syntax="Cfront.code" from=("rose_dgetrf.C")/>
+<trace top_nest1,decl_top_nest1,nest1,body1,nest2,nest4,nest3,nest5/>
+<eval decl_top_nest1 = "";
+      top_nest1 = (decl_top_nest1 nest1);
+      EraseTraceHandle[repl=top_nest1](nest1,target)/>
+
+
+<trace var_tile_nest1/>
+<eval var_clnup_top_nest1 = top_nest1/>
+<eval body1_1_p_dim = (1);
+      body1_1_p = ArrayAccess#("p","k")/>
+<eval nest4_2_a_dim = (1,1);
+      nest4_2_a = FunctionCall#("arr_ref",(("a" ("k" "k"))))/>
+<eval nest5_3_a_dim = (1,1);
+      nest5_3_a = FunctionCall#("arr_ref",(("a" ("k" "j"))))/>
+
+<parameter bsize_nest1 type=(INT INT) default=(16 16) message="Blocking factor for loop nest nest1"/>
+<parameter ujsize_nest1 type=(INT) default=(2) message="Unroll and Jam factor for loop nest nest1"/>
+<parameter scalar1_config_p type=0..2 default=1 message="configuration for scalarRepl array p at loop body1: 0-no opt; 1-scalarRepl; 2-strength reduction."/>
+<parameter scalar2_config_a type=0..2 default=1 message="configuration for scalarRepl array a at loop nest4: 0-no opt; 1-scalarRepl; 2-strength reduction."/>
+<parameter scalar3_config_a type=0..2 default=1 message="configuration for scalarRepl array a at loop nest5: 0-no opt; 1-scalarRepl; 2-strength reduction."/>
+
+<cond (HEAD(bsize_nest1))==1||((HEAD(ujsize_nest1))<=(HEAD(bsize_nest1))&&(HEAD(bsize_nest1)%HEAD(ujsize_nest1))==0)/>
+
+<eval block_nest1 = DELAY{
+         bdim_nest1 = (BlockDim#("k","k_bk",HEAD(bsize_nest1)) BlockDim#("j","j_bk",HEAD(TAIL(bsize_nest1))));
+         var_tile_nest1 = COPY(nest1);
+         AppendDecl[trace=decl_top_nest1](IntegerType,(("j_bk" "k_bk")));
+         TRACE((nest5_3_a nest4_2_a body1_1_p),BlockLoops[factor=bdim_nest1;cleanup=0;trace_innerNest=var_tile_nest1;trace_decl=decl_top_nest1;nonPerfect=NonPerfectLoops#(nest1,((nest2 nest3)));trace_mod=(nest5_3_a nest4_2_a body1_1_p)](nest2[Nest.body],nest1))
+      }/>
+
+<eval unrolljam_nest1 = DELAY{
+         ERASE((nest1 body1 nest2 nest3),top_nest1);
+         TraceNestedLoops[trace=top_nest1](((nest1 nest2)),ERASE(var_tile_nest1));
+         nest3 = ERASE(nest2);
+         REPLACE(ERASE(nest2),nest3,nest2);
+         body1 = nest1[Nest.body];
+         EraseTraceHandle[repl=body1](ERASE(body1),nest1);
+         REPLACE(ERASE(var_tile_nest1),nest1,top_nest1);
+         UnrollJam[factor=((HEAD(ujsize_nest1)));cleanup=0;trace=top_nest1](nest2,nest1)
+      }/>
+<eval scalar1_body1 = DELAY{
+         if (scalar1_config_p)  {
+            TRACE((nest5_3_a nest4_2_a body1_1_p),CopyRepl[prefix="p_1_scalar";data_type="int";scalar=1;init_loc=body1;save_loc=body1;trace=top_nest1;trace_decl=decl_top_nest1;trace_mod=(nest5_3_a nest4_2_a body1_1_p)](body1_1_p,((CopyDim#("body1_1_p_cp0",1,1,body1_1_p_dim[0]))),body1))
+         }
+      }/>
+<eval scalar2_nest4 = DELAY{
+         if (scalar2_config_a)  {
+            TRACE((nest5_3_a nest4_2_a body1_1_p),CopyRepl[prefix="a_2_scalar";data_type="double";scalar=1;init_loc=nest4;trace=top_nest1;trace_decl=decl_top_nest1;trace_mod=(nest5_3_a nest4_2_a body1_1_p)](nest4_2_a,((CopyDim#("nest4_2_a_cp0",1,1,nest4_2_a_dim[0]) CopyDim#("nest4_2_a_cp1",1,1,nest4_2_a_dim[1]))),nest4))
+         }
+      }/>
+<eval scalar3_nest5 = DELAY{
+         if (scalar3_config_a)  {
+            TRACE((nest5_3_a nest4_2_a body1_1_p),CopyRepl[prefix="a_3_scalar";data_type="double";scalar=1;init_loc=nest5;trace=top_nest1;trace_decl=decl_top_nest1;trace_mod=(nest5_3_a nest4_2_a body1_1_p)](nest5_3_a,((CopyDim#("nest5_3_a_cp0",1,1,nest5_3_a_dim[0]) CopyDim#("nest5_3_a_cp1",1,1,nest5_3_a_dim[1]))),nest5))
+         }
+      }/>
+<eval cleanup_nest1 = DELAY{
+         CleanupBlockedNests[trace=top_nest1](var_clnup_top_nest1)
+      }/>
+
+<eval APPLY{block_nest1};
+      APPLY{unrolljam_nest1};
+      APPLY{scalar1_body1};
+      APPLY{scalar2_nest4};
+      APPLY{scalar3_nest5};
+      APPLY{cleanup_nest1}/>
+<output from=(target) syntax=("Cfront.code")/>

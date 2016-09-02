@@ -1,0 +1,45 @@
+include specification.incl
+<******** required for generating driver in the target language *>
+<code TesterBaseType pars=(type) />
+<code TesterRandomVal/>
+<code TesterRoutineReturnVar/>
+<code RefRoutineReturnVar/>
+<code TesterParameterInit pars=(initseq)/>
+
+<code TesterVariableDecl pars=(type, name) />
+<code TesterBufferDecl pars=(type,name)/>
+<code TesterStaticBufferDecl pars=(type,name,size)/>
+<code TesterStatic2DBufferDecl pars=(type,name,size,size2)/>
+<code TesterBufferSizeDecl pars=(name) />
+<code Tester2DBufferSizeDecl pars=(name)/>
+
+<code TesterAssign pars=(lhs,rhs)/>
+<code TesterBufferAllocate pars=(type, name, size)/>
+<code Tester2DBufferAllocate pars=(type,name,size,size2)/>
+<code StaticBufferAllocate pars=(type,name,size)/>
+<code Static2DBufferAllocate pars=(type,name,size,size2)/>
+<code TesterBufferInitialize pars=(name, value, valueIncr)/>
+<code Tester2DBufferInitialize pars=(name, value, valueIncr)/>
+<code TesterBufferIncrement pars=(name)/>
+
+<code TesterIncludes pars=(mt, randseed, fun, ref) />
+<code DeclForTesterVars pars=(mt, paramDecl) />
+<code BeginTesterCall pars=(useWallTime,mt)/>
+<code EndTesterCall pars=(useWallTime, mt)/>
+
+<code ComputeTesterDiff pars=(mt, returnType) />
+<code SimpleReturnDiff pars=(funDecl, refDecl)/>
+<code NumberReturnDiff pars=(funDecl, refDecl) />
+<code ArrayReturnDiff pars=(ret1, ret2, size) />
+<code CopyToReturnArray pars=(array_dest, array_src) />
+<code ComputeFlops pars=(flops_exp,nrep)/>
+<code ComputeMFLOPS pars=(useWallTime,mt)/>
+<code OutputTiming pars=(useWallTime, mt,flops_exp)/>
+<code TimingLoop pars=(call, update)/>
+<code MultiTestingLoop pars=(body)/>
+
+<code TesterIncrementVar pars=(var,incr)/>
+<code TesterMacroVal pars=(name,val)/>
+<code TesterFunCall pars=(funDecl, params)/>
+<code RefFunCall pars=(funDecl, params) />
+<code TesterMainCode pars=(body)/>

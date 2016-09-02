@@ -1,0 +1,115 @@
+<define PARSE CODE.Goal/>
+<define TOKEN (("+" "+") ("-" "-")) />
+<define KEYWORDS ("for" "int" "float")/>
+
+<******* a global variable named symTable is used to save all variable info*****>
+<define symTable MAP(ID,"int"|"float"|"") />
+
+<* look up a variable name from a list of symble tables*>
+<xform LookupVariable pars=(varName)  symTableList=GLOBAL.symTable >
+  for ( p = symTableList; p != NULL; p = TAIL(p)) {
+     curTable = HEAD(p);
+     res = curTable[varName];
+     if (res != "") RETURN res;
+  }
+</xform>
+
+<xform insert_entry pars=(id,type) symTableList=GLOBAL.symTable >
+  (HEAD(symTableList))[id]=type;
+  ""
+</xform>
+
+
+<******************************************************************>
+
+<* enumeration of different types, each a subtype of Type *>
+<code IntType match=CODE.Type> int </code> 
+<code FloatType match=CODE.Type> float </code>
+<code TypeError match=CODE.Type> TYPE_ERROR </code>
+
+<* PtrType is a struct with a single member variable: elemtype*>
+<code PtrType pars=(elemtype) match=CODE.Type> [@elemtype@] </code>
+
+<******************************************************************>
+<* ATTR implements the synthesized/inherited attribute of each expression*>
+<* It is a struct with two member variables: exp and type *>
+<******************************************************************>
+<code ATTR pars=(exp,type) />
+
+<* representation of the whole program *>
+<code Goal pars=(program:LIST(CODE.For | CODE.ExpStmt | CODE.Decl, "\n")) > 
+@program@ </code>
+
+<* ExpStmt is a type of AST node and is a a struct with two member variables: exp and its type*>
+<code ExpStmt pars=(exp : CODE.Exp, type)
+  parse=(exp ";" eval(return(ExpStmt#(exp[ATTR.exp],exp[ATTR.type]))))>
+@exp@;
+</code>
+ 
+<* For is a type of AST node and is a struct with 5 member variables: var,lb,ub,incr, body*>
+<code For pars=(var:ID, lb:CODE.Exp, ub:CODE.Exp, incr:CODE.Exp, body:CODE.Goal)
+  parse=("for" "(" var "=" lb ";" var "<" ub ";" incr ")" "{" body "}"
+          eval(t1=LookupVariable(var); 
+               if (t1=="") print("Undefined variable:" var);
+               if (t1 != lb[ATTR.type] || t1 != CODE.IntType) 
+                  print("Type mismatch:" var " vs. " lb);
+               if (t1 != ub[ATTR.type]) print("Type mismatch:" var " vs. " ub);
+               return(For#(var,lb[ATTR.exp],ub[ATTR.exp],incr[ATTR.exp],body)) )) > 
+for (@var@=@lb@; @var@ < @ub@; @incr@)
+{
+  @body@
+}
+</code>
+
+<* Decl is a type of AST node and is a struct with two member variables: t and id *>
+<code Decl pars=(t : CODE.Type, id : ID) 
+   parse=(t id ";" eval(if (LookupVariable(id)) ERROR("Variable already defined:" id); 
+                        insert_entry(id, t); return(Decl#(t,id))))>
+@id@ : @t@;
+</code>
+
+<* two types of AST nodes for expressions, each a subtype of Exp *>
+<code Bop pars=(op, opd1, opd2) match=CODE.Exp> (@opd1 op opd2@) </code> 
+<code Uop pars=(op, opd) match=CODE.Exp> @op opd@ </code> 
+
+<*******************************************************************>
+<* parse the types and expressions and return the corresponding AST*>
+<*******************************************************************>
+
+<code Type parse=( ("int" eval(return IntType))
+                  |("float" eval(return FloatType))
+                  |("[" (t=Type) "]" eval(return(PtrType#(t)))))/>
+
+<code Exp parse=(CODE.Factor (exp1=CODE.Exp1) eval(return(exp1)))/>
+
+<code Exp1 
+  parse=(("+" (factor=CODE.Factor) 
+         eval(
+           if (INHERIT[ATTR.type]==IntType && factor[ATTR.type]==IntType) 
+                {t=CODE.IntType;}
+           else if (INHERT[ATTR.type]==FloatType && factor[ATTR.type]==FloatType) 
+                { t = CODE.FloatType; }
+           else { print("mismatching type: " INHERIT "vs." factor); t = CODE.TypeError; }
+           ATTR#(Bop#("+",INHERIT[ATTR.exp],factor[ATTR.exp]),t))
+        (exp1=CODE.Exp1) eval(return(exp1)))
+      |("[" (sub=CODE.Exp) "]" 
+            eval(if (sub[ATTR.type]!=IntType) print("Array subscript must bean integer: " sub);
+                 if (INHERIT[ATTR.type] : PtrType#(t1)) { t=t1; } else { t=TypeError; }
+                 ATTR#(Bop#("[]",INHERIT[ATTR.exp],sub[ATTR.exp]),t))
+         (exp1=CODE.Exp1) eval(return(exp1)))
+      |("=" (exp1=CODE.Exp) 
+            eval(if (INHERIT[ATTR.type]!=exp1[ATTR.type]) 
+                    print("mismatching type: " INHERIT "vs." exp1);
+                 return (CODE.ATTR#(Bop#("=",INHERIT[ATTR.exp],exp1[ATTR.exp]),
+                                    INHERIT[ATTR.type]))))
+      |("++" eval(if (INHERIT[ATTR.type]!=IntType) print("Cannot apply ++ to " INHERIT);
+                  return (CODE.ATTR#(Uop#("++",INHERIT[ATTR.exp]),IntType)))) 
+      | ("" eval(return(INHERIT)))) />
+
+<code Factor 
+  parse=(((id=ID) eval(t = LookupVariable(id); 
+                       if (t=="") print("Undefined variable:" id); 
+                       return(CODE.ATTR#(id,t))))
+          | ((v=INT) eval(return (CODE.ATTR#(v,IntType)))) 
+          | ((v=FLOAT) eval(return (CODE.ATTR#(v,FloatType))))) />
+

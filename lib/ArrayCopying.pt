@@ -1,0 +1,670 @@
+
+<code CopyBufName pars=(orig)>
+@orig@_cp
+</code>
+
+<***********************************************>
+
+<xform CollectBlockedLoopInfo pars=(loop,nest,input) scalar=1 cpblock="" scalar_num=0>
+  Loop#(i,start,stop,dist) = loop;
+  iorig=loop[Loop.origivar];
+  if (iorig != "" && iorig != i) { 
+        iref = 0; ivars = NULL; i = "";
+        istart=NULL; isize=NULL;
+        foreach_r (nest : (cur1=Loop#(CLEAR i1,CLEAR start1,CLEAR stop1,CLEAR dist1)) : FALSE) {
+            if ((i1==iorig) || cur1[Loop.origivar] == iorig)
+            { <* support for multi-level blocking *>
+              i = i1; <<* to remember the previous loop and avoid multiple counting of the same loop
+              if (start1 == 0 || i1==iorig) iref = i1 + iref;
+              ivars = i1::ivars;
+              if (!scalar) { <* ivars of outside loops may appear in start1 or stop1*>
+                 imax = cur1[Loop.maxiternum]; 
+                 if (imax != "" && !(imax : INT)) stop1=imax;
+                 (loops,_) = FindLoopsInNest(cur1, input); 
+                 foreach_r (loops : Loop#(CLEAR i, CLEAR s, CLEAR t,_) : TRUE) {
+                    if (Lookup(i,start1))  { start1=REPLACE(i,s,start1); }
+                    c_stop = get_coeff(i,stop1);
+                    if (c_stop != 0) {
+                       if (c_stop < 0) { stop1 = REPLACE(i,s,stop1); }
+                       else  { stop1=REPLACE(i,t,stop1); }
+                    }
+                 }
+                 istart= REBUILD(start1)::istart;  
+                 isize = (stop1-start1) :: isize; 
+              }
+              else { istart= i1::istart; isize = dist1::isize;}
+            }
+         }
+    }
+    else { iref = i; ivars=i; 
+             istart=(scalar? i : start);
+             isize = ((scalar_num != 0) ? 1 : (scalar? dist : ((cpblock!="")?stop : stop/dist))); }
+ (iref,ivars,istart,isize)
+</xform>
+
+<xform BuildCopyDim pars=(aref, dim, input) scalar=1 cpblock="" scalar_num=0>
+switch (dim)
+{
+  case (cur=Loop) | Nest#((cur=Loop),_):
+     (iref, ivars, istart, isize) = CollectBlockedLoopInfo[cpblock=cpblock;scalar=scalar;scalar_num=scalar_num](cur,dim,input);  
+     coeff = get_coeff(iref, aref);
+     if (coeff == 0) {
+         print("[BuildCopyDim] Did not find dimension " iref " in reference " aref);
+         NULL
+     }
+     else { CopyDim#(ivars, istart, isize, coeff) }
+  case (cur=LoopBound#(iref,_,_)) | Nest#((cur=LoopBound#(iref,_,_)),_):
+     coeff = get_coeff(iref, aref);
+     if (coeff == 0) 
+         ERROR("[BuildCopyDim] Did not find dimension " iref " in reference " aref);
+     CopyDim#(iref, iref, 1, coeff)
+  case (first second) : 
+      if (first : CopyDim) { dim }
+      else { BuildCopyDim(aref, first, input) :: BuildCopyDim(aref, second, input) }
+  case INT|CODE.CopyDim: dim
+  case ""|NULL : NULL
+}
+
+</xform>
+
+<xform BuildRefDims pars=(dim, extra_refs, extra_dims,input) res=NULL scalar=1 >
+sub = 0;
+switch (extra_refs) {
+  case (first rest) :
+     res=BuildRefDims[res=BuildRefDims(dim,rest,cdr(extra_dims),input)]
+                 (dim,first,car(extra_dims), input) ;
+  case NULL|"": NULL
+  case (ArrayAccess#(_,CLEAR sub)|Uop#("*",ID|Bop#("+",_,CLEAR sub))):
+     for (p = extra_dims; p != NULL; p = cdr(p)) {
+        Nest#((curl=Loop),_)=car(p);
+        (iref, ivars, istart, isize) = CollectBlockedLoopInfo[scalar=scalar](curl,car(p),input);
+        <* the dimension may appear in sub multiple times *>
+        for ( (sub1=sub;coeff = get_coeff(iref, sub1)); coeff != 0; 
+              (sub1 = REBUILD(REPLACE(coeff,0,sub1)); coeff=get_coeff(iref,sub1))) {
+           foreach (dim : CopyDim#(CLEAR ivars2, CLEAR istart2, _, coeff) : TRUE) {
+              if (ivars2 != ivars && (car istart) == (car istart2)) { 
+                for ( (p1=ReverseList(ivars);p2=ReverseList(ivars2)); p1!=NULL&&p2!=NULL; (p1=cdr(p1);p2=cdr(p2))) {
+                   res= (car(p1), car(p2), coeff) :: res; 
+                }
+                for ( ""; p1 != NULL; p1 = cdr(p1)) 
+                   res= (car(p1), car(ivars2), coeff) :: res; 
+        }
+           }
+           if (coeff==1) BREAK;
+        } 
+     }  
+}
+res
+</xform>
+
+<***********************************************>
+<xform CopyHelp pars=(dim, buf, sub, index) 
+             output=(_cploops, _cpdest, _cpsrc, _cpsize) unroll=1 
+             trace_vars=GLOBAL.TRACE_VARS >
+switch  (dim) {
+case ""|NULL : res=("","",sub,1);
+case CopyDim#(ivars,start,cpsize,dist):
+   cpivar = NULL; cpsrc = sub;
+   for ( (pstart=start; pi = ivars);  pstart != NULL && pi != NULL; 
+       (pstart=cdr(pstart); pi = cdr(pi))) {
+     i = car(pi);
+     if (unroll || cpsize : INT) cpivar = UnrollIvarName#i :: cpivar;
+     else cpivar = i :: cpivar;
+     cpsrc= REPLACE(i,car(pstart) + car(cpivar),cpsrc);
+   }
+   if ((car cpsize) : INT)
+        cploop= UnrolledLoop#(car(cpivar), 0, "+",1,car(cpsize)); 
+   else if (unroll)
+        cploop= UnrolledLoop#(car(cpivar), car(ivars), "+",1,1); 
+   else  { cploop = Loop#(car(cpivar),0,car(cpsize),1); }
+   cpivar = ReverseList(cpivar);
+   res = (cploop, cpivar, cpsrc, car(cpsize));
+case (dim1 dim2) : 
+   {
+    (cploop1,cpdest1,cpsrc1,cpsize1) = CopyHelp(dim1,buf,sub,index);
+    (cploop2,cpdest2,cpsrc2,cpsize2) = CopyHelp(dim2,buf,cpsrc1,index+1);
+    res = ( (cploop1 cploop2), (cpdest1 cpdest2), cpsrc2, (cpsize1::cpsize2));
+   }
+}
+res
+</xform>
+
+<***********************************************>
+<xform PeelStripmine pars=(loop)>
+switch (loop) {
+  case (first second): (first, second)
+  case (b, t, r, d):
+      (t1,t2) = PeelStripmine(t);
+      (r1,r2) = PeelStripmine(r);
+      ( ((car b),t1, r1,""), (cdr b, t2, r2, d) )
+  case "" : ("","")
+  case Loop|NestApp|StripmineTriangularTloop : (loop, "")
+}
+</xform>
+
+<xform BlockCopyLoopUpperBoundHelp pars=(rloop,bstop)>
+    switch (rloop) {
+     case ""|(_,_,"",_): bstop;
+     case (_,_,rloop2,_): BlockCopyLoopUpperBoundHelp(rloop2,bstop)
+     case Loop#(_,_,r_ub,_): r_ub
+    }
+</xform>
+
+<xform BlockCopyBasecaseHelp pars=(base, cpbody,indexvar)>
+     if (base : ""|NULL) { cpnest = cpbody; }
+     else { switch (car(base)) {
+     case CODE.Loop|CODE.NestApp|CODE.StripmineTriangularTloop: 
+        cpnest=BuildNest(car(base), BlockCopyBasecaseHelp(cdr(base),cpbody,indexvar));
+     case (CLEAR b,CLEAR t,CLEAR r):
+          cpnest = XFORM.BuildBlockCopyNest[p_tloop=NULL;cpsize=""](b,r,t, cpbody, indexvar);
+     } }
+</xform>
+
+<xform BlockCopyFlattenTileLoop pars=(tloop, rloop,indexvar,bvar,bstep,r_ub,cpsize) p_tloop=NULL >
+    switch (tloop) {
+      case ""|NULL: (p_tloop, "")
+      case CODE.Loop|CODE.NestApp|CODE.StripmineTriangularTloop|(_ _): 
+        <* here skip empty loops *>
+        res1 = AppendList(p_tloop,tloop);  
+        if (rloop != "") { 
+          res2 = AppendList(p_tloop,NestApp#(rloop, ExpStmt#(Assign#(indexvar, Bop#("+",indexvar, Bop#("*",(bvar+bstep-r_ub),cpsize))))));
+        }
+        else res2 = NULL;
+        (res1, res2)
+      case (b1,t1,r1,_): <* Here empty loops cannot be skipped due to matching of the loops*>
+          if (p_tloop : NULL) {
+              res1=(b1,t1,r1);
+              res2=(rloop:""|NULL)?"":(rloop[0],rloop[1],rloop[2]); 
+          }
+          else {
+             (pb, pt, pr) = p_tloop; 
+             res1 = (AppendList(pb,b1), AppendList(pt,t1), AppendList(pr,r1));
+             if (rloop != "") {
+               (b2,t2,r2,"") = rloop;
+               res2=(AppendList(pb,b2), AppendList(pt,t2), AppendList(pr,r2));
+             }
+             else res2=p_tloop;
+          }
+          (res1,res2)
+    }
+</xform>
+
+<xform BuildBlockCopyNest pars=(bloop, rloop, tloop, cpbody, indexvar) 
+             p_tloop=NULL final=1 fillup="" cpsize="" blocksize="" triangular="">
+  if (cpsize == "") {
+    for ( (cpsize=1; p=bloop); 
+           p != NULL && ((car p) : Loop#(_,_,_,CLEAR step)|NestApp#(Loop#(_,_,_,CLEAR step),_) | StripmineTriangularBloop#(Loop#(_,_,_,CLEAR step),_));
+          (p=cdr(p); cpsize=cpsize * step)) {}
+    blocksize=cpsize;
+  }
+ if ( bloop : ""|NULL) {
+     (base,_) = BlockCopyFlattenTileLoop[p_tloop=p_tloop](tloop,"",indexvar,"","","",cpsize);
+     BlockCopyBasecaseHelp(base, cpbody, indexvar) 
+  }
+  else {
+     first = car(bloop);
+     Loop#(bvar,_,bstop,bstep)|NestApp#(Loop#(bvar,_,bstop,bstep),_)|
+     StripmineTriangularBloop#(_,Loop#(bvar,_,bstop,bstep)) = first;
+     otherLoops = cdr(bloop);
+     cpsize = cpsize / bstep; <* overwrite persistent configuration variable *>
+
+     (peel1, rest1) = PeelStripmine(tloop);
+     (peel2, rest2) = PeelStripmine(rloop); 
+      <* here we assume peel1&peel2 correspond to bloop *>
+     r_ub=REBUILD(BlockCopyLoopUpperBoundHelp(peel2,bstop));
+     (tloop1,rloop1) = BlockCopyFlattenTileLoop[p_tloop=p_tloop](peel1,peel2,indexvar,bvar,bstep,r_ub,cpsize); 
+     other_nest = BuildBlockCopyNest[p_tloop=tloop1] (otherLoops, rest2, rest1, cpbody, indexvar);
+
+      <* adjust copying index to support triangular maatrix copy*>
+     if (otherLoops!=NULL && (car(otherLoops) : StripmineTriangularBloop#(Loop#(_,bvar,_,_),_))) {
+        adjust = ExpStmt#(Assign#(indexvar, Bop#("+",indexvar,Bop#("*",bvar,cpsize))));
+        other_nest=adjust::other_nest;
+     }
+     else adjust="";
+     switch (first) {
+      case Loop|NestApp: cpnest = BuildNest(first, other_nest);
+      case StripmineTriangularBloop#(bloop1,bloop2):
+          cpnest="";
+          foreach cur=Nest#((l=StripmineTriangularTloop#(bvar,CLEAR t1,CLEAR t2)),_) \in other_nest do 
+              adj = ExpStmt#(Assign#(indexvar, indexvar+ t1[Loop.start]- bvar)); 
+              n1= BuildNest(bloop1,REPLACE(cur,adj::REPLACE(l,t1,cur), other_nest)); 
+              n2 = BuildNest(bloop2, REPLACE(l,t2,other_nest)); 
+              cpnest=n1 :: n2;
+              BREAK; 
+          enddo  
+          if (cpnest == "") {
+              PRINT("Warning: Failed to process triangular blocked loops:"first);
+              cpnest = BuildNest(first, other_nest); 
+          }
+    }
+     if (!(rloop1 : ""|NULL)) {
+        cleanup = BuildBlockCopyNest[p_tloop=rloop1;fillup=(bvar,bstep,LEN(otherLoops),cpsize)]
+                 (otherLoops, rest2, rest1, cpbody, indexvar);
+        if (adjust != "") cleanup = adjust :: cleanup;
+        if (final) cleanup = cleanup :: ExpStmt#(Assign#(bvar, Bop#("+",bvar, bstep)));
+        cleanup = BuildNest(If#( Bop#("<",bvar,r_ub)), cleanup); 
+        if (fillup!="") {
+            (bvar1, bstep1,dim1,cpsize1) = fillup;
+            if (cpsize1 == 1) cpsize1 = blocksize / bstep;
+            cleanup = cleanup :: ExpStmt#(Assign#(indexvar, Bop#("+",indexvar,Bop#("*",Bop#("-",Bop#("+",bvar1,bstep1),bvar),cpsize1)))); 
+        }
+        cpnest = cpnest :: cleanup; 
+    }
+    cpnest
+  }
+</xform>
+<<******************************
+<xform GetCopyBlockInfo pars=(prefix,ivar, input) trace_decl=GLOBAL.TRACE_DECL 
+         trace_ivars=GLOBAL.TRACE_VARS >
+     switch (input) {
+        case CODE.CopyBlock: input
+        case Nest#(Loop#(bvar_loop,_,stop,step),_):
+           blockdims = NULL; bvar_copy=NULL; bvars=NULL;
+           for ( pivar = ivar; pivar != NULL && cdr(pivar) != NULL; pivar=cdr(pivar)) {
+              
+              i1 = car(cdr(pivar)); i2=car(pivar); 
+              bvar_copy= CopyIvarName#(prefix "_" BlockIvarName(i1)) :: bvar_copy;
+              foreach (input : Loop#(i2,_,_,CLEAR step1) : FALSE) {BREAK; }
+              blockdims = BlockDim[next=blockdims]#(i1, i2, step1);
+              bvars = i2 :: bvars;
+           }
+           AppendDecl[trace=trace_decl](IntegerType,bvar_copy);
+           AppendVar[trace=trace_ivars](bvar_copy);
+           CopyBlock#(ReverseList(bvar_copy), bvars, blockdims)
+     }
+</xform>
+
+<xform BuildCopyNest pars=(lhs,rhs, cploop, buf_index) 
+           block=NULL init="" data_type="" triangular="">
+   if (data_type!="" && (lhs : CODE.Name|ID))
+       cpStmt= DeclStmt#(TypeInfo#(data_type, lhs, CODE.VarInit#rhs));
+   else cpStmt = ExpStmt#(Assign#(lhs,rhs));
+   if (block == NULL) {
+      cpNest = BuildNest(cploop, cpStmt);
+   }
+   else {
+       (bloop, tloop, rloop) = block;
+       cpNest = BuildBlockCopyNest[triangular=triangular](bloop, rloop, tloop, cpStmt, buf_index);
+   }
+  (init == "")? cpNest : (init :: cpNest)
+</xform>
+
+<xform BuildCopy pars=(dim, buf, aref)   triangular=0 
+           data_type=GLOBAL.ARRAY_ELEM_TYPE 
+           dir=3 scalar=1  cpblock="" 
+           trace_decl=GLOBAL.TRACE_DECL trace_vars=GLOBAL.TRACE_VARS
+           output=(_cpbuf, _cpres, _buf_size) >
+    if (cpblock != "") {
+        for ( p_cpblock=cpblock; p_cpblock != NULL; p_cpblock=cdr p_cpblock) {
+           CopyBlock#(_,bvar_loop,_)=car(p_cpblock);
+           aref = REBUILD(REPLACE(bvar_loop,0,aref));
+        }
+    }
+    (cploop,cpbuf,cpsrc,buf_size) = 
+        CopyHelp[unroll=scalar;trace_vars=trace_vars](dim, buf, aref, 0);
+    if (scalar) { 
+       lhs=BuildName(buf cpbuf);
+       init = ""; 
+       cpnest = BuildNest(cploop,lhs);
+       cpbuf=NULL;
+       foreach_r ( cpnest : (cur=Name#_) : TRUE) 
+          cpbuf = cur :: cpbuf;
+    }
+    else   if (cpblock != "") { <* compute blockDim and cpbuf *>
+        blockDim = NULL; b_bufsize = 1; 
+        for ( (p_buf=buf_size; p_cpblock=ReverseList(cpblock)); 
+               (p_buf != NULL && p_cpblock != NULL ); 
+              (p_buf = cdr p_buf; p_cpblock=cdr p_cpblock;)) {
+           CopyBlock#(bvar_copy, _, blockdim) = car(p_cpblock);
+           bdim_now = NULL;
+           for ( (pv=bvar_copy; p = blockdim); p != NULL; 
+                  (pv=cdr(pv); p = p[BlockDim.next])) {
+              curp = car p;
+              cur_blocksize = curp[BlockDim.blocksize]; next = curp[BlockDim.next];
+              bdim_now = BlockDim[next=bdim_now]#("", car(pv),cur_blocksize);
+           }
+           blockDim = bdim_now::blockDim;
+           b_bufsize =  b_bufsize * ( ((car p_buf) + (cur_blocksize - 1))/ cur_blocksize * cur_blocksize);
+        }
+        cpbuf = ArrayAccess#(buf, b_bufsize);
+     }
+    else if (cploop : ""|NULL) cpbuf=buf;
+    else
+       cpbuf = ArrayAccess#(buf, Reduce_listExp("*",buf_size)); 
+
+    if (dir == 0) RETURN (cpbuf, "",car(buf_size));
+
+    if (scalar)  { buf_index = ""; cpblock=""; blockloops=NULL;}
+    else if (cploop : ""|NULL) { lhs = buf; buf_index="";init=""; blockloops=NULL; }
+    else {
+      if (!GLOBAL.USE_PTR_ARITH) {
+        buf_index = CopyIvarName#(buf);
+        AppendDecl[trace=trace_decl](IntegerType, buf_index);
+        AppendVar[trace=trace_vars](buf_index);
+        init = ExpStmt#(Assign#(buf_index, 0));
+        lhs = ArrayAccess#(buf, PostIncrement#(buf_index));
+      }
+      else {
+        buf_index = BufferPtr#buf;
+        AppendDecl[trace=trace_decl](PtrType#(data_type), (buf_index));
+        AppendVar[trace=trace_vars](buf_index);
+        init = ExpStmt#(Assign#(buf_index, buf)); 
+        lhs = Uop#("*",PostIncrement#(buf_index));
+      }
+      if (cpblock != "") {
+         (bloop,tloop,rloop,body)=Stripmine[cleanup=1;no_mod=1;triangular=triangular;trace_ivars=trace_vars]("", blockDim, cploop);
+          blockloops = (bloop,tloop,rloop); 
+      }
+      else blockloops = NULL;
+    }
+    if (trace_decl : VAR) data_type = "";
+    (dir==1)? (cpbuf, 
+             BuildCopyNest[init=init;block=blockloops;data_type=data_type;triangular=triangular](lhs,cpsrc,cploop,buf_index),
+              car(buf_size))
+    :(dir==2)? (cpbuf, 
+             BuildCopyNest[init=init;block=blockloops;triangular=triangular](cpsrc,lhs,cploop,buf_index),
+              car(buf_size))
+    :(dir==3)?  (cpbuf, 
+          (BuildCopyNest[init=init;block=blockloops;data_type=data_type;triangular=triangular](lhs,cpsrc,cploop,buf_index),
+           BuildCopyNest[init=init;block=blockloops;triangular=triangular](cpsrc,lhs,cploop,buf_index) ),
+              car(buf_size))
+    : (ERROR("unexpected dir value: " dir)) 
+</xform>
+
+<***********************************************>
+
+<xform SetupCopyLocation pars=(dim,input) scalar=0 >
+  res=input;
+  if (scalar) {
+    for (p = dim; p != NULL; p = cdr(p)) {
+      ctrl = car(p);
+      foreach (res : Nest#(CLEAR ctrl2,CLEAR body) : TRUE) {
+        ctrl2 = REBUILD(ctrl2);
+        if (ctrl : ctrl2) { res = body; break; }
+      }
+    } 
+  }
+  if (res != input) {
+     if (input : VAR) {
+      res=TRACE(res);
+      REPLACE(ERASE(res), res, input);
+     }
+  }
+  res
+</xform>
+
+<xform CheckCopyRepl pars=(item, did_repl, init_flag)>
+    switch (item) {
+        case ExpStmt#(Assign#(CLEAR left, CLEAR right)) |
+             DeclStmt#(TypeInfo#(_,CLEAR left, CLEAR right)):
+            if (((init_flag == 1) && LookupList(left, did_repl)) ||
+                ((init_flag == 0) && LookupList(right, did_repl))) {
+                item
+            } else {
+                NULL
+            }
+        case UnrolledFromIvar#(CLEAR name, CLEAR num, CLEAR xlist):
+            newlist = NULL;
+            for (tlist = xlist; tlist != NULL; tlist = cdr(tlist)) {
+                clist = car(tlist);
+                rcc = CheckCopyRepl(clist, did_repl, init_flag);
+                if (rcc != NULL)
+                    newlist = BuildList(rcc, newlist);
+            }
+            newlist = ReverseList(newlist);
+            if (newlist != NULL) {
+                UnrolledFromIvar#(name, num, newlist)
+            } else {
+                NULL
+            }
+        default:
+            ERROR("[CheckCopyRepl] Unsupported item type " item);
+    }
+</xform>
+
+<define ArrayIndex MAP(_,_)/>
+<xform CopyRepl pars=(aref, dim, input) 
+     scalar=0 prefix="" data_type=GLOBAL.ARRAY_ELEM_TYPE  
+     buf_init="" arr_ref_type=CODE.ArrayAccess
+     init=0 save=0 init_loc="" save_loc="" trace_init="" delete_loc=""  align_loc=0
+     permute="" cpBlock="" triangular="" extra_dims="" scalar_num=0
+     trace_decl=GLOBAL.TRACE_DECL trace_vars=GLOBAL.TRACE_VARS  
+     trace_mod=GLOBAL.TRACE_EXP 
+     trace_incl=GLOBAL.TRACE_INCL 
+     trace=GLOBAL.TRACE_TARGET >
+
+   if (prefix == "") {
+      if (Lookup(arr_ref_type#(DELAY{arr},_),aref)) {
+        foreach (aref : arr_ref_type#(arr,_) : TRUE) {
+          if (arr : Uop#("*",CLEAR arr1)) arr = arr1;
+          if (ArrayIndex[arr] != "") {
+            prefix = CopyBufName#arr::ArrayIndex[arr];
+            ArrayIndex[arr] = ArrayIndex[arr] + 1;
+          } else {
+            prefix = CopyBufName#arr;
+            ArrayIndex[arr] = 1;
+          }
+        }
+      } else
+        prefix = ("CopyRepl");
+   }
+   if (input : VAR && !(trace : VAR)) trace = input;
+   if (trace : VAR && !scalar && !(trace_decl : VAR)) {
+       trace_decl=TRACE(trace_decl); 
+       REPLACE(ERASE(trace), trace_decl::ERASE(trace), trace); 
+   }
+   if (!Lookup(DELAY{arr_ref_type#(_,sub)|Bop#("+",_,sub)|Bop#("+",sub,_)}, aref)) 
+     ERROR("Cannot find array subscript for pattern matching: " aref);
+
+   if (init && init_loc == "") init_loc = SetupCopyLocation[scalar=scalar](dim,input); 
+   if (save && save_loc == "") save_loc = (init_loc != "")? init_loc : SetupCopyLocation[scalar=scalar](dim, input); 
+   if (cpBlock=="") { <* determine whether loops have been blocked *>
+     if (dim != NULL && car(dim) :  (cur=Loop#(i,_,_,_)) | Nest#( (cur=Loop#(i,_,_,_)),_))
+        { if (!(cur[Loop.origivar] : ""|i)) cpBlock=dim; }
+   }
+   input_copy=COPY(input); aref=COPY(aref); 
+   dim = BuildCopyDim[scalar=scalar;cpblock=cpBlock;scalar_num=scalar_num](sub, dim, input_copy);
+   if (extra_dims != "") {
+      (aref2,dim2) = extra_dims;
+      ref_dims=BuildRefDims[scalar=scalar](dim, aref2, dim2, input_copy);
+   }
+   else ref_dims="";
+
+   dir = ( (init==0&&init_loc == "")? ((save==0&&save_loc == "")? 0 : 2) : ((save==0&&save_loc=="")? 1 : 3));
+
+   if (cpBlock != "") {
+      dim_new = NULL; blockDim=NULL; cpblock_new = NULL;
+      for ( (p_cp=cpBlock;p_dim = dim); (p_dim!=NULL && p_cp != NULL); 
+            (p_dim=cdr p_dim; p_cp=cdr p_cp)) {
+          CopyDim#(ivar, start, count, dist) = car p_dim;
+          cur_block = GetCopyBlockInfo[trace_decl=trace_decl;trace_ivars=trace_vars](prefix,ivar,car p_cp);
+          if (cur_block != car(p_cp)) cpblock_new=cur_block::cpblock_new; 
+          CopyBlock#(bvar_copy,bvar_loop,curdim) = cur_block;
+          for (pb = bvar_loop; pb != NULL; pb = cdr(pb)) 
+             aref = REBUILD(REPLACE(car(pb),0,aref));
+          dim_new = CopyDim#(ivar, start, bvar_copy,dist) :: dim_new; 
+          blockDim=curdim :: blockDim;
+      } 
+      if (cpblock_new != NULL) cpBlock = ReverseList(cpblock_new);
+      blockDim= ReverseList(blockDim);
+   } 
+   else blockDim="";
+
+   buf = prefix;
+   (cpbuf,cpres, buf_size) = 
+           BuildCopy[data_type=data_type;scalar=scalar; 
+                     cpblock=cpBlock;dir=dir;
+                     trace_vars=trace_vars;trace_decl=trace_decl;
+                     triangular=triangular]
+                             (dim, buf, aref);
+   if (cpbuf == "")
+        ERROR("Nothing to be copied", input);
+   if (cpBlock!="")
+      dim = ReverseList(dim_new);
+
+   if (triangular != "") { <* simplify start of loop for triangular array *>
+      for (CopyDim#(v2,_,_,_)=car(cdr(dim)); v2 != NULL && cdr(v2) != NULL; 
+           v2=cdr(v2)) {bv2=car(v2); }
+      cur = "";
+      foreach cur=StripmineTileStart#(_,bv2,_) \in input do 
+          break; 
+      enddo
+      if (cur != "") input=REPLACE(cur, bv2, input); 
+   }
+
+   if (!Lookup(DELAY{arr_ref_type#(_,CLEAR sub)|Bop#("+",_,CLEAR sub)|Bop#("+",CLEAR sub,_)}, aref)) 
+     ERROR("Cannot find array subscript for pattern matching: " aref);
+   if (scalar) trace_mod="";
+   ((trace_mod,res), did_repl)=ReplExp[scalar=scalar;block=blockDim;permute=permute;addi_vars=ref_dims;buf_size=buf_size] (buf, aref, sub, dim, (trace_mod,input));
+   
+   if (!(cpbuf : arr_ref_type#(CLEAR arr, CLEAR size)))
+           { arr = cpbuf; size = 0; }
+   AppendVar[trace=trace_vars](arr);
+
+   <* QY: init, save, alloc, delete are expected to be outside of input*>
+   <* first modify the surrounding environment *>
+   if (delete_loc != "") {
+        Append_Include[trace=trace_incl](Include_Allocate);
+        if (data_type != "") {
+            if (align_loc == 0) {
+              allocbuf = AllocateStore[init0=(triangular!="")]#(arr, data_type, size); 
+              AppendDecl[trace=trace_decl](PtrType#data_type, arr);
+              deletebuf=DeleteStore#(arr, size);
+            }
+            else {
+               arr_alloc=Name#(arr "_alloc");
+               allocbuf=AllocateStoreWithAlign[init0=(triangular!="")]#(arr, data_type, size, arr_alloc, align_loc);
+               deletebuf=DeleteStore#(arr_alloc, size);
+               AppendDecl[trace=trace_decl](PtrType#data_type, (arr_alloc arr));
+               AppendVar[trace=trace_vars](arr_alloc); 
+            }
+            EraseTraceHandle[repl=allocbuf::delete_loc::deletebuf](delete_loc, trace);
+        }
+        else ERROR("Missing data type information to allocate buffer");
+   } 
+   else if (data_type != "") {
+     if (scalar == 1) { 
+        for (cbuf = cpbuf; cbuf != NULL; cbuf = cdr(cbuf)) {
+          cabuf = car(cbuf);
+          if (Lookup(cabuf, did_repl)) 
+             AppendDecl[trace=trace_decl](data_type, cabuf);
+        }
+      }
+      else {
+        ArrayAccess#(arr,size) = cpbuf;
+        if (buf_init != "") 
+         AppendDecl[trace=trace_decl;init=VarInit#buf_init](CODE.PtrType#data_type, arr);
+        else
+         AppendDecl[trace=trace_decl](data_type, cpbuf);
+      }
+   }
+
+   initbuf = (dir==1)? cpres : (dir==3)? cpres[0] : "";
+   savebuf = (dir==2)? cpres : (dir==3)? cpres[1] : "";
+
+   <* Wenwen: check if the scalar replacement was performed really *>
+<*
+   if (scalar == 1) {
+     if (initbuf != "") {
+       initbuf = CheckCopyRepl(initbuf, did_repl, 1);
+     }
+     if (savebuf != "") {
+       savebuf = CheckCopyRepl(savebuf, did_repl, 0);
+     }
+   }
+*>
+  
+   if (init_loc == input) {
+       res = initbuf::res;
+       init_loc = "";
+   }
+   if (save_loc == input) {
+       res = res::savebuf;
+       save_loc = "";
+   }
+   if (trace_init : VAR) {
+      REPLACE(ERASE(trace_init), AppendList(ERASE(trace_init),initbuf), trace_init);
+   }
+   else if (init_loc != "") {
+      if (Lookup(init_loc,input)) {
+          res = REPLACE(init_loc, (initbuf::init_loc), res);
+          init_loc = "";
+      }
+      else if (Lookup(car(init_loc),input)) {
+        for (p = init_loc; p != NULL; p=cdr(p)) 
+          res = REPLACE(car(p), (initbuf::(car p)), res);
+        init_loc = "";
+      }
+   } 
+   if (save_loc != "") {
+      if (Lookup(save_loc,input)) {
+         res = REPLACE(save_loc, (save_loc::savebuf), res);
+         save_loc = "";
+      }
+      else if (Lookup(car(save_loc),input)) { 
+         for (p = save_loc; p != NULL; p=cdr(p)) 
+             res = REPLACE(car(p), ((car p)::savebuf), res);
+         save_loc = "";
+      }
+   } 
+
+   if (trace : VAR)  {
+      <<*cur = "";
+      <<*foreach cur \in trace s.t. cur==input do break; enddo
+      <<*if (cur == "") { print ("Error: [CopyRepl:] cannot find input in trace:" input); } 
+      EraseTraceHandle[repl=res](input,trace); 
+      <<*cur = "";
+      <<*foreach cur \in trace s.t. cur==res do break; enddo
+      <<*if (cur == "") { print ("Error: [CopyRepl:] replacing input failed:" input); } 
+   }
+   if (init_loc != "" && init_loc == save_loc)  {
+         EraseTraceHandle[repl=initbuf::save_loc::savebuf](save_loc,trace);
+   }
+   else {
+      if (save_loc!="") 
+          EraseTraceHandle[repl=save_loc::savebuf](save_loc, trace);
+      if (init_loc != "") 
+          EraseTraceHandle[repl=initbuf::init_loc](init_loc, trace);
+   }
+   res
+</xform>
+
+<***********************************************>
+<xform ScalarRepl pars=(aref, dim, input)  
+      prefix="" data_type=GLOBAL.ARRAY_ELEM_TYPE  init_loc="" save_loc="" scalar_num=0 
+      init_place="" trace_vars=GLOBAL.TRACE_VARS
+      trace_decl=GLOBAL.TRACE_DECL trace_mod=GLOBAL.TRACE_EXP trace=GLOBAL.TRACE_TARGET >
+   if (!(input : VAR) && input : CODE.StmtBlock)
+      input = input[StmtBlock.stmts];
+
+   if (aref : ID) {
+      arr = aref;
+      if (prefix == "") prefix = CopyBufName#arr;
+      i = 0; 
+      foreach aref=ArrayAccess#(arr,_) \in ERASE(input) do
+         i = i+1;
+         input = CopyRepl[scalar=1;
+           init_loc=init_loc;save_loc=save_loc; init=init; save=save; scalar_num=scalar_num;
+           prefix=(prefix i); data_type=data_type; trace_decl=trace_decl; 
+           trace=trace; trace_mod=trace_mod; trace_vars=trace_vars] 
+           (aref, dim, input);
+      enddo
+      if (aref == arr) print("ERROR: Cannot find an array reference for " aref);
+   }
+  else {
+     CopyRepl[scalar=1;init_loc=init_loc;save_loc=save_loc; init=init; save=save;
+           prefix=prefix; data_type=data_type; trace_decl=trace_decl; scalar_num=scalar_num;
+           trace=trace; trace_mod=trace_mod; trace_vars=trace_vars] 
+           (aref, dim, input)
+  }
+</xform>
+
+<xform  AppendLoopBody pars=(ivar, step, app, input) >
+ repl="";
+ foreach_r (input : Nest#(Loop#(CLEAR ivar,_,_,CLEAR istep,_), CLEAR body) : FALSE ) {
+     cur = (step =="")? app : REPLACE(step,istep,app);
+     repl = BuildList( (body, BuildList(body,cur)), repl);
+ }
+ (repl != "")?  REPLACE(repl, input) : input
+</xform>
+

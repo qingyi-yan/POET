@@ -1,0 +1,149 @@
+
+DEBUGGING at level 1
+3:FLOAT
+===>0
+"3.3":FLOAT
+===>1
+END DEBUGGING at level 1
+parsing result=Uop#(
+  "-",
+  3)
+Uop#(
+  "-",
+  3)
+EXPO#(
+  "3.2",
+  "5")
+(
+"3.2",
+"a5")
+3.2
+.1
+DeclStmt#TypeInfo#(
+    ArrayType#(
+      IntType#"int",
+      ArrayDim#3),
+    "abc",
+    "")
+DeclStmt#TypeInfo#(
+    ArrayType#(
+      StaticType#IntType#"char",
+      ArrayDim#"MAXLINE"),
+    "listname_base",
+    "")
+DeclStmt#TypeInfo#(
+    "ABC",
+    "abc",
+    "")
+FunctionDecl#(
+  "p",
+  "",
+  "ABC",
+  EmptyStmt)#(
+  "",
+  "")
+Bop#(
+  "-",
+  Bop#(
+    "+",
+    "a",
+    "b"),
+  "c")
+Bop#(
+  "*",
+  "beta",
+  ArrayAccess#(
+    "C",
+    Bop#(
+      "+",
+      Bop#(
+        "*",
+        "j",
+        "ldc"),
+      "i")))
+Loop#(
+  "i",
+  0,
+  "100",
+  2)#(
+  "",
+  "",
+  "",
+  "",
+  "")
+Bop#(
+  "+",
+  Uop#(
+    "-",
+    1),
+  "N")
+3.7
+Bop#(
+  "!=",
+  ArrayAccess#(
+    ArrayAccess#(
+      "mat",
+      0),
+    "i"),
+  0)
+
+
+DEBUGGING at level 1
+("GOO" "abc")==>cur1=foo
+===>0
+if ("GOO" "abc")==>cur1=foo===>0
+("FOO" "abc")==>cur2=foo
+===>1
+if ("FOO" "abc")==>cur2=foo===>1
+foo#x=cur2
+===>foo#abc
+a=Stmt#"abdc"
+===>Stmt#"abdc"
+Stmt#a=a
+===>Stmt#"abdc"
+a=("a" "b" "c")
+===>("a" "b" "c")
+b=(a "d")
+===>(("a" "b" "c") "d")
+REPLACE(a,b,a)
+===>(("a" "b" "c") "d")
+SPLIT("","for(i=0;i<100;i+=2)")
+===>("for" "(" "i" "=" "0" ";" "i" "<" "100" ";" "i" "+" "=" "2" ")")
+SPLIT("","(abc def)")
+===>("(" "abc" " " "def" ")")
+SPLIT("","(abc def)")=>LIST(STRING,"")
+===>("(" "abc" "def" ")")
+PERMUTE((3 2 1),("a" "b" "c"))
+===>("c" "b" "a")
+SPLIT("","a+b-c")
+===>("a" "+" "b" "-" "c")
+SPLIT("","x*x-2")
+===>("x" "*" "x" "-" "2")
+REPLACE("x","y",SPLIT("","x*x-2"))
+===>("y" "*" "y" "-" "2")
+SPLIT("","a+b-c")
+===>("a" "+" "b" "-" "c")
+REPLACE((("a",1) ("b",2) ("c",3)),SPLIT("","a+b-c"))
+===>(1 "+" 2 "-" 3)
+Result of invoking RebuildBop(op,opd1,opd2)
+===>CodeVar:Bop#("*",70,"i")
+Result of invoking RebuildBop(op,opd1,opd2)
+===>CodeVar:Bop#("+",Bop#("*",70,"i"),"l")
+Result of invoking RebuildBop(op,opd1,opd2)
+===>CodeVar:ArrayAccess#("A",Bop#("+",Bop#("*",70,"i"),"l"))
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+input=Stmt#"var"
+===>Stmt#"var"
+DUPLICATE("var",(1 2 3),input)
+===>(Stmt#1 Stmt#2 Stmt#3)
+input:Stmt#_
+===>1
+Stmt#input:Stmt#_
+===>1
+Stmt#input:Stmt#newvar
+===>1
+Stmt#123:Stmt#newvar
+===>0
+END DEBUGGING at level 1

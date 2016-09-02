@@ -1,0 +1,71 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default=((9)) message="Unroll factor for loop Nest1_1" />
+<parameter tp2 type=1.._ default=((9)) message="Unroll factor for loop Nest1_2" />
+<parameter tp3 type=1.._ default=((9)) message="Unroll factor for loop Nest1_3" />
+<trace inputCode />
+<trace Nest12,Nest13,Nest14,Nest15,Nest16,Nest17,Nest18,Nest19,Nest20,Nest1_1,Nest1_2,Nest1_3 />
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5,Stmt6,Stmt7,Stmt8,Stmt9,Stmt10,Stmt11,Stmt12,Stmt13,Stmt14,Stmt15,Stmt16,Stmt17,Stmt18,Stmt19,Stmt20,Stmt21,Stmt22,Stmt23,Stmt24,Stmt25,Stmt26,Stmt27,Stmt28,Stmt29,Stmt30 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest1_3_group1 = (Nest1_3) />
+<trace Nest1_2_group1 = (Nest1_2) />
+<trace Nest1_1_group1 = (Nest1_1) />
+
+
+<trace _decl1="" />
+<eval Nest12_decl=Nest12;
+      if (Nest12 : CODE.FunctionDecl) 
+          Nest12_decl=Nest12[FunctionDecl.body][StmtBlock.stmts];
+      else Nest12_decl = Nest12;
+      EraseTraceHandle[repl=(_decl1 Nest12_decl)](Nest12_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval EraseTraceHandle[repl=Nest1_3_group1](Nest1_3,inputCode);
+	EraseTraceHandle[repl=Nest1_2_group1](Nest1_2,inputCode);
+	EraseTraceHandle[repl=Nest1_1_group1](Nest1_1,inputCode);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt1);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt2);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt3);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt4);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt5);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt6);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt7);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt8);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt9);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt10);
+	RedundancyElimination[used_place=(Nest20);index_start=9](4,Nest1_1);
+	UnrollLoop[factor=tp1](Nest1_1_group1);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt11);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt12);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt13);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt14);
+	RedundancyElimination[used_place=("")](4,Stmt15);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt16);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt17);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt18);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt19);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt20);
+	RedundancyElimination[used_place=(Nest20);index_start=9](4,Nest1_2);
+	UnrollLoop[factor=tp2](Nest1_2_group1);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt21);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt22);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt23);
+	RedundancyElimination[used_place=(Nest20);erase_flag=(0)](4,Stmt24);
+	RedundancyElimination[used_place=("")](4,Stmt25);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt26);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt27);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt28);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt29);
+	RedundancyElimination[used_place=(Nest20)](4,Stmt30);
+	RedundancyElimination[used_place=(Nest20);index_start=9](4,Nest1_3);
+	UnrollLoop[factor=tp3](Nest1_3_group1); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

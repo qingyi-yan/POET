@@ -1,0 +1,31 @@
+include utils.incl
+<code Flush/>
+<code Align pars=(byte)/>
+<code AllocateVector pars = (name, type,size, init, spec) />
+<code AllocateMatrix pars = (name, type, row, col, init, spec) />
+<code AllocateArray2D pars = (name, type, row, col, init, spec) />
+<code StaticVector pars = (name, type,size, init, spec) />
+<code StaticMatrix pars = (name, type, row, col, init, spec) />
+<code InitializeVector pars = (type,var, n) />
+<code FlushCache pars = (n) />
+<code Increment pars=(begin,incr)/>
+<code Random />
+<code ParameterInitialization pars = (paramName, init) />
+<code FlopsExpression pars = (exp) />
+<code GetCycleCountCode pars=(ISA) />
+
+<******** required when reading the target language *>
+<code TopSpecification pars=(incl, routine, checkpoint, init, returns, mflops)/>
+<code FunctionDecl pars=(name, params, ret, body) />
+<code SubroutineDecl pars=(name, params, body) />
+<code RoutineSpec pars=(routine)/>
+<code CheckpointSpec pars=(file:String) />
+<code RoutineInitSpec pars=(init) />
+<code TypeInfo pars=(type, name, init) />
+<code MacroVal pars=(name,val)/>
+<code VoidType/>
+<code Random/>
+<code IncludeSpec pars=(content)/>
+<code ReturnSpec pars=(result)/>
+<code MFLOPS_spec pars=(exp)/>
+

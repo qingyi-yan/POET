@@ -1,0 +1,19 @@
+
+DEBUGGING at level 1
+LEN(A)
+===>2
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+HEAD(B)
+===>4
+TAIL(B)
+===>((5 7) (9 10))
+LEN(B)
+===>3
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+LEN(C)
+===>2
+END DEBUGGING at level 1

@@ -1,0 +1,270 @@
+include opt.pi
+
+<parameter pre type="s"|"d" 
+                  default="d" 
+                  message="Whether to compute at single- or double- precision" /> 
+
+<parameter yu type=1.._ 
+                  default=4 
+                  message="Unroll factors for loops that iterate over vectors y and x" /> 
+<parameter xu type=1.._ 
+                  default=2 
+                  message="Unroll factors for loops that iterate over vectors y and x" /> 
+
+<parameter SSELEN type=8|16 
+                  default=8 
+                  message="The length of SSE registers. Should be 8 for 32 bit machines and 16 for 64 bit machines" /> 
+<parameter SSENO type=0|8|16 
+                  default=8 
+                  message="The number of SSE registers. Should be 8 for 32 bit Intel machines and 16 for 64 bit Intel machines" /> 
+<parameter align type=0|1 
+                  default=1 
+                  message="Whether to align loops before SSE vectorization" /> 
+
+<parameter PF type=0..4 
+                  default=1 
+                  message="Whether and how to apply prefetching optimization. 0: no prefetching; 1: prefetch A at next iteration of loop I; 2: prefetch X at next iteration of loop J; 3: prefetch both A at next iteration of loop J; 4: prefetch both X and A at iteration of loopJ." /> 
+
+<parameter permuteReg type=(INT,INT,INT,INT) 
+                  parse=TUPLE("("INT","INT","INT","INT")")
+                  default=(1,2,3,4)
+                  message="permutation of integers (1,2,3,4) to control the ordering of scalar repl (for A,X,Y) and unrollJam (register level blocking); The original ordering is A_scalar->UnrollJam->X_scalar->Y_scalar" />
+
+<parameter permuteUnroll type=(INT,INT) 
+                  parse=TUPLE("("INT","INT")")
+                  default=(1,2)
+                  message="permutation of integers (1,2) to control the ordering of FiniteDifferencing and loop unrolling. The original ordering is FiniteDiff -> Unroll" />
+
+<parameter threeAddress type=0..1 
+                  default=1 
+                  message="whether or not translate to three-address code" /> 
+
+<parameter addressTranslate type=0..1 
+                  default=0 
+                  message="Turn on three address and two address translate" />
+
+
+<eval ftype=(pre == "d")? "double" : "float";
+      BETA="__BETA"; />
+
+<define alpha 0/>
+<trace gemvdef,gemv,gemvDecl,gemvBody,nest2,loopI,stmt0,nest1Wrap,nest1,loopJ/>
+
+<input to=gemvdef syntax="Cfront.code" >
+#ifdef BETA/*@@*/__BETA/*@@*/ 
+
+/*@; BEGIN(gemv=CODE.FunctionDecl) @*/
+void ATL_/*@@*/__pre/*@@*/gemvT_a1_x1_b/*@@*/__BETA/*@@*/_y1(const int M, const int N, const double alpha, const double *A, const int lda, const double *X, const int incX, const double beta, double *Y, const int incY) 			
+{ 
+   int i, j;     					//@=>gemvDecl=Stmt
+   for (i = 0; i < M; i += 1) 				//@=>loopI=Loop BEGIN(nest2=Nest) BEGIN(gemvBody=Nest) 
+   {                                                    
+     Y[i] = beta * Y[i];				//@ =>stmt0=Stmt; BEGIN(nest1Wrap=Nest)
+     for (j = 0; j < N; j += 1)		        	//@=>loopJ=Loop BEGIN(nest1=Nest)
+     { 							
+         Y[i] += A[i*lda+j] * X[j];			
+      }      						
+   } 							
+}  							
+#endif 
+
+</input>
+
+<eval Arepl=""; Xrepl=""; Yrepl=""; beta="";
+      lda="lda";
+      ai=Bop#("*","i",lda);
+      aij=Bop#("+",ai,"j");
+      Aij=ArrayAccess#("A", aij);
+      Ai=ArrayAccess#("A", ai);
+      alphaA=Aij;
+      Yi=ArrayAccess#("Y", "i");
+      Xj=ArrayAccess#("X", "j");
+      paij=Bop#("+","A",aij);
+      pai=Bop#("+","A",ai);
+      pxj=Bop#("+","X","j");
+      pyi=Bop#("+","Y","i"); />
+
+<eval specialize=DELAY {
+   REPLACE("__pre",pre, gemvdef) ;
+   if (pre != "d") 
+       REPLACE("double",ftype, gemvdef) ;
+   REPLACE(BETA, beta, gemvdef) ;
+   if (beta == 0) stmt0 = REBUILD(REPLACE("beta",0, stmt0)); 
+   else { if (beta == 1) stmt0 = REBUILD (REPLACE("beta",1, stmt0)); }
+}/>
+
+<output to="orig.c" syntax="Cfront.code" from=( 
+   <<*INSERT (gemvdef,gemvdef);
+   (
+    beta=0; 
+    SAVE gemvdef; 
+    APPLY {specialize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+   (
+    beta=1; 
+    SAVE gemvdef; 
+    APPLY {specialize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+   (
+    beta="X"; 
+    SAVE gemvdef; 
+    APPLY {specialize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+) />
+
+<eval optimize= 
+    DELAY { 
+            Xrepl = Yrepl = Arepl = ""; 
+            APPLY {specialize}; 
+          }
+
+    PERMUTE(permuteReg, 
+       DELAY { <* APPLY A_ScalarRepl; *>
+          TRACE(Arepl, 
+                ScalarRepl[prefix="a_buf"; trace_vars=Arepl;init_loc=nest1[Nest.body]; data_type=ftype; 
+                         trace_decl=gemvDecl; trace=gemvBody ]
+                   (alphaA, (CopyDim#("i","i",loopI[Loop.step],lda)
+                                         CopyDim#("j","j",loopJ[Loop.step],1)),
+                     nest1[Nest.body]));
+            }
+
+       DELAY{ <* APPLY nest2_UnrollJam; *>
+           if (Yrepl != "") 
+              PRINT ("Unroll-Jam is disabled because of Y_ScalarRepl");
+           else { 
+               if (yu > 1)  UnrollJam[factor=yu;cleanup=1;trace=gemvBody](nest1,nest2);
+               }
+          }
+
+       DELAY { <* APPLY X_ScalarRepl;  *>
+           TRACE(Xrepl,
+               ScalarRepl[prefix="x_buf";trace_vars=Xrepl; init_loc=nest1[Nest.body]; data_type=ftype; 
+                      trace_decl=gemvDecl; trace=gemvBody]
+                  (Xj, CopyDim#("j","j",loopJ[Loop.step],1), 
+                   nest1[Nest.body]));
+         }
+
+       DELAY { <* APPLY Y_ScalarRepl; *>
+          if (beta == 0)  {
+              TRACE(Yrepl,
+                    ScalarRepl[prefix="y_buf";trace_vars=Yrepl; save_loc=nest2[Nest.body]; 
+                               data_type=ftype; trace_decl=gemvDecl; trace=gemvBody]
+                      ( Yi, CopyDim#("i","i",loopI[Loop.step],1), 
+                        nest2[Nest.body]));
+              }
+          else {
+              TRACE(Yrepl,
+                    ScalarRepl[prefix="y_buf";trace_vars=Yrepl; save_loc=nest2[Nest.body]; 
+                               init_loc=nest2[Nest.body]; data_type=ftype; 
+                               trace_decl=gemvDecl; trace=gemvBody]
+                   ( Yi, CopyDim#("i","i",loopI[Loop.step],1), 
+                     nest2[Nest.body]));
+             }
+         }
+      )  <* end of permuteReg *>
+
+      DELAY { <* APPLY Three address translation: Array2Ptr, Abuf_SplitStmt; *>
+         if (threeAddress != 0) {
+             ArrayAccess2PtrRef(nest2);
+             if (Arepl){
+		if(addressTranslate == 0){
+                SplitStmt[iReuse=1; trace=gemvBody](Arepl, nest1[Nest.body]);
+                } else {
+                        nvars = "";
+                        TRACE(nvars,SplitStmt[new=TRUE; trace_newVars=nvars; iReuse=1; trace=gemvBody]
+				(Arepl,nest1[Nest.body]));
+                        Arepl = BuildList(Arepl,nvars);
+                }  
+	     }
+             if (SSENO && SSELEN) { <* APPLY body2_Vectorize;  *>
+                 vars= (beta=="X")? (("beta",0) (Arepl,1) (Xrepl,1) (Yrepl,0)) 
+                         :  ( (Arepl,1) (Xrepl,1) (Yrepl,0) ) ;
+                 alignOpt=(align? (pai,paij,"alignA") : "");
+                 VectorizeLoop[ext=nest2[Nest.body];
+                      reduce_vars=Yrepl; init_vars=((beta=="X")?"beta":""); 
+                               elem_prec=pre; iRegno=SSENO; iReglen=SSELEN; 
+                               trace_include=gemv; trace_decl=gemvDecl; alignOpt=alignOpt; 
+                               trace=gemvBody]
+                     (vars, nest1);
+                }
+            }
+         }
+
+     PERMUTE(permuteUnroll, 
+         DELAY { <* APPLY nest1_Unroll; *>
+            factor=xu / loopJ[Loop.step];
+            if (factor > 1) {
+                UnrollLoops[factor=factor;cleanup=1; trace=nest1Wrap]
+                            (nest1[Nest.body],nest1) ;
+                }
+            }
+
+         DELAY { <* APPLY array_FiniteDiff; *>
+            FiniteDiff[prefix="pA"; exp_type=("const " ftype "*"); trace_decl=gemvDecl]
+                ( "A", (ExpDim#(nest2, loopI[Loop.step], lda) ExpDim#(nest1, 1, 1)), gemvBody);
+            FiniteDiff[prefix="pX"; exp_type=("const " ftype "*");  trace_decl=gemvDecl; 
+                         trace=gemvBody]
+                 ( "X", ExpDim#(nest1, 1, 1), nest2[Nest.body]);
+            FiniteDiff[ prefix="pY"; exp_type=(ftype "*");  trace_decl=gemvDecl] 
+                 ( "Y", ExpDim#(nest2, 1, 1), gemvBody);
+            }
+     ) <* end of permuteUnroll *>
+
+     DELAY {  <* APPLY body2_Prefetch; *>
+        if (PF == 1)  {
+            Prefetch[ trace_decl=gemvDecl; trace_include=gemvdef; 
+                    data_type="const " ftype " *"; trace=gemvBody; var="prefA"] 
+              ("A" + loopI[Loop.step] * lda, 
+                ((nest2,nest2[Nest.body]) (nest1,nest1[Nest.body])), 
+                ((loopI[Loop.step]*lda)  loopJ[Loop.step]));
+            }
+        if (PF == 2 || PF == 4) {
+            Prefetch[ trace_decl=gemvDecl; trace_include=gemvdef; 
+                  data_type="const " ftype " *"; trace=gemvBody; vars="prefX"] 
+              ("X"+loopJ[Loop.step], 
+                (nest1,nest1[Nest.body]), loopJ[Loop.step]);
+           }
+        if (PF == 3 || PF == 4) {
+            Prefetch[ trace_decl=gemvDecl; trace_include=gemvdef; 
+                   data_type="const " ftype " *"; trace=gemvBody; vars="prefA"] 
+              ("A"+loopJ[Loop.step], 
+                ((nest2,nest2[Nest.body]) (nest1,nest1[Nest.body])), 
+                ((loopI[Loop.step]*lda)  loopJ[Loop.step]));
+           }
+        }
+ />
+<output to="dgemv_kernel.c" syntax="Cfront.code" from=( 
+   (
+    beta=0; 
+    SAVE gemvdef; 
+    APPLY {optimize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+   (
+    beta=1; 
+    SAVE gemvdef; 
+    APPLY {optimize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+   (
+    beta="X"; 
+    SAVE gemvdef; 
+    APPLY {optimize};
+    res = COPY gemvdef;
+    RESTORE gemvdef;
+    res 
+   )
+) />

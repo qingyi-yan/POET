@@ -1,0 +1,229 @@
+include utils.incl
+include specification.incl
+
+<parameter infile default="" message="name of input file"/>
+<parameter header default="" message="name of header file"/>
+<parameter lang message="syntax of input file" default="Cfront.code"/>
+<parameter outfile default="" message="name of output file"/>
+<parameter arracc message="array access operators" default="" parse=LIST(ID," ")/>
+<parameter DEFAULT_SIZE message="default value of macro size" default=200/>
+<code NEED pars=(t) > NEED to be defined </code>
+
+<input from=infile to=target syntax=lang />
+
+<input cond=(header!="") from=header to=header_def syntax="Cmacro.code" />
+
+<xform init_macro pars=(tab) >
+res = "";
+foreach (tab : (_, (cur=CODE.ParameterInitialization)) : TRUE) {
+   res = BuildList(cur, res);
+}
+res
+</xform>
+
+<xform init_constants pars=(tab)>
+foreach (tab : (CLEAR cur, CODE.NEED#(CLEAR t1)) : TRUE) {
+  switch (t1) {
+  case CODE.PtrType: tab[cur]=CODE.ParameterInitialization#(cur,0);
+  case CODE.ConstType#(CODE.FloatType)|CODE.FloatType:
+   tab[cur]=CODE.ParameterInitialization#(cur, CODE.Random);
+  case CODE.ConstType#(CODE.IntType)|CODE.IntType:
+   tab[cur] = CODE.ParameterInitialization#(cur,0);
+  }
+}
+</xform>
+
+<xform init_loop_bounds pars=(input) tab="" >
+foreach (input : CODE.Loop#(CLEAR i,_,CLEAR ub,_): FALSE) {
+  tab[i] = ub;
+  
+  if (ub : CODE.Bop#("+"|"-", (ub1=ID), INT)) ub = ub1;
+  if (tab[ub] : NEED) { 
+     cur = ParameterInitialization#(ub,MacroVal#("SIZE",GLOBAL.DEFAULT_SIZE));
+     tab[ub]=cur;
+  }
+}
+</xform>
+
+<xform get_bound  pars=(val,tab) >
+ switch (val) {
+ case ID: res = tab[val]; 
+          switch (res) {
+           case CODE.NEED:
+              tab[val] = CODE.ParameterInitialization#(val,MacroVal#("SIZE",GLOBAL.DEFAULT_SIZE)); 
+              res = val;
+           case CODE.ParameterInitialization#(val,CODE.MacroVal): res = val
+           default: if (res != val) res = get_bound(res, tab);
+          }
+          res
+ case Bop#(op, op1, op2) : Bop#(op, get_bound(op1,tab), get_bound(op2,tab))
+ case CODE.FunctionCall#(f,args) : FunctionCall#(f, get_bound(args, tab))
+ case (head tail) : (get_bound(head,tab) get_bound(tail,tab))
+ case INT : val
+ }
+</xform>
+
+<xform LocalVarFromParam pars=(arr, input) tab="" res="">
+  if (tab[arr] == "") { 
+      foreach (input : CODE.Assign#(arr,CLEAR arr1) : TRUE) {
+         if (!Lookup(arr1, res)) { 
+            res = LocalVarFromParam(arr1, input);
+         }
+      }
+      res
+  }
+  else if (!Lookup(arr, res)) { BuildList(arr,res) }
+  else { res }
+</xform>
+
+<xform get_subscript_bounds pars=(sub, tab)>
+       dim=NULL;
+       for (p_sub = sub; p_sub!= NULL; p_sub= cdr(p_sub)) {
+         cur_sub = car(p_sub);
+         if (cur_sub : INT)  val=cur_sub+1;
+         else val=get_bound(cur_sub, tab);
+         if (val == "") ERROR("unknown bound for :" cur_sub "\n SymTab: " tab);
+         dim=val::dim;
+       }
+  dim
+</xform>
+
+<xform init_array pars=(input) tab="" >
+res = NULL;
+foreach (input : (cur=CODE.ArrayAccess#(CLEAR arr,CLEAR sub)): FALSE) {
+  <*if (sub : INT) CONTINUE;*>
+  <*Support for matrix access like A[i][j], now only support arrays with 2 dimensions*>
+  if (arr : CODE.ArrayAccess#(CLEAR arr1, CLEAR sub1)) {
+    arr = arr1;
+    sub = sub1 :: sub;
+  }
+  arr_params = LocalVarFromParam[tab=tab](arr, input);
+  for (p = arr_params; p != NULL; p = cdr(p)) {
+     arr=car(p);
+     if (tab[arr] : NEED#(CLEAR t1)) {
+       if (t1 : CODE.PtrType#(CLEAR t2)) t1 = t2;
+       if (t1 : CODE.PtrType#(CLEAR t2)) t1 = t2;
+       if (t1 : CODE.ConstType#(CLEAR t2)) t1 = t2;
+       dim=get_subscript_bounds(sub,tab);
+       switch (LEN(dim)) {
+        case 1: curinit=AllocateVector#(arr,t1,dim,CODE.Random,(Flush Align#16));
+        case 2: curinit=AllocateMatrix#(arr,t1,car(cdr(dim)),car(dim),CODE.Random,(Flush Align#16));
+        default: ERROR("too many dimensions: " dim);
+      }
+       tab[arr]=curinit;
+       res=curinit::res;
+    }
+    else if (tab[arr] : (prev=AllocateVector#(CLEAR t1))){
+       preDim = t1[2];
+       dim=get_subscript_bounds(sub,tab);
+       if ((preDim : INT)&&(((dim : INT)&&(dim > preDim))||(!(dim : INT)))) {
+         curinit=AllocateVector#(arr,t1[1],dim,CODE.Random,(Flush Align#16));
+         tab[arr]=curinit;
+         res=REPLACE(prev,curinit,res);
+       }
+    } else if (tab[arr] : (prev=AllocateMatrix#(CLEAR t1))) {
+       preDiM1 = t1[2]; preDiM2 = t1[3];
+       if (!(preDiM1 : INT) && !(preDiM2 : INT)) CONTINUE;
+       dim=get_subscript_bounds(sub,tab);
+       dim1 = car(cdr(dim)); dim2 = car(dim);
+       if (((dim1 : INT) && (dim1 > preDiM1)) || ((dim2 : INT) && (dim2 > preDiM2))) {
+         curinit=AllocateMatrix#(arr,t1[1],dim1,dim2,CODE.Random,(Flush Align#16));
+         tab[arr]=curinit;
+         res=REPLACE(prev,curinit,res);
+       }
+    }
+  }
+}
+res
+</xform>
+
+<xform process_Cmacro pars=(input) tab="" >
+res = "";
+foreach (input : CODE.MacroDef#(CLEAR arrref,CLEAR params,
+                             CODE.ArrayAccess#(CLEAR arr,CLEAR sub)) : TRUE) {
+      if (tab[arr] : CODE.AllocateMatrix#(_,_,_,CLEAR col,_,_)) {
+        switch (sub) {
+          case CODE.Bop#("+",Bop#("*",i,CLEAR col2),j): 
+            if (tab[col2] : CODE.NEED) 
+               { tab[col2]=col; 
+                 res=BuildList(ParameterInitialization#(col2,col),res); }
+        }
+      }
+}
+res
+</xform>
+
+<xform mod_arrays pars=(input) tab="">
+res="";
+foreach (input : CODE.Assign#((arr=ID)|ArrayAccess#(CLEAR arr,_),_) : TRUE) {
+  res = LocalVarFromParam[tab=tab;res=res](arr,input);
+}
+res
+</xform>
+
+<xform calc_mflops pars=(input) tab="">
+switch (input)
+{
+  case CODE.Nest#(CODE.Loop#(_,l,u,_),body):
+       n = tab[u];
+       if (n : ID) u = n / 2;
+       calc_mflops(body) * u
+  case CODE.Nest#(CODE.If|CODE.Else,_) : 0 <* QY: skip for now *>
+  case CODE.ExpStmt#exp|CODE.Return#exp : calc_mflops(exp)
+  case CODE.Assign#(lhs,rhs): calc_mflops(rhs)
+  case CODE.Bop#("*"|"+"|"-"|"/",p1,p2): calc_mflops(p1) + calc_mflops(p2) + 1 
+  case CODE.Uop#("-",p1): calc_mflops(p1) + 1
+  case (first second): calc_mflops(first) + calc_mflops(second)
+  case ID|CODE.ArrayAccess|CODE.VarDeclStmt: 0
+  case CODE.StmtBlock#body : calc_mflops(body)
+  case FLOAT|INT: 0
+  default: 0
+}
+</xform>
+
+<eval 
+   if (target : CODE.DeclarationBlock#content) target=content;
+   incl=NULL; routine="";
+   for (p = target; p != NULL; p = cdr(p)) {
+DEBUG{
+     cur = car(p);
+     if (car(cur) : CODE.FunctionDecl|CODE.SubroutineDecl) { routine=car(cur); break; }
+     else incl = cur::incl;
+};
+   } 
+   if (incl != NULL) incl=IncludeSpec#(ReverseList(incl)); 
+   else incl = "";
+   if (routine == "") ERROR("Cannot find a subroutine to specify in " target);
+   if (! (routine : FunctionDecl#(name,params,retType, body)))
+     { SubroutineDecl#(name,params,body) = routine; retType=""; } 
+   routine = RoutineSpec#routine;
+
+   body1=body;
+   foreach (body1 : (cur=CODE.FunctionCall#(CLEAR f,CLEAR args)) : TRUE) { 
+      if (Lookup(f, arracc)) {
+        body=REPLACE(cur, ArrayAccess#(car(args),cdr(args)), body); 
+      }
+   }
+   
+   initTab=MAP{};
+   foreach (params : CODE.TypeInfo#(CLEAR t,CLEAR n,_) : TRUE) {
+        initTab[n]=NEED#(t);
+   }
+   init_loop_bounds[tab=initTab](body);
+   arrays = init_array[tab=initTab](body);
+   init_constants(initTab);
+   init = BuildList(init_macro(initTab), arrays);
+
+   if (header != "")
+      init=BuildList(init,process_Cmacro[tab=initTab](header_def));
+   init=RoutineInitSpec#init;
+
+   ret = mod_arrays[tab=initTab](body);
+   if ( ret != "") ret=ReturnSpec#ret; 
+   mflop=calc_mflops[tab=initTab](body);
+   mflop=MFLOPS_spec#mflop;
+
+   result=TopSpecification#(incl,routine,"",init,ret,mflop); 
+/>
+
+<output from=result to=outfile syntax=(lang "specification.code") />

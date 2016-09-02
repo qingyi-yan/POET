@@ -1,0 +1,247 @@
+include tables_generated.incl
+include xform_interactions.pt
+include utils.incl
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<define check_only 0 />
+
+<code Input pars=(input) />
+<code TransformationsWithSource pars=(transformFile, source) />
+<code TransformationsFile pars=(handles, define_vars, xforms) />
+<code Handles pars=(nests, stmts, funcs) />
+<code SpecifiedNests pars=(nests) />
+<code SpecifiedStmts pars=(stmts) />
+<code SpecifiedFuncs pars=(funcs) />
+<code Transformation pars=(name, nests, params) />
+<code TransformationOnlyWithParameters pars=(name, params) />
+<code Parameters pars=(param, remaining_params) />
+<code Parameter pars=(name, value) />
+<code Accessor pars=(before, after) />
+<code NestWithGroup pars=(nest, group) />
+
+
+<define output_transformations NULL />
+
+<input from=(inputFile) annot=0 syntax="code_files/xformList_spec.code" to=inputCode/>
+
+<xform LogError pars=(error_type, exp)>
+    ERROR (error_type " : " exp);
+</xform>
+
+<*This validates a parameter by ensuring it's the right type and checking if it satisies its requirements*>
+<xform VerifyParameterValue pars=(value, type, requirement)>
+    is_valid = 1;
+    switch(type) {
+        case "LIST(INT)" | "LIST(ID)" | "LIST(HANDLE)":
+          for (p = value; p != NULL; p = cdr(p)) {
+              cur_val = car(p);
+              if(type == "LIST(INT)")
+                 (is_valid,_) = VerifyParameterValue(cur_val, "INT", requirement);
+              else
+                 (is_valid,_) = VerifyParameterValue(cur_val, "ID", requirement);
+            }
+            value = CODE.HandleList#(value);
+        case "INT":
+            (min_val,max_val) = requirement;
+            <*transformation is not valid*>        
+            if(value < min_val)  {
+                is_valid = 0;
+                LogError("Integer Parameter Value", value ^ " < " ^ min_val);
+            } else if(max_val != "" && value > max_val) {
+                is_valid = 0;
+                LogError("Integer Parameter Value", value ^ " > " ^ max_val);
+            }
+        case "STRING"|"ID"|"HANDLE": ""
+        case "HANDLE_BODY": value=CODE.HandleAccess#(value, CODE.FieldAccess#("Nest","body")); 
+        case "SELECT":
+            CODE.StringValue#strvalue  = value;
+            valid = 0;
+            for(ops = requirement; ops != NULL; ops = cdr(ops)) {
+                if(strvalue == car(ops))
+                    valid = 1;
+            }
+    
+            if(valid == 0) {
+                is_valid = 0;
+                LogError("Unrecognized value: ", strvalue "is not allowed for this transformation");
+            }
+        default:
+            is_valid = 0;
+            LogError("Unsupported Parameter Type", type);
+    }
+    
+    (is_valid,value)
+</xform>
+
+<*This makes sure the parameter exists for a given transformation*>
+<xform VerifyParameters pars=(xform_name, params)>
+
+    
+    <*assume the parameters are valid to start*>
+    is_valid = 1; new_params = params;
+    
+    foreach_r (params: (cur=Parameter#(CLEAR param_name, CLEAR param_value)) 
+               : TRUE) {
+        <*Check if the parameter is supported*>
+        new_param_value = param_value;
+        if(transformation_parameter_table[param_name] != "") {
+            param_info = car(transformation_parameter_table[param_name]);
+            (is_valid,new_param_value) = VerifyParameterValue(param_value, param_info[0], param_info[1]);
+            if(is_valid == 0)
+                LogError("Invalid Parameter Value", xform_name ^" "^ param_name);
+        } else {
+            is_valid = 0;
+            LogError("Unsupported Parameter", param_name ^ " in " ^ xform_name);
+        }
+        if (is_valid && !GLOBAL.check_only && param_value != new_param_value)
+           new_params = REPLACE(cur, Parameter#(param_name,new_param_value),new_params);
+    }
+    (is_valid, new_params)
+</xform>
+
+<xform FilterValidXforms pars=(xforms)>
+    
+    <*list of the valid_xforms that get returned*>
+    valid_xforms = NULL;
+
+    foreach_r (xforms : (xform=CODE.Transformation#(CLEAR name,CLEAR nests,CLEAR params)) : TRUE) {
+       <*check if the xform is supported*>
+       xform_info=car(transformations_table[name]);
+       if (xform_info != "") {
+           (required,_,_,_,_) = xform_info;
+           (is_valid,params) = VerifyParameters(name,params);
+       } else {
+           is_valid = 0;
+           LogError("Unsupported Transformation", name);
+       }
+       if (is_valid) {
+           if (!GLOBAL.check_only && nests == "") {
+             nests = NULL;
+             foreach_r(required : (param_name=ID)|((param_name=ID),_) : TRUE) {
+                foreach (params:Parameter#(param_name, CLEAR param_value):TRUE){
+                   nests=param_value::nests;
+                   BREAK;
+                }
+             }
+             new_params=NULL;
+             foreach_r (params: 
+               (cur=Parameter#(CLEAR param_name, CLEAR param_value)):TRUE){
+                 if (!Lookup(param_name,required)) 
+                     new_params=cur :: new_params; 
+             }
+             params=new_params;
+           }
+           valid_xforms = Transformation#(name,nests,params) :: valid_xforms;
+       } else {
+           LogError("Invalid Transformation", name);
+       }
+    }
+    valid_xforms
+</xform>
+
+<* This returns a unique name for the TRACE_DECL.*>
+<xform GetTraceDeclName pars=(stmts, nests, funcs) >
+    counter = 1;
+    base_name = "_decl";
+    trace_decl_name = "_decl";
+
+    <*    Assume the name is taken to start the foor loop *>
+    is_name_taken = 1;
+
+    for(counter; is_name_taken == 1; counter = counter + 1) {
+        trace_decl_name = base_name ^ counter;
+
+        <*    Now assume the name is not taken *>
+        is_name_taken = 0;
+
+        <*    Check if the name has been taken *>
+        for(remaining_funcs = funcs; remaining_funcs != NULL; remaining_funcs = cdr(remaining_funcs)) {
+            nest = car(remaining_funcs);
+
+            if(trace_decl_name == funcs)
+                is_name_taken = 1;
+        }
+        for(remaining_stmts = stmts; remaining_stmts != NULL; remaining_stmts = cdr(remaining_stmts)) {
+            stmt = car(remaining_stmts);
+
+            if(trace_decl_name == stmt)
+                is_name_taken = 1;
+        }
+        for(remaining_nests = nests; remaining_nests != NULL; remaining_nests = cdr(remaining_nests)) {
+            nest = car(remaining_nests);
+
+            if(trace_decl_name == nest)
+                is_name_taken = 1;
+        }
+    }
+
+    trace_decl_name
+</xform>
+
+<eval
+    if (!(inputCode : CODE.TransformationsWithSource#(transformFile,_)))
+        transformFile = inputCode;
+
+    TransformationsFile#(handles,definitions, xforms) = transformFile; 
+
+    Handles#(nests,stmts,funcs) = handles;
+
+    <* If there are previously defined statements, make sure they don't conflict with anything. *>
+    all_handles = "";
+    if (nests != "") {
+        nests = nests[SpecifiedNests.nests];
+        all_handles = nests;
+    }
+
+    if (funcs != "") {
+        funcs = funcs[SpecifiedFuncs.funcs];
+        if (all_handles == "")
+            all_handles = funcs;
+        else
+            all_handles = AppendList(all_handles, funcs);
+    }
+
+    if(stmts != "") {
+        stmts = stmts[SpecifiedStmts.stmts];
+        if (all_handles == "")
+            all_handles = stmts;
+        else
+            all_handles = AppendList(all_handles, stmts);
+    }
+
+    <* Add tuning parameters to the transformation*>
+    xforms = FilterValidXforms(xforms);
+    (xforms, defined_parameters) = CreateTuningParameters(xforms);
+
+    <* Add transformations at the end of the list.
+     * AddEndTransformations returns a list of new transformations and a list
+     * of new tuning parameters created*>
+    (xforms, defined_parameters) = GetEndTransformations(xforms,defined_parameters);
+
+    <*Replace the xform targets with the group tracing handle*>
+    tth_map = MAP{};
+    last_tth_map = MAP{};
+    <* Create tracing handles for the transformation parameters and target *>
+    (xforms,definitions,tracing_handles) = CreateTracingHandles(xforms,definitions);
+    <* Replace the xform target with the group tracing handle*>
+    (xforms,group_handles,last_tth_map) = AddGroupHandles(xforms, tth_map, last_tth_map, nests, funcs);
+    (target_tracing_handles, group_handles, last_tth_map) = SortTargetTracingHandles(group_handles, all_handles);
+
+      (xforms, params) = AddFixTransformations(xforms);
+      if (params != "" && params != NULL)
+         defined_parameters = (defined_parameters == NULL)? params : (defined_parameters :: params);
+    <*Create configuration transformations for the target tracing handles. *>
+    configuration_xforms = CreateConfigurationXforms(last_tth_map);
+    if (configuration_xforms != "")
+       xforms = configuration_xforms :: xforms;
+
+    <*    Name the TRACE_DECL to be unique *>
+    trace_decl_name = GetTraceDeclName(stmts, nests, funcs);
+    traceDecl=CODE.TraceDecl#(trace_decl_name, car(all_handles));
+
+    output = CODE.PoetOptFile#(defined_parameters, tracing_handles, target_tracing_handles, handles, traceDecl, definitions, xforms);
+/>
+
+<output to=(outputFile) syntax="code_files/poet_spec.code" from=(output) />
+

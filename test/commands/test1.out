@@ -1,0 +1,193 @@
+
+DEBUGGING at level 1
+"3":STRING
+===>1
+3:STRING
+===>0
+"3":ID
+===>0
+"A3":ID
+===>1
+MyCodeTemplate.info="this"
+===>"this"
+a=MyCodeTemplate[MyCodeTemplate.info="this"]#"123"
+===>MyCodeTemplate#"123"#"this"
+MyCodeTemplate#"123":STRING
+===>0
+MyCodeTemplate#123:MyCodeTemplate
+===>1
+3:MyCodeTemplate
+===>0
+MyCodeTemplate#123:MyCodeTemplate#INT
+===>1
+("abc" "." "ext"):STRING
+===>0
+("3" "4" "5"):(INT)...
+===>1
+3:(INT)...
+===>1
+(3 4 5):(INT)...
+===>1
+(3 4 5 "abc"):(INT)...
+===>0
+(3 4 5 "abc"):(_)...
+===>1
+3:0..2
+===>0
+3:0..5
+===>1
+"a":0..5
+===>0
+"a":CODE
+===>0
+MyCodeTemplate:CODE
+===>1
+MyCodeTemplate#123:CODE
+===>1
+("abc" "." "ext"):CODE
+===>0
+MyCodeTemplate#123:XFORM
+===>0
+("abc" "." "ext"):XFORM
+===>0
+foo:XFORM
+===>1
+"abc":TUPLE
+===>0
+("abc",2):TUPLE
+===>1
+MyCodeTemplate#123:TUPLE
+===>0
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+"3"=>STRING
+===>"3"
+a=("3" "5")
+===>("3" "5")
+a=>STRING
+===>"35"
+3=>STRING
+===>"3"
+-"3.2"
+===>("-","3.2")
+("abc" "." "ext")=>STRING
+===>"abc.ext"
+"3"=>INT
+===>3
+"3"=>INT=>STRING
+===>"3"
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+a1=(3 4 5)
+===>(3 4 5)
+a2=(1 2 a1)
+===>(1 2 (3 4 5))
+a3=(1 2)::a1
+===>((1 2) 3 4 5)
+a4=1::2::a1
+===>(1 2 3 4 5)
+HEAD(a2)
+===>1
+TAIL(a2)
+===>(2 (3 4 5))
+HEAD(a3)
+===>(1 2)
+TAIL(a3)
+===>(3 4 5)
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+LEN(235)
+===>1
+LEN("abc")
+===>3
+LEN((1 2 3))
+===>3
+LEN((2,3,4,5))
+===>4
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+amap=MAP(_,_)
+===>MAP{}
+bmap=MAP((("abc",3) ("def",4)))
+===>MAP{"abc"=>3;"def"=>4;}
+cmap=MAP
+===>MAP{}
+amap["abc"]=3
+===>3
+amap[4]="def"
+===>"def"
+abc=amap["abc"]
+===>3
+LEN(amap)
+===>2
+Entering FOREACH(amap)
+FOREACH found : ("abc",3)
+FOREACH found : (4,"def")
+Exiting FOREACH(amap)
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+input="bc ade lkd"
+===>"bc ade lkd"
+input:STRING
+===>1
+345:STRING
+===>0
+input:INT
+===>0
+345:INT
+===>1
+345:INT|STRING
+===>1
+345:(INT _)
+===>0
+input:MAP
+===>0
+amap:MAP(_,_)
+===>1
+amap:MAP(INT,_)
+===>0
+input:(_ _)
+===>0
+(2 3):(_ _)
+===>1
+(2,3):(_,_)
+===>1
+(3 2):(first second)
+===>1
+SPLIT("",input)
+===>("bc" " " "ade" " " "lkd")
+SPLIT("",input)=>var=(STRING STRING STRING)
+===>("bc" "ade" "lkd")
+SPLIT("",input)
+===>("bc" " " "ade" " " "lkd")
+SPLIT("",input)=>var=(STRING,STRING,STRING)
+===>("bc","ade","lkd")
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+"abc"^"def"
+===>"abcdef"
+"abc"^"def"^3
+===>"abcdef3"
+("abc" "def")^3
+===>"abcdef3"
+input="bc,ade,lkd"
+===>"bc,ade,lkd"
+SPLIT(1,"abc")
+===>("a" "bc")
+SPLIT(",",input)
+===>("bc" "," "ade" "," "lkd")
+SPLIT(",",MyCodeTemplate#input)
+===>MyCodeTemplate#(("bc" "," "ade" "," "lkd"))#""
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+myFunc=DELAY{x=100}
+===>x=100
+END DEBUGGING at level 1
+DEBUGGING result: myFunc=DELAY{x=100}===>POETEvalExp:x=100

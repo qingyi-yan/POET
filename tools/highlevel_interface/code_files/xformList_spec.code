@@ -1,0 +1,102 @@
+include ExpStmt.incl
+
+<define PARSE CODE.TransformationsWithSource|CODE.TransformationsFile />
+<define UNPARSE CODE.Input />
+<define PARSE_ARRAY XFORM.build_array_ref/>
+<define TOKEN (("-" ">") ("=" "=")) />
+<define EXP_BASE (INT|CODE.StringValue|Char|ID) />
+<define EXP_BOP ( ("?" ":") (">>" "<<") ("=" "+=" "-=" "*=" "/=" "%=") ("&" "|") ("&&" "||") ("==" ">=" "<=" "!=" ">" "<") ("+" "-") ("*" "%" "/") ("->" ".")) />
+<define EXP_UOP ("-" "&" "*")/>
+
+<code TransformationsWithSource pars=(transformFile:CODE.TransformationsFile, source:CODE.Source)>
+/* #begin poet-gui
+@transformFile@
+#end poet-gui */
+@source@
+</code>
+
+<code Source pars=(char1:CODE.AnyChar, remaining:CODE.Source|"")>
+@char1@@remaining@
+</code>
+
+<code AnyChar pars=(char:ID|"{"|"}"|"["|"]"|"("|")"|"\\"|"/"|"*"|";"|":"|"&"|"^"|"%"|"$"|"#"|"@"|"!"|","|"."|"?"|"|"|"-"|"_"|"="|"+"|"\""|"'"|" "|"0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"<"|">"|"\n"|"?"|"`"|"~")>
+@char@
+</code>
+
+<code TransformationsFile pars=(handles:CODE.Handles, define_vars:LIST(CODE.Definition,"\n"), xforms:LIST(CODE.Transformation,"\n"))>
+@handles@
+@define_vars@
+@xforms@
+</code>
+
+<code Definition pars=(name:ID, value:CODE.StringValue|ID) lookahead=2 >
+@name@=@value@
+</code>
+
+<code XformTarget pars=(nests:LIST(CODE.HandleList|EXP, ",")) rebuild=nests>
+: @nests@
+</code>
+
+<code Transformation pars=(name:ID, nests:CODE.XformTarget|"", params:LIST(CODE.Parameter, " ")) lookahead=2>
+@name@: @nests@ @params@
+</code>
+
+<code HandleList pars=(nests: LIST(ID, ",")) >
+(@nests@)
+</code>
+
+<code Handles pars=(nests:CODE.SpecifiedNests|"", stmts:CODE.SpecifiedStmts|"", funcs:CODE.SpecifiedFuncs|"") >
+@nests@
+@stmts@
+@funcs@
+</code>
+
+<code SpecifiedNests pars=(nests:CODE.NestList) >
+Nests:@nests@
+</code>
+
+<code SpecifiedStmts pars=(stmts:CODE.NestList) >
+Stmts:@stmts@
+</code>
+
+<code SpecifiedFuncs pars=(funcs:CODE.NestList) >
+Funcs:@funcs@
+</code>
+
+<code NestList parse=LIST(ID, ",") />
+
+<code Parameter pars=(name:ID, value:LIST(EXP, ",")) lookahead=2>
+@name@=@value@
+</code>
+
+<code AddrOf pars=(content:EXP)>
+&@content@
+</code>
+
+<code ArrayAccess pars=(array:ID|CODE.PtrDeref|CODE.ObjAccess|CODE.ArrayAccess, subscript:ID|INT) lookahead=2>
+(@array@)[@subscript@]
+</code>
+
+<code ObjAccess pars=(type:ID|CODE.ArrayAccess, field:ID)>
+@type@.@field@
+</code>
+
+<code PtrDeref pars=(ptr:ID)>
+*@ptr@
+</code>
+
+<code ParenValue pars=(value:LIST(EXP,","))>
+(@value@)
+</code>
+
+<code StringValue pars=(value:LIST(ID|INT|FLOAT|ParenValue|"+",",")) >
+"@value@"
+</code>
+
+<xform build_array_ref pars=(array,subscript)>
+  ((subscript : Bop#(".",type,fd))?
+             CODE.HandleAccess#(array,CODE.FieldAccess#(type,fd))
+             : ArrayAccess#(array,subscript))
+</xform>
+
+<code FieldAccess pars=(type,fd)/>

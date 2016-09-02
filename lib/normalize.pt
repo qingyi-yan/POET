@@ -1,0 +1,173 @@
+
+<define RETURN_VAR_INDEX 0/>
+
+<xform gen_return_var pars=(dummy) >
+  GLOBAL.RETURN_VAR_INDEX = GLOBAL.RETURN_VAR_INDEX+1;
+  Name#("__ret__" GLOBAL.RETURN_VAR_INDEX)
+</xform>
+
+<xform gen_default_init pars=(type)>
+  switch (type) {
+   case CODE.VoidType: ("int", CODE.VarInit#0)
+   case CODE.PtrType|CODE.IntType1: (type, CODE.VarInit#0)
+   case "bool" : ("int",CODE.VarInit#(-1))
+   case CODE.IntType|"int"|"size_t"|ScopedName#("std" "size_t") : (type,CODE.VarInit#0)
+   case ID : t1=get_type(type); 
+             if (t1 != type) return gen_default_init(t1);
+             return (type,"");
+   case CODE.ScopedName#("std" TypeName#("pair",inst=CODE.TemplateInstantiation#((t1 t2)))): 
+      (t1,VarInit#v1) = gen_default_init(t1);
+      (t2,VarInit#v2) = gen_default_init(t2);
+      (type, VarInit#(CODE.FunctionCallParameter#(v1 v2)))
+   case CODE.ScopedName: 
+        (type,"")
+  }
+</xform>
+
+<xform gen_return_stmt pars=(type,var)>
+switch (type) {
+ case CODE.VoidType: CODE.Return#"" 
+ default : Return#var
+}
+</xform>
+
+<xform eliminate_early_return_help pars=(var,input) level=0 is_last=1 
+              return_init=""
+              output=(_var,_val,_res) >
+ switch (input) {
+ case CODE.BookKeeping|CODE.DeclStmt|CODE.ExpStmt|CODE.DeleteStmt|CODE.Break: 
+        (NULL,NULL, input)
+ case  (first second):
+   (var1,val1, b1) = eliminate_early_return_help[is_last=(is_last && second==NULL)](var,first); 
+   if (var1 != NULL && level == 0) level = 1;
+   (var2,val2, b2) = eliminate_early_return_help(var,second); 
+   if (var1 == NULL) { (var2, val2, AppendList(b1,b2)) }
+   else if (car(second) : CODE.Nest#(CODE.Else,_)) {
+      (var1, AppendList(val1,val2), AppendList(b1,b2))
+   }
+   else { 
+      c = Bop#("!=", var1, car(val1));
+      for (p_val1 = cdr(val1); p_val1 != NULL; p_val1 = cdr(p_val1)) {
+         c = Bop#("&&", c, Bop#("!=", var1, car(p_val1))) 
+      }
+      (var1, AppendList(val1,val2), AppendList(b1,CODE.Nest#(If#c, b2)))
+   }
+ case CODE.Nest#(ctrl,body):
+   (var1,val1, b1) = eliminate_early_return_help[level=level+1](var,body); 
+   if (var1 != NULL && ctrl : While#(c) && return_init:VarInit#init_val) { 
+       (var1, val1, Nest#(While#(Bop#("&&",c,Bop#("==",var1,init_val))),b1)) 
+   }
+   else { (var1,val1,Nest#(ctrl,b1)) }
+ case CODE.StmtBlock#body:  
+   (var1,val1, b1) = eliminate_early_return_help[level=level+1](var,body); 
+   (var1,val1,StmtBlock#(b1))
+ case CODE.Return#"": 
+   if (level == 0 && is_last == 1) { (NULL,NULL, input) }
+   else { (var, 1, CODE.ExpStmt#(CODE.Assign#(var, 1))) }
+ case CODE.Return#e : 
+   if (level==0 && is_last == 1) { (NULL,NULL, input) }
+   else { (var, e, CODE.ExpStmt#(CODE.Assign#(var, e))) }
+ case ""|NULL: (NULL,NULL,NULL)
+ }
+</xform>
+
+<xform eliminate_early_return pars=(input, rtype) var="" >
+  ret_var = var;
+  if (ret_var == "") ret_var = gen_return_var("");
+  (t,v) = gen_default_init(rtype);
+  (ret_var, val, res) = XFORM.eliminate_early_return_help[return_init=v](ret_var,input);
+  if (ret_var != NULL && var == "") {
+     res = DeclStmt#(TypeInfo#(t,ret_var,v))::res :: gen_return_stmt(rtype, ret_var);
+  }
+  res
+</xform>
+
+<xform normalize_exp pars=(exp)>
+ switch (exp) {
+ case CODE.ArrayAccess#(e1,e2)|CODE.PtrAccess#(e1,e2)|CODE.Bop#("+"|"-"|"*"|"/"|"%",e1,e2): 
+     (b1,c1,a1) = normalize_exp(e1);
+     (b2,c2,a2) = normalize_exp(e2);
+     (AppendList(b1,b2), REPLACE(e1,c1,REPLACE(e2,c2,exp)), AppendList(a1,a2))
+ case CODE.Uop#( (op=("++"|"--")), arg):
+     (b1,c1,a1) = normalize_exp(arg);
+     (ExpStmt#(Uop#(op,c1))::b1, c1, a1)
+ case CODE.VarRef#(arg, (op=("++"|"--"))):
+     (b1,c1,a1) = normalize_exp(arg);
+     (b1, c1, AppendList(a1,ExpStmt#(VarRef#(c1,op))))
+ case ID : (NULL,exp,NULL)
+ default: (NULL,exp,NULL)
+ }
+</xform>
+
+<xform breakup_var_decls pars=(input) >
+  switch (input){
+   case (first second): AppendList(breakup_var_decls(first),breakup_var_decls(second)) 
+   case CODE.Nest#(ctrl,body) : REPLACE(body, breakup_var_decls(body), input)
+   case CODE.DeclStmt#vars :
+       res = NULL;
+       foreach t=CODE.TypeInfo  \in vars do
+         res = (DeclStmt#t) :: res;
+       enddo
+       ReverseList(res) 
+   default: input
+  }
+</xform>
+
+<xform extract_var_decls pars=(input) output=(_decls,_newinput)>
+  switch (input) {
+  case CODE.DeclStmt#e:
+       res = NULL; decl=NULL;
+       foreach cur=TypeInfo#(CLEAR t, CLEAR v, CLEAR init) \in ReverseList(e) do 
+          if (t : CODE.RefType) {
+             decl = DeclStmt#(cur)::decl;
+          }
+          else if (init : ""|VarInit#(INT|FLOAT)) {
+             decl=DeclStmt#(TypeInfo#(t,v,init))::decl;
+          }
+          else {
+             (_,i) = gen_default_init(t);
+             decl=DeclStmt#(TypeInfo#(t,v,i))::decl;
+             res=ExpStmt#(Assign#(v,init[VarInit.value]))::res;
+          }
+       enddo
+       (decl,res)
+  case (first second):
+        (d1,r1)=extract_var_decls(first); 
+        (d2,r2)=extract_var_decls(second); 
+      (AppendList(d1,d2), AppendList(r1,r2))
+  default: (NULL,input)
+  }
+</xform>
+
+<xform rename_var pars=(origdecl, oldname, newname, input) repl=0 >
+ switch(input) {
+ case oldname : if (repl) { newname } else { oldname }
+ case (first second):
+        if (Lookup(origdecl,first)) repl = 1;
+        rename_var(origdecl, oldname, newname, first):: 
+         rename_var(origdecl, oldname, newname, second)
+ case ID | NULL | CODE.Name | "" | INT | CODE.INT_0x | FLOAT | CODE.ScopedName | CODE.False | CODE.True | CODE.Break | CODE.SizeOf: input
+ case CODE.For#(e1,e2,e3):
+        For#(rename_var(origdecl, oldname, newname, e1), 
+             rename_var(origdecl, oldname, newname, e2),
+             rename_var(origdecl, oldname, newname, e3))
+ case PtrAccess#(e,f) | ObjAccess#(e,f) | ArrayAccess#(e,f) : 
+      e1 = rename_var(origdecl,oldname,newname,e);
+      if (e != e1) { REPLACE(e,e1,input) }
+      else { input }
+ case Bop#(op,f,s) : 
+    Bop#(op,rename_var(origdecl,oldname,newname,f), 
+            rename_var(origdecl,oldname,newname,s))
+ case Assign#(first, second) | Nest#(first, second) | Loop#(_,first,second,_)
+    | Loop_r#(_,first,second,_)
+    | (first,second) | TypeInfo#(_,first,second):
+        f1 = rename_var(origdecl, oldname, newname, first);
+        s1 = rename_var(origdecl, oldname, newname, second);
+       REPLACE(second, s1, REPLACE(first, f1, input)) 
+ case DeclStmt#e | ExpStmt#e | VarInit#e | StmtBlock#e | CastExp#(_,_,e)
+    | FunctionCallParameter#e | While#e | If#e | CODE.ArrayInit#e
+    | FunctionCall#e | Else#e | NewAlloc#(_,e) | Uop#(_,e):
+    e1 = rename_var(origdecl,oldname,newname,e);
+    REPLACE(e,e1,input)
+}
+</xform>

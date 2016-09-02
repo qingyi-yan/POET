@@ -1,0 +1,40 @@
+main: {
+   Control Link -> NULL;
+   Access Link -> NULL;
+   Return Address -> OS;
+   Return Result Address -> OS:Result;
+   foo -> <main, code of foo>;
+   foo(1,2) : ?;
+}
+
+foo(1,2): {
+   Control Link -> main;
+   Access Link -> main;
+   Return Address ->  after line 14;
+   Return Result Address -> main:foo(1,2);
+   x : 1;
+   y : 2;
+   h -> <foo(1,2), code of h>;
+   g -> <foo(1,2), code of g>;
+   g (h,y) : ? ;
+}
+
+g(h,y): {
+   Control Link -> foo(1,2);
+   Access Link -> foo(1,2);
+   Return Address -> after line 12;
+   Return Result Address -> foo(1,2):g(h,y);
+   f -> <foo(1,2),code of h>;
+   x : 3;
+   f(x) : ? ; 
+   h(x+1) : ?;
+}
+
+h(x) :  {
+   Control Link -> g(h,y);
+   Access Link -> foo(1,2);
+   Return Address -> after line 9;
+   Return Result Address -> g(h,y):f(x);
+   x : 3;
+}
+

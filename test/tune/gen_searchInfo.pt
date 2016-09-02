@@ -1,0 +1,10 @@
+
+<parameter inputFile message="input file name"/>
+<parameter inputSyntax default="auto_tune.code" message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter outputSyntax default="search_spec.code" message="output syntax file name"/>
+
+<input from=("opt.pi" inputFile) syntax=inputSyntax to=inputCode/>
+<eval if ( car(inputCode)=="") inputCode=cdr(inputCode); />
+
+<output to=(outputFile) syntax=outputSyntax from=(inputCode)/>

@@ -1,0 +1,271 @@
+include utils.incl
+include ExpStmt.incl
+
+<******** Types **************>
+<code TesterIntType >
+int
+</code>
+
+<code TesterBaseType pars=(type) >
+@foreach (type: (cur=ConstType#(CLEAR type1)): FALSE)  
+      type=REPLACE(cur, type1, type);
+type@
+</code>
+
+<code TesterBufferType pars=(type)>
+@type@*
+</code>
+
+<********* Variables and values *******>
+
+<code TesterRandomVal>
+rand();
+</code>
+
+<code TesterRoutineReturnVar>
+__pt_return
+</code>
+
+<code RefRoutineReturnVar>
+__pt_ref_return
+</code>
+
+<code PT_ivar pars=(index)>
+__pt_i@index@
+</code>
+
+<code MT_ivar>
+__pt_MT_ivar
+</code>
+
+
+<********** expressions and statements *****>
+
+<code TesterBufferDecl pars=(type,name)>
+@TesterBufferType#type@ @name@_buf;
+</code>
+
+<code TesterStaticBufferDecl pars=(type,name,size)>
+@type@ @name@_buf[@size@];
+</code>
+
+<code TesterStatic2DBufferDecl pars=(type,name,size,size2)>
+@type@ @name@_buf[@size@][@size2@];
+</code>
+
+<code TesterVariableDecl pars=(type, name) >
+@type@ @name@;
+</code>
+
+<code TesterBufferSizeDecl pars=(name)>
+@TesterIntType@ @name@_size;
+</code>
+
+<code Tester2DBufferSizeDecl pars=(name)>
+@TesterIntType@ @name@_size;
+@TesterIntType@ @name@_size2;
+</code>
+
+<code TesterAssign pars=(lhs,rhs)>
+@lhs@ = @rhs@;
+</code>
+
+<code TesterBufferAllocate pars=(type,name,size)>
+@name@_size=@size@;
+@name@_buf = (@type@*)calloc(@name@_size, sizeof(@type@));
+</code>
+
+<code Tester2DBufferAllocate pars=(type,name,size,size2)>
+@name@_size=@size@;
+@name@_size2=@size2@;
+@name@_buf = calloc(@name@_size, sizeof(@type@));
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@size@; ++@ivar@) {
+  @name@_buf[@ivar@] = calloc(@name@_size2, sizeof(@type@));
+}
+</code>
+
+<code StaticBufferAllocate pars=(type,name,size)>
+@name@_size=@size@;
+</code>
+
+<code Static2DBufferAllocate pars=(type,name,size,size2)>
+@name@_size=@size@;
+@name@_size2=@size2@;
+</code>
+
+<code TesterBufferInitialize pars=(name, value, valueIncr)>
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@name@_size; ++@ivar@)
+{
+  @name@_buf[@ivar@] = @value@; @ ((valueIncr=="")?"":(@
+  @valueIncr))@
+}
+@name@ = @name@_buf;
+</code>
+
+<code Tester2DBufferInitialize pars=(name, value, valueIncr)>
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@name@_size; ++@ivar@) {
+  @(ivar2=PT_ivar#1; "")
+  @for (@ivar2@=0; @ivar2@<@name@_size2; ++@ivar2@) {
+    @name@_buf[@ivar@][@ivar2@] = @value@; @ ((valueIncr=="")?"":(@
+    @valueIncr))@
+  }
+}
+@name@ = @name@_buf;
+</code>
+
+<code TesterBufferIncrement pars=(name)>
+@(ivar=PT_ivar#0;"")
+@if (@ivar@ < @name@_rep-1)
+  @name@ += @name@_size;
+else @name@ = @name@_buf;
+</code>
+
+<code TesterMacroVal pars=(name,val)>
+/* macro for the value of routine parameter */
+#ifndef @name@
+#define @name@ @val@
+#endif
+</code>
+
+<* fun: the decl of function to call; funpar: the parameters to pass into fun *>
+<code TesterFunCall pars=(funDecl, params)>
+@ lhs = (funDecl[FunctionDecl.ret]:VoidType)? "" : TesterRoutineReturnVar "=";
+  lhs funDecl[FunctionDecl.name]@ (@NameList#params@);
+
+</code>
+
+<code RefFunCall pars=(funDecl, params)>
+@ lhs = (funDecl[FunctionDecl.ret]:VoidType)? "" : RefRoutineReturnVar "=";
+  lhs funDecl[FunctionDecl.name]@ (@NameList#params@);
+
+</code>
+
+<code TesterParameterInit pars=(initseq)>
+/* parameter initializations */
+srand(RANDSEED);
+@StmtList#initseq@
+</code>
+
+
+<code ComputeTesterDiff pars=(mt, returnType)>
+@switch(returnType) {
+	case int: @printf("int");@
+	default:@  printf("default");
+@}@ 
+
+if(@RefRoutineReturnVar@ != @TesterRoutineReturnVar@) {
+	printf("Different return values\n");
+}else {
+	printf("Same return\n");
+}
+</code>
+
+<code MultiTestingLoop pars=(body)>
+/* Multiple Testings */@(ivar=MT_ivar; "")@
+for (@ivar@=0; @ivar@<MT; ++@ivar@) {
+  @StmtList#body@
+}
+</code>
+
+<code SimpleReturnDiff pars=(funDecl, refDecl) >
+if(@RefRoutineReturnVar@ == @TesterRoutineReturnVar@) {
+	printf("@funDecl@ == @refDecl@, return values match\n");
+
+}else {
+	printf("@funDecl@ != @refDecl@, return values do not match\n");
+}
+</code>
+
+<code NumberReturnDiff pars=(funDecl, refDecl) >
+
+printf("(%.15lf = @funDecl@) and (%.15lf = @refDecl@) differ by %.15lf\n",
+	(double)@TesterRoutineReturnVar@, (double)@RefRoutineReturnVar@,
+	fabs((double)@TesterRoutineReturnVar@-@RefRoutineReturnVar@));
+</code>
+
+<code ArrayReturnDiff pars=(ret1, ret2, size)>
+{
+int diff_flag = 0;
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@size@; ++@ivar@)
+{
+  if(@ret1@_buf[@ivar@] != @ret2@_buf[@ivar@]) {
+    diff_flag = 1;
+    printf("Position %d (%f) and Position %d (%f) differ by %.15f\n", @ivar@,
+        @ret1@_buf[@ivar@], @ivar@, @ret2@_buf[@ivar@],
+    	fabs(@ret1@_buf[@ivar@]-@ret2@_buf[@ivar@]));
+  }
+  /*else {
+    printf("Identical output at index %d\n", @ivar@);
+  } */
+}
+if(diff_flag) {
+  printf("Output differs\n");
+}else {
+  printf("Output is identical\n");
+}
+}
+</code>
+
+<code CopyToReturnArray pars=(array_dest, array_src)>
+@(ivar=PT_ivar#0; "")
+@for (@ivar@=0; @ivar@<@array_src@_size; ++@ivar@)
+{
+  @array_dest@_buf[@ivar@] = @array_src@_buf[@ivar@];
+}
+</code>
+
+
+<******  collective templates ****>
+
+<code DeclForTesterVars pars=(mt:INT, paramDecl:StmtList)>
+
+/* induction variables */
+int @PT_ivar#0@, @PT_ivar#1@, @PT_ivar#2@;
+
+@(if(mt > 1) {@
+/* induction variable for Multiple testing */
+int @MT_ivar@;
+@})@
+
+/* Declaring parameters of the routine */
+@paramDecl@
+
+</code>
+
+<code TesterIncludes pars=(mt:INT, randseed:INT, fun:FunctionDecl, ref:FunctionDecl)>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#ifndef RANDSEED
+#define RANDSEED @randseed@
+#endif
+
+@(if (mt > 1) {@
+/* Collect multiple testing samples */
+#ifndef MT
+#define MT @mt@
+#endif
+
+@})@
+/* routine to test*/
+@StmtList#fun@
+@StmtList#ref@
+
+</code>
+
+<code TesterMainCode pars=(body:StmtList)>
+int main(int argc, char **argv) 
+{
+  @body@
+  return(0);
+}
+</code>
+
+<code IncludeSpec pars=(content:CODE.StmtList)>
+@content@
+</code>

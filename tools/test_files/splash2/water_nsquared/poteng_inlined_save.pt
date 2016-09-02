@@ -1,0 +1,96 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest8,Nest9,Nest10,Nest11,Nest12,Nest1_1,Nest1_2,Nest1_3 />
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5,Stmt6,Stmt7,Stmt8,Stmt9,Stmt10,Stmt11,Stmt12,Stmt13,Stmt14,Stmt15,Stmt16,Stmt17,Stmt18,Stmt19,Stmt20,Stmt21,Stmt22 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest9_group1 = (Nest9) />
+<trace Nest8_group1 = (Nest8) />
+<trace Nest1_3_FuseLoops_index_start_th23 = () />
+<trace Nest9_ScalarRepl_aref_th22 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"XDIR"),0)) />
+<trace Nest9_ScalarRepl_aref_th21 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"XDIR"),1)) />
+<trace Nest9_ScalarRepl_aref_th20 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"XDIR"),2)) />
+<trace Nest9_ScalarRepl_aref_th19 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"YDIR"),0)) />
+<trace Nest9_ScalarRepl_aref_th18 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"YDIR"),1)) />
+<trace Nest9_ScalarRepl_aref_th17 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"YDIR"),2)) />
+<trace Nest9_ScalarRepl_aref_th16 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"ZDIR"),0)) />
+<trace Nest9_ScalarRepl_aref_th15 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"ZDIR"),1)) />
+<trace Nest9_ScalarRepl_aref_th14 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","comp"),"F"),"DISP"),"ZDIR"),2)) />
+<trace Nest8_ScalarRepl_aref_th13 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"XDIR"),0)) />
+<trace Nest8_ScalarRepl_aref_th12 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"XDIR"),1)) />
+<trace Nest8_ScalarRepl_aref_th11 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"XDIR"),2)) />
+<trace Nest8_ScalarRepl_aref_th10 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"YDIR"),0)) />
+<trace Nest8_ScalarRepl_aref_th9 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"YDIR"),1)) />
+<trace Nest8_ScalarRepl_aref_th8 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"YDIR"),2)) />
+<trace Nest8_ScalarRepl_aref_th7 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"ZDIR"),0)) />
+<trace Nest8_ScalarRepl_aref_th6 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"ZDIR"),1)) />
+<trace Nest8_ScalarRepl_aref_th5 = (CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"F"),"DISP"),"ZDIR"),2)) />
+<trace Nest8_ScalarRepl_aref_th4 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"VM"),"XDIR")) />
+<trace Nest8_ScalarRepl_aref_th3 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"VM"),"YDIR")) />
+<trace Nest8_ScalarRepl_aref_th2 = (CODE.ArrayAccess#(CODE.ObjAccess#(CODE.ArrayAccess#("VAR","mol"),"VM"),"ZDIR")) />
+<trace Stmt1_StrengthReduction_subexpression_th1 = () />
+
+<trace _decl1="" />
+<eval Nest8_decl=Nest8;
+      if (Nest8 : CODE.FunctionDecl) 
+          Nest8_decl=Nest8[FunctionDecl.body][StmtBlock.stmts];
+      else Nest8_decl = Nest8;
+      EraseTraceHandle[repl=(_decl1 Nest8_decl)](Nest8_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Nest1_3_FuseLoops_index_start_th23 Nest9_ScalarRepl_aref_th22 Nest9_ScalarRepl_aref_th21 Nest9_ScalarRepl_aref_th20 Nest9_ScalarRepl_aref_th19 Nest9_ScalarRepl_aref_th18 Nest9_ScalarRepl_aref_th17 Nest9_ScalarRepl_aref_th16 Nest9_ScalarRepl_aref_th15 Nest9_ScalarRepl_aref_th14 Nest8_ScalarRepl_aref_th13 Nest8_ScalarRepl_aref_th12 Nest8_ScalarRepl_aref_th11 Nest8_ScalarRepl_aref_th10 Nest8_ScalarRepl_aref_th9 Nest8_ScalarRepl_aref_th8 Nest8_ScalarRepl_aref_th7 Nest8_ScalarRepl_aref_th6 Nest8_ScalarRepl_aref_th5 Nest8_ScalarRepl_aref_th4 Nest8_ScalarRepl_aref_th3 Nest8_ScalarRepl_aref_th2 Stmt1_StrengthReduction_subexpression_th1) />
+
+<eval EraseTraceHandle[repl=Nest9_group1](Nest9,inputCode);
+	EraseTraceHandle[repl=Nest8_group1](Nest8,inputCode);
+	RedundancyElimination[used_place=("")](4,Stmt3);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt4);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt5);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt6);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt7);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt8);
+	RedundancyElimination[used_place=("")](4,Stmt10);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt11);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt12);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt13);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt14);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt15);
+	RedundancyElimination[used_place=(Nest12);erase_flag=(0)](4,Stmt17);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt18);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt19);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt20);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt21);
+	RedundancyElimination[used_place=(Nest12)](4,Stmt22);
+	FuseLoops[reserve_target=1]((Nest1_1 Nest1_2),Nest1_3);
+	RedundancyElimination[used_place=(Nest12);index_start=9](4,Nest1_3);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt2)](Nest9_ScalarRepl_aref_th22,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest12)](Nest9_ScalarRepl_aref_th21,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt2)](Nest9_ScalarRepl_aref_th20,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt9)](Nest9_ScalarRepl_aref_th19,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest12)](Nest9_ScalarRepl_aref_th18,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt9)](Nest9_ScalarRepl_aref_th17,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt16)](Nest9_ScalarRepl_aref_th16,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest12)](Nest9_ScalarRepl_aref_th15,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Stmt16)](Nest9_ScalarRepl_aref_th14,(Nest9_group1),Nest9_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th13,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th12,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th11,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th10,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th9,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th8,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th7,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th6,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th5,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th4,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th3,(Nest8_group1),Nest8_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0;scalar_num=1;init_loc=(Nest9)](Nest8_ScalarRepl_aref_th2,(Nest8_group1),Nest8_group1[Nest.body]);
+	RedundancyElimination[expression=CODE.Bop#("==", CODE.Bop#("%", "NMOL", 2), 0);data_type="int"](6,Nest8);
+	StrengthReduction[minus_result="NMOL1"](2,Stmt1); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

@@ -1,0 +1,31 @@
+include utils.incl
+
+<define TOKEN ((":"":") ("*" "/"))/>
+<define PARSE CODE.Program/>
+<define BACKTRACK TRUE/>
+
+<code Program parse=LIST(CODE.Parseable|CODE.UnknownUntilEOL, "\n")/>
+
+<code Parseable pars=(content:CODE.WLType|CODE.Comment|CODE.comments)>
+@content@
+</code>
+
+<code comments pars=(content:(~"*/")) >
+/*@content@*/
+</code>
+
+<code ScopeOp parse=LIST(CODE.Name,"::")/>
+
+<code TemplateList parse=LIST(CODE.Name|INT|FLOAT, ",") />
+
+<code GenericTemplate pars=(templist : CODE.TemplateList)>
+<@templist@>
+</code>
+
+<code WLType pars=(scope: CODE.ScopeOp,template:CODE.GenericTemplate, objectname:CODE.Name)>
+@scope@ @template@ @objectname@ ;
+</code>
+
+<code Comment pars=(content:_) >
+//@content@
+</code>

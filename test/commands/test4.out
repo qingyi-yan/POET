@@ -1,0 +1,19 @@
+
+DEBUGGING at level 1
+LEN(A)
+===>2
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+HEAD(B)
+===>(1 2)
+TAIL(B)
+===>(3)
+LEN(B)
+===>2
+END DEBUGGING at level 1
+
+DEBUGGING at level 1
+LEN(C)
+===>2
+END DEBUGGING at level 1

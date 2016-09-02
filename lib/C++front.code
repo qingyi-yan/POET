@@ -1,0 +1,143 @@
+include Cfront.code
+
+<define TYPE_BASE CODE.ClassType|CODE.ClassTypeName|C_TYPE_BASE/>
+<define TYPE_NAME CODE.TypeName/>
+<define TYPE_REBUILD XFORM.Cpp_RebuildType />
+<define FUNCTION_NAME CODE.Operator | CODE.Name />
+
+<code TypeSpec pars=(base: ID, annot:LIST1(CODE.TemplateInstantiation|"*"|"&",""))  
+      rebuild=(XFORM.Cpp_RebuildType(base,annot)) >
+@base@ @annot@
+</code>
+
+<code TemplateInstantiation pars=(args : LIST1(GLOBAL.C_TYPE_BASE|INT|ID|CODE.TypeSpec,",")) lookahead=3 > 
+<@args@>
+</code>
+
+<define DECLARATION (CODE.TemplateDecl|CODE.InlineDecl|CODE.GlobalConstructor|CODE.Destructor|C_DECLARATION) />
+<define TYPE_ANNOT CODE.TemplateInstantiation|C_TYPE_ANNOT/>
+<define TYPE_REBUILD XFORM.Cpp_RebuildType />
+<define BUILD_BOP (XFORM.C_buildBop[c_only=0]) />
+<define VAR_INIT CODE.VarInit | CODE.FunctionCallParameter />
+
+<xform Cpp_RebuildType pars=(type,annot)>
+ switch(annot) {
+ case CODE.TemplateInstantiation#(param) : CODE.TemplateType#(type,param)
+ default: XFORM.C_RebuildType(type,annot)
+ }
+</xform>
+
+<code ClassType/>
+<code TemplateType pars=(type,param)> @type@<@param@> </code>
+<code ClassTypeName pars=(name:CODE.TypeName)> class @name@ </code>
+
+<define STMT_BASE CODE.DeleteStmt|C_STMT_BASE/>
+
+<define EXP_BASE (CODE.True|CODE.False|CODE.NewAlloc|GLOBAL.C_EXP_BASE) />
+
+<code TypeName pars=(name:("typename" ID)|ID, p : CODE.TemplateInstantiation|"") 
+          rebuild=((p=="")? name : TypeName#(name,p)) >
+@name p@
+</code> 
+
+
+<code True > true </code>
+<code False > false </code>
+
+<code NewAlloc pars=(t : CODE.TypeName|ID, 
+                     param : CODE.FunctionCallParameter|CODE.ArraySubscript|"")
+    parse=("new" t param eval(return(NewAlloc#(t, ((param=="")?NULL:param))))) >
+new @t@ @((param:ArraySubscript)? param : ("(" param ")"))@
+</code>
+
+<code InlineDecl pars=(content:CODE.TypeInfoDeclParse) >
+inline @content@ 
+</code>
+
+<code Operator pars=(op : "!="|"=="|"="|"+="|"*"|"++"|("(" ")")|("[" "]"))>
+operator @op@
+</code>
+
+<code TemplateParameterDecl pars=(tag:"class"|"typename"|"int",name : ID)> 
+@tag@ @name@ </code>
+<code TemplateDecl 
+      pars=(params : LIST(CODE.TemplateParameterDecl,","), 
+            base : GLOBAL.DECLARATION) 
+      rebuild=(r=TemplateDecl#(params,base);insert_typeInfo("",r);r) >
+template <@params@>
+@base@
+</code>
+
+<code ClassType 
+   pars=(name : ID, body : CODE.ClassBody | "", 
+         parents : LIST(CODE.BaseClassDecl,",")) 
+   > 
+class @name@ @parents@ 
+  @body@
+</code>
+
+<code UsingDecl pars=(t : LIST(ID,"::"))> using @t@ </code>
+
+<code ClassBody symtab=""
+  pars=(decls:LIST(CODE.Comment|CODE.AccessControl|CODE.FriendDecl|CODE.TemplateDecl|CODE.TypeDef|CODE.Constructor|CODE.Destructor|CODE.UsingDecl|CODE.EmptyStmt|CODE.TypeInfoDeclParse,"\n")) 
+  parse=(eval(XFORM.enter_block("")) "{" decls "}"
+         eval(return(ClassBody[symtab=XFORM.exit_block(decls)]#decls)))
+  >
+{
+  @decls@
+}
+</code>
+
+<code AccessControl pars=(access:"public"|"private"|"protected")>
+@access@: </code>
+
+<code FriendDecl pars=(type : CODE.ClassTypeName|FunctionDecl)>
+friend @type@; </code>
+
+<code BaseClassDecl 
+  pars=(access : "public"|"private"|"protected", base : CODE.TypeName|ID)
+  >
+: @access@ @base@
+</code>
+
+<code GlobalConstructorName pars=(name:ID) lookahead=3> @name@::@name@ </code>
+<code GlobalDestructorName pars=(name:ID) lookahead=3 > 
+@name@ :: ~@name@
+</code>
+
+<code GlobalConstructor  symtab=""  lookahead=3
+  pars=(name:GlobalConstructorName, params:LIST(CODE.ParamDeclParse,","),
+        inits : CODE.ConstructorInit|"", body: CODE.Stmt) 
+  parse=(name "(" eval(XFORM.enter_block("")) params ")" inits body
+         eval(return(Constructor[symtab=XFORM.exit_block(params)]#(name,params,inits,body))))
+  >
+@name@ (@params@) @inits@ @body@
+</code>
+
+<code Constructor  symtab=""  lookahead=2
+  pars=(name:ID, params:LIST(CODE.ParamDeclParse,","),
+        inits : CODE.ConstructorInit|"", body: CODE.Stmt) 
+  parse=(name "(" eval(XFORM.enter_block("")) params ")" inits body
+         eval(return(Constructor[symtab=XFORM.exit_block(params)]#(name,params,inits,body))))
+  >
+@name@ (@params@) @inits@ @body@
+</code>
+
+<code ConstructorInit pars=(inits: LIST(CODE.ConstructorParamInit,",")) >
+: @inits@ </code>
+
+<code ConstructorParamInit pars = (name : ID, init : LIST(EXP,","))> 
+@name@(@init@) </code>
+
+<code DestructorName pars=(name:ID) > ~@name@ </code>
+
+<code Destructor pars=(name:CODE.DestructorName|CODE.GlobalDestructorName, body:Stmt) >
+@name@() @body@ </code>
+
+
+<*****************Stmts **********************************>
+
+<code DeleteStmt pars=(vars : NameList)>
+delete @vars@;
+</code>
+

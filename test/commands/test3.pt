@@ -1,0 +1,35 @@
+include Cfront.code
+
+<eval DEBUG{ 
+  a = 5;
+  if (a > 0) b = a + 1;  else b = a -1;
+  "abc" : EXP;
+  5 : EXP;
+}/>
+
+<eval DEBUG {
+  input = (1 2 3 4 7);
+  for (inputp = input; inputp != ""; inputp = cdr(inputp)) {
+     curelem = car(inputp);
+     if (curelem == 1) CONTINUE;
+     if (curelem == 3) BREAK;
+  }
+}
+/>
+
+<eval DEBUG{
+   input = Nest#(Loop#("i",0,100,1),Nest#(Loop#("j",1,10,1), Stmt#1));
+   foreach (input : (curLoop = Loop#_) : TRUE) {
+      if (curLoop[Loop.i] == "j") CONTINUE;
+   }
+   loopNests = "";
+   foreach (input : (curNest = Nest#((Loop#_),_)) : FALSE) {
+      if ( (curNest[Nest.ctrl])[Loop.i] == "i") BREAK;
+      loopNests = loopNests? (curNest  loopNests) : curNest;
+   }
+   switch (input)
+   {
+    case _: input
+   }
+} />
+

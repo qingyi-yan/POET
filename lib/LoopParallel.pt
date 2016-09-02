@@ -1,0 +1,509 @@
+<parameter PAPI_OMP_INSTRUMENT type=(0|1) default=0 message="whether instrument OMP Parallel Sections" />
+<parameter PAPI_COUNTERS parse=LIST(INT|STRING,",") 
+                         default=("PAPI_L1_DCM" "PAPI_FP_OPS" "PAPI_BR_TKN" "PAPI_RES_STL") 
+                         message="Name of the performance counters" />
+
+<code VEC pars=(var,dist,sum,gnum, index)>
+VEC#(@var@,@dist@,@sum@,@gnum@,@index@)
+</code>
+
+
+<************* Loop Pipelining *********************>
+<xform ReplaceType pars=(t)>
+ switch (t) {
+  case CODE.ArrayType#(CLEAR t1,CLEAR dim):  
+       res = ReplaceType(t1);
+       for (i = 0; i < LEN(dim); i=i+1) { 
+          res = CODE.PtrType#(res);
+       }
+       res
+  case CODE.ConstType#(CLEAR t1): ReplaceType(t1)
+  default: t
+ }
+</xform>
+
+<xform PipelineLoop pars=(inner, input) dep="" shared="" private=""
+     trace=GLOBAL.TRACE_TARGET trace_include=GLOBAL.TRACE_INCL threads=2>
+  Nest#(Loop#(j,lb1,ub1,step1),body1) = input;
+  Nest#(Loop#(i,lb,ub,step),body) = inner;
+  GLOBAL.NEED_MIN_MAX=1;
+
+  params = NULL; local=NULL; done=MAP{};
+  foreach (trace : (curinfo=CODE.TypeInfo#(CLEAR t,CLEAR cur,_)) : TRUE) {
+     if (done[cur] == "")  {
+       done[cur]=1;
+       t1 = ReplaceType(t);
+       if (t1 != t) curinfo = TypeInfo#(t1,cur,"");
+       if (shared != "") {
+          if (Lookup(cur, shared)) params = curinfo :: params;
+          else local = curinfo :: local;
+       }
+       else if (private != "") {
+          if (Lookup(cur, private)) local = curinfo :: local;
+          else params = curinfo :: params;
+       }
+     }
+  }
+
+  name=j;
+
+  result = CODE.pipeline_main#(name, params, (ub-lb), threads);
+  REPLACE(input,result, trace);
+
+  new_inner_body = body :: CODE.pipeline_release#(name, i);
+  for ( p = dep ; p != NULL; p = cdr(p)) {
+     (d1 d2) = car p;
+     wait = CODE.pipeline_wait#(name, i - d2, j - d1);
+     if (d2 < 0) wait = CODE.Nest#(CODE.If#(CODE.Bop#("<",i,(ub+d2))),wait);
+     else if (d2 > 0) wait = CODE.Nest#(CODE.If#(CODE.Bop#(">=",i,(lb+d2))),wait);
+     new_inner_body = wait :: new_inner_body; 
+  }
+  new_inner = Nest#(Loop#(i,"___BEGIN"+lb,CODE.MIN#("___END"+lb,ub),step),new_inner_body);
+  stage_body = REPLACE(inner, new_inner, input);
+  foreach_r (local: CODE.TypeInfo#(CLEAR t,CLEAR n,_) : TRUE) {
+     stage_body = CODE.DeclStmt#(CODE.TypeInfo#(t, n,"")) :: stage_body;
+  }
+
+  Append_Include[trace=trace_include](CODE.pipeline_global#(name, params));
+  if (!Lookup(CODE.Include_pipeline, trace_include))
+     Append_Include[trace=trace_include](CODE.Include_pipeline);
+  orig=ERASE(trace_include);
+  REPLACE(orig,orig::CODE.pipeline_stage#(name,params,stage_body),trace_include);
+  result
+</xform>
+<***********************************************>
+<************* Loop SIMD Vectorization *********************>
+<***********************************************>
+<xform BuildVecRepl pars=(vars, index, gnum, dist, share, regAssign) >
+switch (vars) {
+case (first rest):  { 
+     index1 = BuildVecRepl(first, index, gnum, dist, "", regAssign);
+     if (rest==NULL) return index1; 
+     if (share == "s")
+         index1 = index;
+     res = BuildVecRepl(rest, index1, (gnum>0)?gnum-1:0, dist, share,regAssign);
+  }
+case (var, attr) :
+      if (attr : INT)
+          res = BuildVecRepl(var, index, LEN(var), attr, share, regAssign);
+      else res =  BuildVecRepl(var, index, LEN(var), dist, attr, regAssign);
+case "" : res = index;
+case var : res = ( regAssign[var] = VEC#(var,dist,"", gnum, index); index+1)
+default: ERROR("invalid register specification:" vars)
+}
+res
+</xform>
+
+<xform AssignVECReg pars=(vars, regno, input) reduce_vars="" aligned_arrays="" output=(_res,_wkreg)>
+   regAssign = MAP(_,_);
+   num = BuildVecRepl(vars,0,0,0,"",regAssign); 
+   if (!LEN(regAssign) || num > regno) {
+       PRINT ("Unable to perform vectorization -- too many variables: " num "!" );
+       (input, "", "")
+   }
+   else {
+     wkreg = num;
+     foreach this_var=Name|ArrayAccess \in reduce_vars do
+        switch(this_var) {
+           case ArrayAccess#(CLEAR arr, CLEAR sub): cur = BuildName(arr "_split");
+           case (Name#_ | STRING): cur = this_var;
+        }
+        if (cur != "") {
+           VEC#(var,dist,sum,gnum,index) = regAssign[cur];
+           if (sum != "") ERROR("reduction operator has already been defined to be " sum ": " (input,"",wkreg));
+             regAssign[cur] = VEC#(var,dist,"+",gnum,index);
+        }
+     enddo
+     foreach cur=Name|ArrayAccess \in aligned_arrays do 
+          VEC#(var,dist,sum,gnum,index) = regAssign[cur];
+          if (sum == "") <<* skip if sum is not undefined (i.e., this is a reduction variable)
+             regAssign[cur] = VEC#(var,dist,"a",gnum,index);
+     enddo
+     if (LEN(regAssign) > 0) input = REPLACE(regAssign, input);
+     else ERROR("Incorrect VectorlizeLoop configuration.", input);
+     (input, regAssign, wkreg)
+  }
+</xform>
+
+<xform VectorizeExp pars=(wkreg,input) outreg="" threeop = 0 scalar="">
+    switch (input) {
+    case CODE.INT_0x : 
+      RETURN (input,input);
+    case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) : 
+      if (opd1 : CODE.CastExp#(_,_,t=_)) opd1 = t;
+      if (opd2 : CODE.CastExp#(_,_,t=_)) opd2 = t;
+      if (threeop == 0) {
+        if ((op : "+"|"*") && (opd2 : VEC#(_,_,_,_,outreg)))
+        { tmp = opd2; opd2 = opd1; opd1 = tmp; }
+        else if (op=="+" && (opd2:Uop#("-",CLEAR tmp)))
+        { op = "-"; opd2 = tmp; }
+        (res1,reg1) = VectorizeExp(wkreg, opd1); 
+        (res2,reg2) = (outreg=="")? VectorizeExp(wkreg+1, opd2) 
+                                  : VectorizeExp[outreg=""](wkreg,opd2);
+        res = BuildList(res1,res2);
+        if (reg1 == "" || reg2 == "") RETURN (input,"");
+      } else {
+         <*Do not handle all the situations -- Qian Wang*>
+         if (opd2 : Uop#("-",CLEAR tmp)) {
+           opd2 = tmp;
+           op = "-";
+         }
+         VEC#(_,_,_,_,reg1) = opd1;
+         VEC#(_,_,_,_,reg2) = opd2;
+      }
+      
+      switch (op) {
+         case "+" : 
+           if (!(threeop))
+              (BuildList(res,ExpStmt#(VecRegAdd#(reg2, reg1))), reg1);
+            else
+              (ExpStmt#(VecRegAdd3#(reg1,reg2,outreg)),outreg);
+         case "*" : 
+           if (!(threeop))
+              (BuildList(res,ExpStmt#(VecRegMul#(reg2, reg1))), reg1);
+           else
+              (ExpStmt#(VecRegMul3#(reg1,reg2,outreg)),outreg);
+         case "/" : 
+           if (!(threeop))
+             (BuildList(res,ExpStmt#(VecRegDiv#(reg2, reg1))), reg1);
+           else
+             (ExpStmt#(VecRegDiv3#(reg1,reg2,outreg)),outreg);
+         case "-" : 
+           if (!(threeop))
+              (BuildList(res,ExpStmt#(VecRegMinus#(reg2, reg1))), reg1);
+           else
+              (ExpStmt#(VecRegMinus3#(reg1,reg2,outreg)),outreg);
+         case "&" :  
+           (BuildList(res,ExpStmt#(CODE.VecRegBitAnd#(reg2, reg1))), reg1)
+
+         <* Generate the opposite, negative version of the operator so the body of the statement
+            will be marked with the "if(flag)" block, where the flag is the scalar in argument 4 *>
+         case "<=" :
+           print("Op: " op " (generate gen_cmp_ngt(,,,))");
+         case ">" :
+           print("Op: " op " (generate gen_cmp_nle(,,,))");          
+           (BuildList(res,ExpStmt#(CODE.VecRegCmpNLE#(reg2,reg1,outreg,Uop#("&",scalar)))), outreg);
+         case "<" :
+           print("Op: " op " (generate gen_cmp_nge(,,,))");
+           (BuildList(res,ExpStmt#(CODE.VecRegCmpNGE#(reg2,reg1,outreg,Uop#("&",scalar)))), outreg);
+         case ">=" :
+           print("Op: " op " (generate gen_cmp_nlt(,,,))");
+         case "==" :
+           print("Op: " op " (generate gen_cmp_neq(,,,))");
+         case "!=" : 
+           print("Op: " op " (generate gen_cmp_eq(,,,))");
+         default: 
+           PRINT("Warning[VectorizeExp]: cannot parallelize operation:" op);
+           (input, "")
+         }
+    case VEC#(CLEAR var1,_,_,_,CLEAR reg1): 
+      if (threeop == 0) {
+         if (reg1 == outreg || outreg == "") RETURN ("", reg1);
+         (ExpStmt#(VecRegMov#(reg1,outreg)), outreg) 
+      } else {RETURN("", reg1);}
+    default: 
+      PRINT("Warning[VectorizeExp]: cannot parallelize expression:" input);
+      (input, "")
+  }
+</xform>
+
+<xform MakeUnrolledBody pars=(input) >
+  print("Input: " input);
+  switch(input) {
+    case Nest#(If#(CLEAR con), CLEAR body) :
+      Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) = con;
+      VEC#(CLEAR var_con1, CLEAR dist_con1, CLEAR sum_con1,_, CLEAR reg_con1) = opd1;
+      VEC#(CLEAR var_con2, CLEAR dist_con2, CLEAR sum_con2,_, CLEAR reg_con2) = opd2;
+      <<*print("CON: \n  op: " op); 
+      <<*print("OPD1: \n  var: " var_con1 "\n  dist: " dist_con1 "\n  sum: " sum_con1 "\n  reg: " reg_con1);
+      <<*print("OPD2: \n  var: " var_con2 "\n  dist: " dist_con2 "\n  sum: " sum_con2 "\n  reg: " reg_con2);
+
+      ExpStmt#(Assign#(CLEAR left, CLEAR right)) = body;
+      VEC#(CLEAR var1, CLEAR dist1, CLEAR sum1,_, CLEAR reg1) = left;
+      VEC#(CLEAR var2, CLEAR dist2, CLEAR sum2,_, CLEAR reg2) = right;
+      <<*print("LEFT: \n  var: " var1 "\n  dist: " dist1 "\n  sum: " sum1 "\n  reg: " reg1);
+      <<*print("RIGHT: \n  var: " var2 "\n  dist: " dist2 "\n  sum: " sum2 "\n  reg: " reg2);
+
+      <* Building nested statements and return *>
+      StmtList#(
+        Nest#(If#(Bop#(op,Uop#("*",var_con1),var_con2)),Assign#(var1,var_con1)),
+        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"1")),var_con2)),Assign#(var1,Bop#("+",var_con1,"1"))),
+        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"2")),var_con2)),Assign#(var1,Bop#("+",var_con1,"2"))),
+        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"3")),var_con2)),Assign#(var1,Bop#("+",var_con1,"3"))))
+    default:
+      print("Warning[MakeUnrolledBody]: cannot extend expression: " input);
+  }
+</xform>
+
+<xform VectorizeStmts pars=(reglen,wkreg,input) threeop = 0 >
+  if_repl = "";
+  foreach (input : Nest#(If#(CLEAR cur),CLEAR body) : TRUE) {
+    switch(cur) {
+      case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) :
+        flag = "___flag___";
+        new_stmts = StmtList#(ExpStmt#(VectorizeExp[scalar=flag](wkreg,cur)),Nest#(If#(flag),MakeUnrolledBody(Nest#(If#(cur),body))));
+        input = new_stmts;
+        print("Updated Input: " input);
+      default :
+        print("Warning[VectorizeStmts]: cannot vectorize expression:" cur);
+    }  
+  }
+
+   repl="";
+   foreach_r ( input : (stmt=DeclStmt#(CLEAR cur)|ExpStmt#(CLEAR cur)) : TRUE) {
+      offset=0; <*used in matching array access *>
+      switch (cur) { 
+      case Assign#(VEC#(CLEAR var,CLEAR dist,CLEAR sum,_,CLEAR reg),0): 
+         repl=BuildList( (cur, VecZero#(reg)), repl);
+      case Assign#(VEC#(CLEAR var,CLEAR dist,CLEAR sum,_,CLEAR reg),Uop#("*",CLEAR addr)|ArrayAccess#(CLEAR addr,CLEAR offset)):{
+           addr = addr + offset;
+           if (dist == 0) {
+             if (sum == "" || sum == "a")  
+                repl = BuildList( (cur, Var2VecReg#(addr,reg)), repl);
+             else
+                repl = BuildList( (cur, Var2VecRegL#(addr,reg)), repl);
+           }
+           else if (dist == 1) {
+             if (sum == "a")  
+                repl = BuildList( (cur,Arr2VecReg#(addr,reg)), repl);
+             else 
+                repl = BuildList( (cur,Arr2VecRegU#(addr,reg)), repl);
+           }
+           else ERROR(input "not handled yet") ;
+       }
+      case Assign#(Uop#("*",CLEAR addr)|ArrayAccess#(CLEAR addr,CLEAR offset),VEC#(CLEAR var,CLEAR dist,CLEAR sum,CLEAR gnum,CLEAR reg)) : {
+           addr = addr + offset;
+           if (dist == 0) {
+              if (sum == "r" && wkreg && (gnum % reglen)== 0) { 
+                rest ="";
+                if (reglen==2) {
+                   match1 = (DELAY { (CLEAR stmt2,ExpStmt#(VecRegRed2Var#(reg+1,_,_))) });
+                   match2 = (DELAY { ((CLEAR stmt2,ExpStmt#(VecRegRed2Var#(reg+1,_,_))) (CLEAR rest))});
+                   curRepl = (DELAY { ((stmt, ExpStmt#(VecRegRed2Arr2#(reg,reg+1,wkreg,addr)))
+                                      BuildList( (stmt2, ""), rest) ) });
+                }
+                else if (reglen==4) {
+                   match1 =  (DELAY { ((CLEAR stmt2,ExpStmt#(VecRegRed2Var#(reg+1,_,_)))
+                                     (CLEAR stmt3,ExpStmt#(VecRegRed2Var#(reg+2,_,_)))
+                                     (CLEAR stmt4,ExpStmt#(VecRegRed2Var#(reg+3,_,_))))}); 
+                   match2 =  (DELAY { (((CLEAR stmt2,ExpStmt#(VecRegRed2Var#(reg+1,_,_)))
+                                     (CLEAR stmt3,ExpStmt#(VecRegRed2Var#(reg+2,_,_)))
+                                     (CLEAR stmt4,ExpStmt#(VecRegRed2Var#(reg+3,_,_))) (CLEAR rest))) });
+                   curRepl = (DELAY { ((stmt,ExpStmt#(VecRegRed2Arr4#(reg,reg+1,reg+2,reg+3,wkreg,wkreg+1,addr)))
+                                      (stmt2, "") (stmt3,"") BuildList( (stmt4,""), rest) ) });
+                }
+                else match=curRepl="";
+                (repl :  (match1))?  (repl = APPLY {curRepl})
+                : (repl :  ( match2))? (repl = APPLY {curRepl})
+                :  (repl=BuildList( (stmt,ExpStmt#(VecRegRed2Var#(reg,addr,wkreg))), repl))
+              }
+              else if (sum=="r" || sum ==  "+") 
+                  repl = BuildList( (stmt, ExpStmt#(VecRegRed2Var#(reg,addr,wkreg))), repl);
+              else repl = BuildList( (cur, VecReg2Var#(reg,addr)), repl);
+           }
+           else if (dist == 1)  {
+              if (sum == "a") 
+                 repl = BuildList( (cur,VecReg2Arr#(reg,addr)), repl);
+              else
+                 repl = BuildList( (cur,VecReg2ArrU#(reg,addr)), repl);
+           }
+           else ERROR( ("not handled yet:" cur), input) ;
+       }
+      case Assign#((lhs=VEC#(CLEAR var3,_,_,_,CLEAR reg3)), CLEAR rhs):
+         (res,reg) = VectorizeExp[outreg=reg3; threeop=threeop](wkreg, rhs);
+         if (reg != "") { 
+              if (reg != reg3) ERROR("Something is wrong. reg = " reg);
+              repl = BuildList( (stmt, res), repl); }
+      default: 
+         print ("Warning[VectorizeStmts]: cannot vectorize expression:" cur);
+     }
+   }
+   res = input;
+   for (pr = repl; pr != NULL; pr = cdr(pr)) 
+   {
+      if(car(pr) == "") continue;
+      (from,to) = car(pr);
+      res = REPLACE(from,to,res);
+   }
+   res
+</xform>
+
+<xform ModifyAlign pars=(addr, input) >
+   repl1="";
+   foreach_r ( input : ExpStmt#(CLEAR cur) : TRUE) {
+      switch (cur) {
+      case Assign#( (p=Uop#("*",CLEAR addr1)), VEC#(CLEAR var,1,"",CLEAR gnum,CLEAR reg)) :
+          if (addr1 - addr == 0)
+             { repl1 = BuildList( (cur, Assign#(p, VEC#(var,1,"a",gnum,reg))), repl1) }
+      case Assign#(VEC#(CLEAR var,1,"",CLEAR gnum,CLEAR reg), (p=Uop#("*",CLEAR addr1))) :
+          if (addr1 - addr == 0)
+             { repl1 = BuildList((cur, Assign#(VEC#(var,1,"a",gnum,reg),p)), repl1) }
+      default: ""
+      }
+   }
+   (repl1 != "")?  (input = REPLACE(repl1, input)) : input
+</xform>
+
+<xform SplitVecLoop pars=(bloop,rloop, nest) >
+   Nest#(loop,body) = nest;
+   nbody = COPY body;
+   repl1="";
+   foreach_r ( nbody : (name=VEC#(CLEAR var,1,CLEAR sum,CLEAR gnum,CLEAR reg)) : TRUE) {
+      repl1 = BuildList((name, VEC#(var,0,"u",gnum,reg)), repl1);
+   }
+   if (repl1 != "")  nbody = REPLACE(repl1, nbody);
+   ( REPLACE( ERASE(loop), bloop, nest),  (rloop=="")? "" : Nest#(rloop,nbody))
+</xform>
+
+
+<xform VectorizePeelAlign pars=(loop, addr, addrp, elemsize, wkvar, input) >
+  split = AddrAlign#(addr,elemsize);
+  Loop#(i,start,stop,step) = loop; 
+  splitnests = SplitVecLoop( Loop#(i,wkvar,stop,step), Loop#(i,start,wkvar,step), input);
+  splitnests = (splitnests[1], ModifyAlign(addrp, splitnests[0])); 
+  ((ExpStmt#(Assign#(wkvar, split))  BuildList(splitnests)),  splitnests)
+</xform>
+
+<xform VectorizeLoopHelp pars=(loop,reglen,input) output = (_res, _splitnests)>
+   (bloop,_,rloop,_) = Stripmine[unroll=1;cleanup=1]("", reglen,loop);
+   splitnests= SplitVecLoop(bloop,rloop, input);
+   res = BuildList(splitnests);
+   ( res,  splitnests)
+</xform>
+
+<***********************************************>
+<xform VectorizeLoop pars=(vars, vnest) ext=""
+     init_vars=""  save_vars="" reduce_vars="" aligned_arrays="" elem_prec="d" 
+     alignOpt="" trace_decl=GLOBAL.TRACE_DECL  trace_include=GLOBAL.TRACE_INCL trace=GLOBAL.TRACE_TARGET>
+   elemsize = ((elem_prec=="d")? 8 : 4);
+   iReglen =  ((elem_prec=="d")? (GLOBAL.REG_LEN/8) : (GLOBAL.REG_LEN/4));
+   threeop = (GLOBAL.REG_LEN==32);
+   iRegno = GLOBAL.REG_NO;
+
+   if (ext == "") ext = vnest;
+   (r1, repl, wkreg) = AssignVECReg[reduce_vars=reduce_vars; aligned_arrays=aligned_arrays](vars,iRegno,ext);
+   if (repl == "")  {
+     RETURN(ext); 
+   }
+   if (init_vars != "") {
+         foreach ( init_vars :  (cur = (Name#_ | STRING)) : TRUE) {
+            r1= BuildList(ExpStmt#(Assign#(repl[cur], Uop#("*",(Uop#("&",cur))))), r1) ;
+         }
+      } 
+   if (save_vars != "") {
+         foreach ( save_vars :  (cur = (Name#_ | STRING)) : TRUE) {
+            r1= BuildList(r1, ExpStmt#(Assign#( Uop#("*",(Uop#("&",cur))), repl[cur]))) ;
+         }
+      } 
+   
+   Nest#(loop,body) = vnest;
+      if (alignOpt != "") {
+         (addr,addrp, name) = alignOpt; 
+         AppendDecl[trace=trace_decl]("size_t", name);
+         (r2, (_,nnest=Nest#(loop,_))) = VectorizePeelAlign(loop, addr, addrp,elemsize, name, vnest);
+      }
+      else r2 = nnest = vnest;
+      vnest =  REPLACE(ERASE(vnest),nnest,vnest);
+      (r3, _) = VectorizeLoopHelp(loop, iReglen, vnest);
+      if (vnest != r3) (_,r2) = EraseTraceHandle[repl=r3](vnest, r2);
+      if (vnest != r2) (_,r1) = EraseTraceHandle[repl=r2](vnest, r1);
+      Append_Include[trace=trace_include](SSEincl#(elem_prec,GLOBAL.REG_LEN));
+      r1 = VectorizeStmts[threeop = threeop](iReglen, wkreg, r1);
+      EraseTraceHandle[repl=r1](ext,trace);
+      r1
+</xform>
+
+<**************************** Parallel Routines *******************************>
+<code PAPIIncl />
+<code PAPIDecl />
+<code PAPIInit />
+<code PAPIStart />
+<xform InitProfile pars=(input) omp=0 trace=GLOBAL.TRACE_TARGET counters="">
+incl=CODE.PAPIIncl;
+decl=PAPIDecl;
+init=(PAPIInit PAPIStart(counters));
+repl=(input incl decl init);
+REPLACE(input, repl, trace)        <<* return result
+</xform>
+
+<code PAPIFinalize />
+<xform FinalizeProfile pars=(input) omp=0 trace=GLOBAL.TRACE_TARGET counters="">
+final=PAPIFinalize#(counters);
+repl=(input final);
+REPLACE(input, repl, trace)        <<* return result
+</xform>
+
+<define THREADS_INDEX 1 />
+
+<xform ParallelizeLoop pars=(input)
+      scope=""
+      shared="" private="" reduction="" reduction_op=""
+      schedule=GLOBAL.OMP_SCHEDULE threads=""  model = "OMP"
+      trace_decl=GLOBAL.TRACE_DECL trace_mod=GLOBAL.TRACE_EXP 
+      trace_vars=GLOBAL.TRACE_VARS  
+      trace_include=GLOBAL.TRACE_INCL trace=GLOBAL.TRACE_TARGET >
+  switch (model) {
+  case "OMP": 
+     Append_Include[trace=trace_include](InclOmp);
+     attr = ""; <<* Build parallel attribute list.
+     if (schedule != "") attr = BuildList(OMPScheduleSpec#(schedule), attr);
+     if (reduction) {
+         if (reduction_op == "") ERROR("Expecting a reduction operator!");
+          attr = BuildList(OMPReductionNameList#(reduction_op, reduction), attr);
+     } 
+     if (private) attr = BuildList(OMPPrivateNameList#(private), attr);
+     if (shared) attr = BuildList(OMPSharedNameList#(shared), attr);
+
+     annot = OMPPragma#(OMPParallelLoop#(attr));
+     annot=REBUILD(annot); <<* trigger rebuild to accommodate different languages
+     res = ModifyTraceHandle(input,Nest[annot=annot]#(input[Nest.ctrl],input[Nest.body]));
+     res = OMPPragma#(OMPParallelBlock#(res));
+     if (threads != "") {
+        if (threads == "MACRO") {
+           threads = ("_TH_" GLOBAL.THREADS_INDEX);
+           GLOBAL.THREADS_INDEX=GLOBAL.THREADS_INDEX+1;
+           Append_Include[trace=trace_include](CODE.Macro#("define" " " threads  " " 2));
+        }
+        res = OMPSetNumThreads#(threads)::res; 
+     }
+     else  <<* Use max threads if not specified.
+         res = (OMPSetMaxNumThreads::res);
+
+     if (GLOBAL.PAPI_OMP_INSTRUMENT)  {
+         Append_Include[trace=trace_include](CODE.PAPIIncl);
+         res = BuildList(PAPIInit, res);
+         res = BuildList(PAPIDecl, res);
+         res = (PAPIStart#(GLOBAL.PAPI_COUNTERS) res PAPIFinalize#(GLOBAL.PAPI_COUNTERS));
+     }
+     EraseTraceHandle[repl=res](input,trace);
+     res
+  case "VEC":
+     if (scope == "") Nest#(loop,body) = input;
+     else Nest#(loop,body) = scope;
+     if (shared == "") {
+         foreach (body : (cur=CODE.Loop|CODE.ArrayAccess|CODE.Name|ID) : TRUE) {
+             if (!(cur : Loop) && 
+                 !Lookup(cur, private::reduction)) 
+                shared = BuildList(cur, shared);
+         }
+     }
+     vars = NULL; 
+     for (p=private; p != NULL; p = cdr(p)) vars = ((car p), 1) :: vars;
+     for (p=reduction; p != NULL; p = cdr(p)) vars = ((car p), 0) :: vars;
+     for (p=shared; p != NULL; p = cdr(p)) vars = ((car p), 0) :: vars;
+
+     regassign = NULL; body_r = body;
+     for (p=vars; p != NULL; p = cdr(p)) {
+        cur = (car p); newvar = "";
+        body_r=TRACE(newvar,SplitStmt[trace_newVars=newvar](cur[0],body_r));
+        regassign = (newvar,cur[1]) :: regassign;
+        if (cur[0] : CODE.Name|ID)
+            regassign = (cur[0],cur[1]) :: regassign;
+     }
+     body_r = ArrayAccess2PtrRef(body_r);
+     input = REPLACE(body,body_r,input);
+     VectorizeLoop[trace=trace;trace_include=trace_include;ext=scope;init_vars=shared;reduce_vars=reduction](regassign,input);
+  }
+</xform>
+
+<** EOF **>

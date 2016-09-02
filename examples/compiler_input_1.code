@@ -1,0 +1,15 @@
+<define PARSE CODE.Block/>
+<define TOKEN (("+" "+") ("-" "-")) />
+<define KEYWORDS ("for" "int" "float")/>
+
+<code Block parse=LIST(CODE.For | (CODE.Exp ";") | CODE.Decl, "\n") />
+<code For parse=("for" "(" ID "=" CODE.Exp ";" ID "<" CODE.Exp ";" CODE.Exp ")" "{" CODE.Block "}")/> 
+<code Exp parse=(CODE.Factor CODE.Exp1) />
+<code Exp1 parse=(("+" CODE.Factor CODE.Exp1)
+                 |("[" CODE.Exp "]" CODE.Exp1)
+                 |("=" CODE.Exp)
+                 |"++"
+                 |"") />
+<code Factor parse=(ID | INT | FLOAT) />
+<code Decl parse=(CODE.Type ID ";")/>
+<code Type parse=("int"|"float"|("[" Type "]"))/>

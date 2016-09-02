@@ -1,0 +1,5 @@
+1 Optimize trsm trisolv. 
+	The current maximum uj factor can only be (4 1), which in fact can be (4 2)
+2 Optimize lufac
+	The current version can not be vectorized 
+	The current version can not apply array_copy

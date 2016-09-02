@@ -1,0 +1,3553 @@
+DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "" "" "" "" ""void" NULLMacro#UnknownUntilEOL#"define"" ""FALSE"" "" "" "" "" "" "" "" "" "" "" ""0" NULLMacro#UnknownUntilEOL#"define"" ""TRUE"" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""HUGE_REAL"" "" "" "" "" "" "" ""1""e""+""32" NULLMacro#UnknownUntilEOL#"define"" ""ISECT_MAX"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""NAME_LEN"" "" "" "" "" "" "" "" ""30" NULLMacro#UnknownUntilEOL#"define"" ""RAYEPS"" "" "" "" "" "" "" "" "" "" ""1""e""-""07" NULLMacro#UnknownUntilEOL#"define"" ""MAX_SUBDIV_LEVEL"" ""3" NULLMacro#UnknownUntilEOL#"define"" ""MAX_RAYINFO"" "" "" "" "" ""(""MAX_SUBDIV_LEVEL"" ""+"" ""1"")" NULLMacro#UnknownUntilEOL#"define"" ""VecDot""(""A"","" ""B"")"" "" "" "" ""("" ""A""[""0""]""*""B""[""0""]"" ""+"" ""A""[""1""]""*""B""[""1""]"" ""+"" ""A""[""2""]""*""B""[""2""]"" "")" NULLMacro#UnknownUntilEOL#"define"" ""ABS""(""A"")"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""("" ""(""A"")"" "">"" ""0.0"" ""?"" ""(""A"")"" "":"" ""-""(""A"")"" "")" NULLMacro#UnknownUntilEOL#"define"" ""IsectAdd""(""hit"","" ""tval"","" ""P"")"" "" ""{"" ""(""hit"")""->""t"" ""="" ""tval"";"" "" ""\
+"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""hit"")""->""pelem"" ""="" ""P"";"" ""}" NULLMacro#UnknownUntilEOL#"define"" ""X_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""Y_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""Z_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""3" NULLMacro#UnknownUntilEOL#"define"" ""CLOCKWISE"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""COUNTER_CLOCKWISE"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""INSIDE""(""x"","" ""a"")"" "" "" "" "" "" "" "" "" "" "" "" ""(""(""(""a"")"" ""<="" ""0.0"" ""&&"" ""(""x"")"" "">="" ""(""a"")"" ""&&"" ""(""x"")"" ""<="" ""0.0"")"" ""||"" ""\
+"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""(""a"")"" "" "">"" "" ""0.0"" ""&&"" ""(""x"")"" "">="" ""0.0"" ""&&"" ""(""x"")"" ""<="" ""(""a"")"")"")" NULLTypeDef#DeclStmt#TypeInfo#(
+        IntType#"char",
+        "CHAR",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        IntType1#"long",
+        "INT",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        IntType1#"unsigned""long" NULL,
+        "UINT",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        IntType1#"unsigned""long" NULL,
+        "BOOL",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        IntType1#"long",
+        "LONG",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        FloatType#"float",
+        "R32",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        FloatType#"double",
+        "REAL",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        ArrayType#(
+          "REAL",
+          (ArrayDim#3 NULL)),
+        "VEC3",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        "VEC3",
+        "COLOR",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "pprocs",
+          DeclarationBlock#(FunctionDecl#(
+              FunctionPtr#"name",
+              "",
+              PtrType#"CHAR",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"print",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"read",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"binread",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"transform",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"intersect",
+              "",
+              "INT",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"pe_intersect",
+              "",
+              "INT",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"normal",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"normalize",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+            (FunctionDecl#(
+              FunctionPtr#"bbox",
+              "",
+              "VOID",
+              EmptyStmt)#(
+              "",
+              "")
+             NULL)
+             NULL#MAP:{
+"name"->FunctionType#(
+                "",
+                PtrType#"CHAR")
+"read"->FunctionType#(
+                "",
+                "VOID")
+"print"->FunctionType#(
+                "",
+                "VOID")
+"binread"->FunctionType#(
+                "",
+                "VOID")
+"transform"->FunctionType#(
+                "",
+                "VOID")
+"intersect"->FunctionType#(
+                "",
+                "INT")
+"pe_intersect"->FunctionType#(
+                "",
+                "INT")
+"normal"->FunctionType#(
+                "",
+                "VOID")
+"normalize"->FunctionType#(
+                "",
+                "VOID")
+"bbox"->FunctionType#(
+                "",
+                "VOID")
+}),
+        "PPROCS",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "surf",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "COLOR",
+                "fcolor",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "COLOR",
+                "bcolor",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "kdiff",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "kspec",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "ktran",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "refrindex",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "kspecn",
+                "")
+               NULL
+             NULL#MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+}),
+        "SURF",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "bbox",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "dnear",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "dfar",
+                "")
+               NULL
+             NULL#MAP:{
+"dnear"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+}),
+        "BBOX",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "element",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "INT",
+                "index",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "BBOX",
+                "bv",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#StructType#(
+                    "object",
+                    ""),
+                "parent",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"CHAR",
+                "data",
+                "")
+               NULL
+             NULL#MAP:{
+"index"->"INT"
+"object"->StructType#(
+                "object",
+                "")
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+                  "object",
+                  "")
+"data"->PtrType#"CHAR"
+}),
+        "ELEMENT",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "object",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "INT",
+                "index",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "CHAR",
+                  (ArrayDim#"NAME_LEN" NULL)),
+                "name",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "BBOX",
+                "bv",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"ELEMENT",
+                "pelem",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "numelements",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"PPROCS",
+                "procs",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"SURF",
+                "surf",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#StructType#(
+                    "object",
+                    ""),
+                "next",
+                "")
+               NULL
+             NULL#MAP:{
+"index"->"INT"
+"name"->ArrayType#(
+                "CHAR",
+                (ArrayDim#"NAME_LEN" NULL))
+"next"->PtrType#StructType#(
+                  "object",
+                  "")
+"pelem"->PtrType#"ELEMENT"
+"object"->StructType#(
+                "object",
+                "")
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+}),
+        "OBJECT",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "voxel",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "INT",
+                "id",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"CHAR",
+                "cell",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "CHAR",
+                "celltype",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "numelements",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#StructType#(
+                    "voxel",
+                    ""),
+                "next",
+                "")
+               NULL
+             NULL#MAP:{
+"next"->PtrType#StructType#(
+                  "voxel",
+                  "")
+"numelements"->"INT"
+"voxel"->StructType#(
+                "voxel",
+                "")
+"id"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+}),
+        "VOXEL",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "btnode",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#PtrType#"ELEMENT",
+                "pe",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "p",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "nprims",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "n",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "i",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "axis",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "totalPrimsAllocated",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  PtrType#StructType#(
+                      "btnode",
+                      ""),
+                  (ArrayDim#2 NULL)),
+                "btn",
+                "")
+               NULL
+             NULL#MAP:{
+"i"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"p"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"n"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"btnode"->StructType#(
+                "btnode",
+                "")
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+                PtrType#StructType#(
+                    "btnode",
+                    ""),
+                (ArrayDim#2 NULL))
+}),
+        "BTNODE",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "grid",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "INT",
+                "id",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#PtrType#"VOXEL",
+                "hashtable",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"UINT",
+                "emptycells",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#PtrType#"ELEMENT",
+                "pepa",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "num_prims",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "indx_inc",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "num_buckets",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "min",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "cellsize",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "subdiv_level",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"BTNODE",
+                "bintree",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#StructType#(
+                    "grid",
+                    ""),
+                "next",
+                "")
+               NULL
+             NULL#MAP:{
+"min"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+                  "grid",
+                  "")
+"id"->"INT"
+"grid"->StructType#(
+                "grid",
+                "")
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+}),
+        "GRID",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "rayinfo",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#"GRID",
+                "grid",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "d",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "entry_plane",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "t_in",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "exit_plane",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "t_out",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "REAL",
+                  (ArrayDim#3 NULL)),
+                "delta",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "index3D",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "index1D",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "indx_inc1D",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#StructType#(
+                    "rayinfo",
+                    ""),
+                "next",
+                "")
+               NULL
+             NULL#MAP:{
+"next"->PtrType#StructType#(
+                  "rayinfo",
+                  "")
+"d"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"rayinfo"->StructType#(
+                "rayinfo",
+                "")
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+}),
+        "RAYINFO",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "ray",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "LONG",
+                "id",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "x",
+                "")
+              TypeInfo#(
+                "INT",
+                "y",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "VEC3",
+                "P",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "VEC3",
+                "D",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "level",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "R32",
+                "weight",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "indx_inc3D",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"RAYINFO",
+                "ri",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "ri_indx",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "RAYINFO",
+                  (ArrayDim#Bop#(
+                        "+",
+                        "MAX_RAYINFO",
+                        1)
+                     NULL)),
+                "rinfo",
+                "")
+               NULL
+             NULL#MAP:{
+"level"->"INT"
+"x"->"INT"
+"P"->"VEC3"
+"id"->"LONG"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+                "RAYINFO",
+                (ArrayDim#Bop#(
+                      "+",
+                      "MAX_RAYINFO",
+                      1)
+                   NULL))
+}),
+        "RAY",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "irecord",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "REAL",
+                "t",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"ELEMENT",
+                "pelem",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "b1",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "b2",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "b3",
+                "")
+               NULL
+             NULL#MAP:{
+"t"->"REAL"
+"b2"->"REAL"
+"b1"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+}),
+        "IRECORD",
+        "")
+  TypeDef#DeclStmt#TypeInfo#(
+        StructType#(
+          "tri",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "VEC3",
+                "norm",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "REAL",
+                "d",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"VEC3",
+                "vptr",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#"VEC3",
+                "nptr",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                ArrayType#(
+                  "INT",
+                  (ArrayDim#3 NULL)),
+                "vindex",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "INT",
+                "indx",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "BOOL",
+                "norminterp",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "BOOL",
+                "vorder",
+                "")
+               NULL
+             NULL#MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+}),
+        "TRI",
+        "")
+  (FunctionDecl#(
+    "TriPeIntersect",
+    (TypeDecl#"pr"TypeDecl#"pe"TypeDecl#"hit" NULL),
+    "INT",
+    StmtBlock#DeclStmt#TypeInfo#(
+          "INT",
+          "i",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "REAL",
+          "Rd_dot_Pn",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "REAL",
+          "Ro_dot_Pn",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "REAL",
+          "q1",
+          "")
+        TypeInfo#(
+          "REAL",
+          "q2",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "REAL",
+          "tval",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"VEC3",
+          "v1",
+          "")
+        TypeInfo#(
+          PtrType#"VEC3",
+          "v2",
+          "")
+        TypeInfo#(
+          PtrType#"VEC3",
+          "v3",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "VEC3",
+          "e1",
+          "")
+        TypeInfo#(
+          "VEC3",
+          "e2",
+          "")
+        TypeInfo#(
+          "VEC3",
+          "e3",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"TRI",
+          "pt",
+          "")
+         NULL
+      ExpStmt#Assign#(
+          "pt",
+          CastExp#(
+            "TRI",
+            "*",
+            PtrAccess#(
+              "pe",
+              "data")))
+      ExpStmt#Assign#(
+          "Rd_dot_Pn",
+          FunctionCall#(
+            "VecDot",
+            (PtrAccess#(
+                "pt",
+                "norm")
+              PtrAccess#(
+                "pr",
+                "D")
+               NULL)))
+      Nest#(
+        If#Bop#(
+            "<",
+            FunctionCall#(
+              "ABS",
+              "Rd_dot_Pn"),
+            "RAYEPS"),
+        Return#0)#(
+        "",
+        "")
+      ExpStmt#Assign#(
+          "Ro_dot_Pn",
+          FunctionCall#(
+            "VecDot",
+            (PtrAccess#(
+                "pt",
+                "norm")
+              PtrAccess#(
+                "pr",
+                "P")
+               NULL)))
+      ExpStmt#Assign#(
+          "tval",
+          Bop#(
+            "/",
+            Uop#(
+              "-",
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "pt",
+                  "d"),
+                "Ro_dot_Pn")),
+            "Rd_dot_Pn"))
+      Nest#(
+        If#Bop#(
+            "<",
+            "tval",
+            "RAYEPS"),
+        Return#0)#(
+        "",
+        "")
+      ExpStmt#Assign#(
+          "v1",
+          Bop#(
+            "+",
+            PtrAccess#(
+              "pt",
+              "vptr"),
+            ArrayAccess#(
+              PtrAccess#(
+                "pt",
+                "vindex"),
+              0)))
+      Nest#(
+        If#Bop#(
+            "==",
+            PtrAccess#(
+              "pt",
+              "vorder"),
+            "COUNTER_CLOCKWISE"),
+        (ExpStmt#Assign#(
+              "v2",
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "pt",
+                  "vptr"),
+                ArrayAccess#(
+                  PtrAccess#(
+                    "pt",
+                    "vindex"),
+                  2)))
+          ExpStmt#Assign#(
+              "v3",
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "pt",
+                  "vptr"),
+                ArrayAccess#(
+                  PtrAccess#(
+                    "pt",
+                    "vindex"),
+                  1)))
+           NULL))#(
+        "",
+        "")
+      Nest#(
+        Else#(
+          "",
+          ""),
+        (ExpStmt#Assign#(
+              "v2",
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "pt",
+                  "vptr"),
+                ArrayAccess#(
+                  PtrAccess#(
+                    "pt",
+                    "vindex"),
+                  1)))
+          ExpStmt#Assign#(
+              "v3",
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "pt",
+                  "vptr"),
+                ArrayAccess#(
+                  PtrAccess#(
+                    "pt",
+                    "vindex"),
+                  2)))
+           NULL))#(
+        "",
+        "")
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e1",
+            0),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              0),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              0)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e1",
+            1),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              1),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              1)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e1",
+            2),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              2),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              2)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e2",
+            0),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              0),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              0)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e2",
+            1),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              1),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              1)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e2",
+            2),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              2),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v2"),
+              2)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e3",
+            0),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              0),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              0)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e3",
+            1),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              1),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              1)))
+      ExpStmt#Assign#(
+          ArrayAccess#(
+            "e3",
+            2),
+          Bop#(
+            "-",
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v1"),
+              2),
+            ArrayAccess#(
+              Uop#(
+                "*",
+                "v3"),
+              2)))
+      SwitchStmt#(
+        PtrAccess#(
+          "pt",
+          "indx"),
+        (CaseLabel#(
+            "X_NORM",
+            (ExpStmt#Assign#(
+                  "q1",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      1),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        1))))
+              ExpStmt#Assign#(
+                  "q2",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      2),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        2))))
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b1"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        1),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          2))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          1)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b1")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          0)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b2"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        1),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          2))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          1)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b2")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          0)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b3"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        1),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          2))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          1)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b3")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          0)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              Break NULL))
+          CaseLabel#(
+            "Y_NORM",
+            (ExpStmt#Assign#(
+                  "q1",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      0),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        0))))
+              ExpStmt#Assign#(
+                  "q2",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      2),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        2))))
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b1"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          0))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          2)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b1")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          1)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b2"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          0))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          2)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b2")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          1)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b3"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        2),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          0))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          2)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b3")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          1)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              Break NULL))
+          CaseLabel#(
+            "Z_NORM",
+            (ExpStmt#Assign#(
+                  "q1",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      0),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        0))))
+              ExpStmt#Assign#(
+                  "q2",
+                  Bop#(
+                    "+",
+                    ArrayAccess#(
+                      PtrAccess#(
+                        "pr",
+                        "P"),
+                      1),
+                    Bop#(
+                      "*",
+                      "tval",
+                      ArrayAccess#(
+                        PtrAccess#(
+                          "pr",
+                          "D"),
+                        1))))
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b1"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          1))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e2",
+                        1),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v2"),
+                          0)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b1")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          2)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b2"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          1))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e3",
+                        1),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v3"),
+                          0)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b2")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          2)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              ExpStmt#Assign#(
+                  PtrAccess#(
+                    "hit",
+                    "b3"),
+                  Bop#(
+                    "-",
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        0),
+                      Bop#(
+                        "-",
+                        "q2",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          1))),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "e1",
+                        1),
+                      Bop#(
+                        "-",
+                        "q1",
+                        ArrayAccess#(
+                          Uop#(
+                            "*",
+                            "v1"),
+                          0)))))
+              Nest#(
+                If#Uop#(
+                    "!",
+                    FunctionCall#(
+                      "INSIDE",
+                      (PtrAccess#(
+                          "hit",
+                          "b3")
+                        ArrayAccess#(
+                          PtrAccess#(
+                            "pt",
+                            "norm"),
+                          2)
+                         NULL))),
+                Return#0)#(
+                "",
+                "")
+              Break NULL))
+           NULL))
+      ExpStmt#FunctionCall#(
+          "IsectAdd",
+          ("hit""tval""pe" NULL))
+      Return#1 NULL#(
+      MAP:{
+"i"->"INT"
+"q1"->"REAL"
+"q2"->"REAL"
+"e1"->"VEC3"
+"e2"->"VEC3"
+"e3"->"VEC3"
+"v1"->PtrType#"VEC3"
+"v2"->PtrType#"VEC3"
+"tval"->"REAL"
+"Rd_dot_Pn"->"REAL"
+"Ro_dot_Pn"->"REAL"
+"v3"->PtrType#"VEC3"
+"pt"->PtrType#"TRI"
+},
+      MAP:{
+"i"->"INT"
+"q1"->"REAL"
+"q2"->"REAL"
+"e1"->"VEC3"
+"e2"->"VEC3"
+"e3"->"VEC3"
+"v1"->PtrType#"VEC3"
+"v2"->PtrType#"VEC3"
+"tval"->"REAL"
+"Rd_dot_Pn"->"REAL"
+"Ro_dot_Pn"->"REAL"
+"v3"->PtrType#"VEC3"
+"pt"->PtrType#"TRI"
+}))#(
+    "",
+    (DeclStmt#TypeInfo#(
+          PtrType#"RAY",
+          "pr",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"ELEMENT",
+          "pe",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"IRECORD",
+          "hit",
+          "")
+         NULL
+       NULL))
+   NULL)
+  (FunctionDecl#(
+    "IntersectHuniformPrimlist",
+    (TypeDecl#"intersectPrim"TypeDecl#"hit"TypeDecl#"v"TypeDecl#"r"TypeDecl#"pid" NULL),
+    "VOID",
+    StmtBlock#DeclStmt#TypeInfo#(
+          PtrType#PtrType#"ELEMENT",
+          "pptr",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"OBJECT",
+          "peParent",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"ELEMENT",
+          "pe",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          ArrayType#(
+            "IRECORD",
+            (ArrayDim#"ISECT_MAX" NULL)),
+          "newhit",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "INT",
+          "hitcode",
+          "")
+        TypeInfo#(
+          "INT",
+          "i",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "REAL",
+          "t_out",
+          "")
+         NULL
+      ExpStmt#Assign#(
+          "t_out",
+          PtrAccess#(
+            PtrAccess#(
+              "r",
+              "ri"),
+            "t_out"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            ArrayAccess#(
+              "hit",
+              0),
+            "t"),
+          "HUGE_REAL")
+      ExpStmt#Assign#(
+          "pptr",
+          CastExp#(
+            "ELEMENT",
+            ("*""*" NULL),
+            PtrAccess#(
+              "v",
+              "cell")))
+      Nest#(
+        Loop#(
+          "i",
+          0,
+          PtrAccess#(
+            "v",
+            "numelements"),
+          1)#"",
+        (ExpStmt#Assign#(
+              "pe",
+              ArrayAccess#(
+                "pptr",
+                "i"))
+          ExpStmt#Assign#(
+              "peParent",
+              PtrAccess#(
+                "pe",
+                "parent"))
+          ExpStmt#Assign#(
+              "hitcode",
+              FunctionCall#(
+                Uop#(
+                  "*",
+                  PtrAccess#(
+                    PtrAccess#(
+                      "peParent",
+                      "procs"),
+                    "pe_intersect")),
+                ("r""pe""newhit" NULL)))
+          ExpStmt#Assign#(
+              "hitcode",
+              FunctionCall#(
+                "TriPeIntersect",
+                ("r""pe""newhit" NULL)))
+          Nest#(
+            If#"hitcode",
+            Nest#(
+              If#Bop#(
+                  "&&",
+                  Bop#(
+                    "<",
+                    ObjAccess#(
+                      ArrayAccess#(
+                        "newhit",
+                        0),
+                      "t"),
+                    ObjAccess#(
+                      ArrayAccess#(
+                        "hit",
+                        0),
+                      "t")),
+                  Bop#(
+                    "<",
+                    ObjAccess#(
+                      ArrayAccess#(
+                        "newhit",
+                        0),
+                      "t"),
+                    "t_out")),
+              ExpStmt#Assign#(
+                  ArrayAccess#(
+                    "hit",
+                    0),
+                  ArrayAccess#(
+                    "newhit",
+                    0)))#(
+              "",
+              ""))#(
+            "",
+            "")
+           NULL))#(
+        "",
+        "")
+      Nest#(
+        If#Bop#(
+            "<",
+            ObjAccess#(
+              ArrayAccess#(
+                "hit",
+                0),
+              "t"),
+            "HUGE_REAL"),
+        ExpStmt#Assign#(
+            Uop#(
+              "*",
+              "intersectPrim"),
+            "TRUE"))#(
+        "",
+        "")
+      Nest#(
+        Else#(
+          "",
+          ""),
+        ExpStmt#Assign#(
+            Uop#(
+              "*",
+              "intersectPrim"),
+            "FALSE"))#(
+        "",
+        "")
+       NULL#(
+      MAP:{
+"i"->"INT"
+"pe"->PtrType#"ELEMENT"
+"t_out"->"REAL"
+"pptr"->PtrType#PtrType#"ELEMENT"
+"peParent"->PtrType#"OBJECT"
+"newhit"->ArrayType#(
+          "IRECORD",
+          (ArrayDim#"ISECT_MAX" NULL))
+"hitcode"->"INT"
+},
+      MAP:{
+"i"->"INT"
+"pe"->PtrType#"ELEMENT"
+"t_out"->"REAL"
+"pptr"->PtrType#PtrType#"ELEMENT"
+"peParent"->PtrType#"OBJECT"
+"newhit"->ArrayType#(
+          "IRECORD",
+          (ArrayDim#"ISECT_MAX" NULL))
+"hitcode"->"INT"
+}))#(
+    "",
+    (DeclStmt#TypeInfo#(
+          PtrType#"INT",
+          "intersectPrim",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"IRECORD",
+          "hit",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"VOXEL",
+          "v",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#"RAY",
+          "r",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          "INT",
+          "pid",
+          "")
+         NULL
+       NULL))
+   NULL)
+   NULL#MAP:{
+"r"->PtrType#"RAY"
+"pr"->PtrType#"RAY"
+"v"->PtrType#"VOXEL"
+"hit"->PtrType#"IRECORD"
+"CHAR"->IntType#"char"
+"INT"->IntType1#"long"
+"UINT"->IntType1#"unsigned""long" NULL
+"BOOL"->IntType1#"unsigned""long" NULL
+"LONG"->IntType1#"long"
+"R32"->FloatType#"float"
+"REAL"->FloatType#"double"
+"VEC3"->ArrayType#(
+      "REAL",
+      (ArrayDim#3 NULL))
+"COLOR"->"VEC3"
+"pprocs"->StructType#(
+      "pprocs",
+      DeclarationBlock#(FunctionDecl#(
+          FunctionPtr#"name",
+          "",
+          PtrType#"CHAR",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"print",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"read",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"binread",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"transform",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"pe_intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"normal",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"normalize",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"bbox",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+         NULL#MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+"read"->FunctionType#(
+            "",
+            "VOID")
+"print"->FunctionType#(
+            "",
+            "VOID")
+"binread"->FunctionType#(
+            "",
+            "VOID")
+"transform"->FunctionType#(
+            "",
+            "VOID")
+"intersect"->FunctionType#(
+            "",
+            "INT")
+"pe_intersect"->FunctionType#(
+            "",
+            "INT")
+"normal"->FunctionType#(
+            "",
+            "VOID")
+"normalize"->FunctionType#(
+            "",
+            "VOID")
+"bbox"->FunctionType#(
+            "",
+            "VOID")
+})
+"object"->StructType#(
+      "object",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "CHAR",
+              (ArrayDim#"NAME_LEN" NULL)),
+            "name",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"PPROCS",
+            "procs",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"SURF",
+            "surf",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"index"->"INT"
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"object"->StructType#(
+            "object",
+            "")
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+})
+"ray"->StructType#(
+      "ray",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "LONG",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "x",
+            "")
+          TypeInfo#(
+            "INT",
+            "y",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "P",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "R32",
+            "weight",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"RAYINFO",
+            "ri",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "ri_indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "RAYINFO",
+              (ArrayDim#Bop#(
+                    "+",
+                    "MAX_RAYINFO",
+                    1)
+                 NULL)),
+            "rinfo",
+            "")
+           NULL
+         NULL#MAP:{
+"level"->"INT"
+"x"->"INT"
+"P"->"VEC3"
+"id"->"LONG"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+})
+"bbox"->StructType#(
+      "bbox",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dnear",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dfar",
+            "")
+           NULL
+         NULL#MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+})
+"PPROCS"->StructType#(
+      "pprocs",
+      DeclarationBlock#(FunctionDecl#(
+          FunctionPtr#"name",
+          "",
+          PtrType#"CHAR",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"print",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"read",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"binread",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"transform",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"pe_intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"normal",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"normalize",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+        (FunctionDecl#(
+          FunctionPtr#"bbox",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "")
+         NULL)
+         NULL#MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+"read"->FunctionType#(
+            "",
+            "VOID")
+"print"->FunctionType#(
+            "",
+            "VOID")
+"binread"->FunctionType#(
+            "",
+            "VOID")
+"transform"->FunctionType#(
+            "",
+            "VOID")
+"intersect"->FunctionType#(
+            "",
+            "INT")
+"pe_intersect"->FunctionType#(
+            "",
+            "INT")
+"normal"->FunctionType#(
+            "",
+            "VOID")
+"normalize"->FunctionType#(
+            "",
+            "VOID")
+"bbox"->FunctionType#(
+            "",
+            "VOID")
+})
+"surf"->StructType#(
+      "surf",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "COLOR",
+            "fcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "COLOR",
+            "bcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kdiff",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspec",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "ktran",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "refrindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspecn",
+            "")
+           NULL
+         NULL#MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+})
+"SURF"->StructType#(
+      "surf",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "COLOR",
+            "fcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "COLOR",
+            "bcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kdiff",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspec",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "ktran",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "refrindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspecn",
+            "")
+           NULL
+         NULL#MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+})
+"BBOX"->StructType#(
+      "bbox",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dnear",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dfar",
+            "")
+           NULL
+         NULL#MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+})
+"element"->StructType#(
+      "element",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "parent",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "data",
+            "")
+           NULL
+         NULL#MAP:{
+"index"->"INT"
+"object"->StructType#(
+            "object",
+            "")
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+})
+"ELEMENT"->StructType#(
+      "element",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "parent",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "data",
+            "")
+           NULL
+         NULL#MAP:{
+"index"->"INT"
+"object"->StructType#(
+            "object",
+            "")
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+})
+"OBJECT"->StructType#(
+      "object",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "CHAR",
+              (ArrayDim#"NAME_LEN" NULL)),
+            "name",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"PPROCS",
+            "procs",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"SURF",
+            "surf",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"index"->"INT"
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"object"->StructType#(
+            "object",
+            "")
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+})
+"voxel"->StructType#(
+      "voxel",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "cell",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "CHAR",
+            "celltype",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "voxel",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"numelements"->"INT"
+"voxel"->StructType#(
+            "voxel",
+            "")
+"id"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+})
+"grid"->StructType#(
+      "grid",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"VOXEL",
+            "hashtable",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"UINT",
+            "emptycells",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pepa",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_prims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_buckets",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "min",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "cellsize",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "subdiv_level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"BTNODE",
+            "bintree",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "grid",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"grid"->StructType#(
+            "grid",
+            "")
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+})
+"VOXEL"->StructType#(
+      "voxel",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "cell",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "CHAR",
+            "celltype",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "voxel",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"numelements"->"INT"
+"voxel"->StructType#(
+            "voxel",
+            "")
+"id"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+})
+"btnode"->StructType#(
+      "btnode",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pe",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "p",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "nprims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "n",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "i",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "axis",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "totalPrimsAllocated",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              PtrType#StructType#(
+                  "btnode",
+                  ""),
+              (ArrayDim#2 NULL)),
+            "btn",
+            "")
+           NULL
+         NULL#MAP:{
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"btnode"->StructType#(
+            "btnode",
+            "")
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+})
+"pe"->PtrType#"ELEMENT"
+"BTNODE"->StructType#(
+      "btnode",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pe",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "p",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "nprims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "n",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "i",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "axis",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "totalPrimsAllocated",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              PtrType#StructType#(
+                  "btnode",
+                  ""),
+              (ArrayDim#2 NULL)),
+            "btn",
+            "")
+           NULL
+         NULL#MAP:{
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"btnode"->StructType#(
+            "btnode",
+            "")
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+})
+"GRID"->StructType#(
+      "grid",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"VOXEL",
+            "hashtable",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"UINT",
+            "emptycells",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pepa",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_prims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_buckets",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "min",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "cellsize",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "subdiv_level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"BTNODE",
+            "bintree",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "grid",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"grid"->StructType#(
+            "grid",
+            "")
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+})
+"rayinfo"->StructType#(
+      "rayinfo",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#"GRID",
+            "grid",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "entry_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_in",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "exit_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_out",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "delta",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "index3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "index1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "rayinfo",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"rayinfo"->StructType#(
+            "rayinfo",
+            "")
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+})
+"RAYINFO"->StructType#(
+      "rayinfo",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#"GRID",
+            "grid",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "entry_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_in",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "exit_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_out",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "delta",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "index3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "index1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "rayinfo",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#MAP:{
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"rayinfo"->StructType#(
+            "rayinfo",
+            "")
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+})
+"RAY"->StructType#(
+      "ray",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "LONG",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "x",
+            "")
+          TypeInfo#(
+            "INT",
+            "y",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "P",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "R32",
+            "weight",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"RAYINFO",
+            "ri",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "ri_indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "RAYINFO",
+              (ArrayDim#Bop#(
+                    "+",
+                    "MAX_RAYINFO",
+                    1)
+                 NULL)),
+            "rinfo",
+            "")
+           NULL
+         NULL#MAP:{
+"level"->"INT"
+"x"->"INT"
+"P"->"VEC3"
+"id"->"LONG"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+})
+"irecord"->StructType#(
+      "irecord",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "REAL",
+            "t",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b1",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b2",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b3",
+            "")
+           NULL
+         NULL#MAP:{
+"t"->"REAL"
+"b2"->"REAL"
+"b1"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+})
+"IRECORD"->StructType#(
+      "irecord",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "REAL",
+            "t",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b1",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b2",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b3",
+            "")
+           NULL
+         NULL#MAP:{
+"t"->"REAL"
+"b2"->"REAL"
+"b1"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+})
+"tri"->StructType#(
+      "tri",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "VEC3",
+            "norm",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "vptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "nptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "vindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "norminterp",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "vorder",
+            "")
+           NULL
+         NULL#MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+})
+"TRI"->StructType#(
+      "tri",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "VEC3",
+            "norm",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "vptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "nptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "vindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "norminterp",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "vorder",
+            "")
+           NULL
+         NULL#MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+})
+"TriPeIntersect"->FunctionType#(
+      (TypeDecl#"pr"TypeDecl#"pe"TypeDecl#"hit" NULL),
+      "INT")
+"IntersectHuniformPrimlist"->FunctionType#(
+      (TypeDecl#"intersectPrim"TypeDecl#"hit"TypeDecl#"v"TypeDecl#"r"TypeDecl#"pid" NULL),
+      "VOID")
+"intersectPrim"->PtrType#"INT"
+"pid"->"INT"
+}

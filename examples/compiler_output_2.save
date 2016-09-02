@@ -1,0 +1,5 @@
+MAP:{
+"i"->IntType
+"b"->IntType
+"c"->PtrType#FloatType
+}

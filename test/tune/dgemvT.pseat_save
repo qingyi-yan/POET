@@ -1,0 +1,16 @@
+ONLINE
+MAX
+MFLOPS
+500
+11
+10
+1 OMP_SCHEDULE E 4 "auto" "static" "dynamic" "runtime" "auto" 
+1 pthread_nest1 N 1 16 1 1
+1 psize_nest1 N 16 256 8 256
+2 bsize_nest1 N 8 128 8 1 16
+1 copy1_config_Y E 3 0 1 2  1
+1 copy2_config_X E 3 0 1 2  1
+1 ujsize_nest1 N 2 16 1 2
+1 scalar1_config_Y E 3 0 1 2 1
+1 scalar2_config_X E 3 0 1 2 1
+1 usize_nest2 N 1 32 1 4

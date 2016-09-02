@@ -1,0 +1,1424 @@
+DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""(""a"")"" ""<"" ""(""b"")"")""?"" ""(""b"")"" "":"" ""(""a"")"")" NULLMacro#UnknownUntilEOL#"define"" ""min""(""a"",""b"")"" ""(""(""(""a"")"" ""<"" ""(""b"")"")""?"" ""(""a"")"" "":"" ""(""b"")"")" NULLMacro#UnknownUntilEOL#"include"" ""<""pthread"".""h"">" NULLMacro#UnknownUntilEOL#"include"" ""<""stdlib"".""h"">" NULLDeclStmt#TypeInfo#(
+      PtrType#StructType#(
+          "t_WorkGroup_Type",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                "pthread_mutex_t",
+                "mutex",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                "pthread_cond_t",
+                "cond",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ready",
+                "")
+               NULL
+             NULL#MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+}),
+      "t_workgroup",
+      "")
+     NULL
+  (FunctionDecl#(
+    "t_pipeline",
+    TypeInfo#(
+      PtrType#VoidType,
+      "input",
+      ""),
+    PtrType#VoidType,
+    EmptyStmt)#(
+    "",
+    "")
+   NULL)
+  Macro#UnknownUntilEOL#"define"" ""Index3D""(""_nx"",""_ny"",""_i"",""_j"",""_k"")"" ""(""(""_i"")""+""_nx""*""(""(""_j"")""+""_ny""*""(""_k"")"")"")" NULL(FunctionDecl#(
+    "jacobi7_4",
+    (TypeInfo#(
+        ConstType#IntType#"int",
+        "nx",
+        "")
+      TypeInfo#(
+        ConstType#IntType#"int",
+        "ny",
+        "")
+      TypeInfo#(
+        IntType#"int",
+        "nz",
+        "")
+      TypeInfo#(
+        ConstType#FloatType#"double",
+        "alpha",
+        "")
+      TypeInfo#(
+        PtrType#FloatType#"double",
+        "A0",
+        "")
+      TypeInfo#(
+        ConstType#IntType#"int",
+        "timesteps",
+        "")
+      TypeInfo#(
+        PtrType#ConstType#FloatType#"double",
+        "B",
+        "")
+      TypeInfo#(
+        ConstType#IntType#"int",
+        "ldb",
+        "")
+      TypeInfo#(
+        PtrType#FloatType#"double",
+        "Anext",
+        "")
+      TypeInfo#(
+        ConstType#IntType#"int",
+        "ldc",
+        "")
+       NULL),
+    VoidType,
+    StmtBlock#DeclStmt#TypeInfo#(
+          FloatType#"double",
+          "fac",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "temp_ptr",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "i",
+          "")
+        TypeInfo#(
+          IntType#"int",
+          "j",
+          "")
+        TypeInfo#(
+          IntType#"int",
+          "k",
+          "")
+        TypeInfo#(
+          IntType#"int",
+          "t",
+          "")
+         NULL
+      ExpStmt#Assign#(
+          "fac",
+          Bop#(
+            "/",
+            "6.0",
+            Bop#(
+              "*",
+              ArrayAccess#(
+                "A0",
+                0),
+              ArrayAccess#(
+                "A0",
+                0))))
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "l0",
+          "")
+        TypeInfo#(
+          PtrType#FloatType#"double",
+          "lnext",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "___i",
+          "")
+         NULL
+      ExpStmt#Assign#(
+          "t_workgroup",
+          CastExp#(
+            StructType#(
+              "t_WorkGroup_Type",
+              ""),
+            "*",
+            FunctionCall#(
+              "malloc",
+              Bop#(
+                "+",
+                Uop#(
+                  "-",
+                  1),
+                Bop#(
+                  "*",
+                  Bop#(
+                    "-",
+                    "nz",
+                    1),
+                  SizeOf#(
+                    StructType#(
+                      "t_WorkGroup_Type",
+                      ""),
+                    ""))))))
+      Nest#(
+        Loop#(
+          "___i",
+          0,
+          Bop#(
+            "+",
+            Uop#(
+              "-",
+              1),
+            Bop#(
+              "-",
+              "nz",
+              1)),
+          1)#"",
+        (DeclStmt#TypeInfo#(
+              PtrType#StructType#(
+                  "t_WorkGroup_Type",
+                  ""),
+              "cur",
+              VarInit#Bop#(
+                  "+",
+                  "t_workgroup",
+                  "___i"))
+             NULL
+          ExpStmt#FunctionCall#(
+              "pthread_mutex_init",
+              (Uop#(
+                  "&",
+                  PtrAccess#(
+                    "cur",
+                    "mutex"))
+                "NULL" NULL))
+          ExpStmt#FunctionCall#(
+              "pthread_cond_init",
+              (Uop#(
+                  "&",
+                  PtrAccess#(
+                    "cur",
+                    "cond"))
+                "NULL" NULL))
+          ExpStmt#Assign#(
+              PtrAccess#(
+                "cur",
+                "ready"),
+              Uop#(
+                "-",
+                1))
+           NULL))#(
+        "",
+        "")
+      DeclStmt#TypeDecl#StructType#(
+            "t_Params_Type",
+            DeclarationBlock#DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "temp_ptr",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  FloatType#"double",
+                  "fac",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ldc",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "Anext",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ldb",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#ConstType#FloatType#"double",
+                  "B",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "timesteps",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "A0",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  FloatType#"double",
+                  "alpha",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "nz",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ny",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "nx",
+                  "")
+                 NULL
+              EmptyStmt NULL#MAP:{
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+})
+         NULL
+      DeclStmt#TypeDecl#StructType#(
+            "t_WorkBlock_Type",
+            DeclarationBlock#DeclStmt#TypeInfo#(
+                  PtrType#StructType#(
+                      "t_Params_Type",
+                      ""),
+                  "params",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "begin",
+                  "")
+                TypeInfo#(
+                  IntType#"int",
+                  "end",
+                  "")
+                 NULL
+               NULL#MAP:{
+"params"->PtrType#StructType#(
+                    "t_Params_Type",
+                    "")
+"begin"->IntType#"int"
+"end"->IntType#"int"
+"t_Params_Type"->StructType#(
+                  "t_Params_Type",
+                  "")
+})
+         NULL
+      DeclStmt#TypeInfo#(
+          StructType#(
+            "t_Params_Type",
+            ""),
+          "t_params",
+          "")
+         NULL
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "temp_ptr"),
+          CastExp#(
+            FloatType#"double",
+            "*",
+            "temp_ptr"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "fac"),
+          CastExp#(
+            FloatType#"double",
+            "",
+            "fac"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "ldc"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "ldc"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "Anext"),
+          CastExp#(
+            FloatType#"double",
+            "*",
+            "Anext"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "ldb"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "ldb"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "B"),
+          CastExp#(
+            ConstType#FloatType#"double",
+            "*",
+            "B"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "timesteps"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "timesteps"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "A0"),
+          CastExp#(
+            FloatType#"double",
+            "*",
+            "A0"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "alpha"),
+          CastExp#(
+            FloatType#"double",
+            "",
+            "alpha"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "nz"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "nz"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "ny"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "ny"))
+      ExpStmt#Assign#(
+          ObjAccess#(
+            "t_params",
+            "nx"),
+          CastExp#(
+            IntType#"int",
+            "",
+            "nx"))
+      DeclStmt#TypeInfo#(
+          PtrType#"pthread_t",
+          "thread_id",
+          VarInit#CastExp#(
+              "pthread_t",
+              "*",
+              FunctionCall#(
+                "malloc",
+                Bop#(
+                  "*",
+                  SizeOf#(
+                    "pthread_t",
+                    ""),
+                  2))))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType1#"unsigned",
+          "worksize",
+          VarInit#Bop#(
+              "+",
+              Bop#(
+                "+",
+                Uop#(
+                  "-",
+                  1),
+                Bop#(
+                  "/",
+                  Bop#(
+                    "-",
+                    "nz",
+                    1),
+                  2)),
+              1))
+         NULL
+      Nest#(
+        Loop#(
+          "___i",
+          0,
+          2,
+          1)#"",
+        (DeclStmt#TypeInfo#(
+              PtrType#StructType#(
+                  "t_WorkBlock_Type",
+                  ""),
+              "cur",
+              VarInit#CastExp#(
+                  StructType#(
+                    "t_WorkBlock_Type",
+                    ""),
+                  "*",
+                  FunctionCall#(
+                    "malloc",
+                    SizeOf#(
+                      StructType#(
+                        "t_WorkBlock_Type",
+                        ""),
+                      ""))))
+             NULL
+          ExpStmt#Assign#(
+              PtrAccess#(
+                "cur",
+                "params"),
+              Uop#(
+                "&",
+                "t_params"))
+          ExpStmt#Assign#(
+              PtrAccess#(
+                "cur",
+                "begin"),
+              Bop#(
+                "*",
+                "___i",
+                "worksize"))
+          ExpStmt#Assign#(
+              PtrAccess#(
+                "cur",
+                "end"),
+              Bop#(
+                "+",
+                PtrAccess#(
+                  "cur",
+                  "begin"),
+                "worksize"))
+          ExpStmt#FunctionCall#(
+              "pthread_create",
+              (Uop#(
+                  "&",
+                  ArrayAccess#(
+                    "thread_id",
+                    "___i"))
+                "NULL""t_pipeline"CastExp#(
+                  VoidType,
+                  "*",
+                  "cur")
+                 NULL))
+           NULL))#(
+        "",
+        "")
+      Nest#(
+        Loop#(
+          "___i",
+          0,
+          2,
+          1)#"",
+        ExpStmt#FunctionCall#(
+            "pthread_join",
+            (ArrayAccess#(
+                "thread_id",
+                "___i")
+              "NULL" NULL)))#(
+        "",
+        "")
+      Nest#(
+        Loop#(
+          "___i",
+          0,
+          Bop#(
+            "+",
+            Uop#(
+              "-",
+              1),
+            Bop#(
+              "-",
+              "nz",
+              1)),
+          1)#"",
+        (DeclStmt#TypeInfo#(
+              PtrType#StructType#(
+                  "t_WorkGroup_Type",
+                  ""),
+              "cur",
+              VarInit#Bop#(
+                  "+",
+                  "t_workgroup",
+                  "___i"))
+             NULL
+          ExpStmt#FunctionCall#(
+              "pthread_mutex_destroy",
+              Uop#(
+                "&",
+                PtrAccess#(
+                  "cur",
+                  "mutex")))
+          ExpStmt#FunctionCall#(
+              "pthread_cond_destroy",
+              Uop#(
+                "&",
+                PtrAccess#(
+                  "cur",
+                  "cond")))
+           NULL))#(
+        "",
+        "")
+       NULL#(
+      MAP:{
+"cur"->PtrType#StructType#(
+            "t_WorkGroup_Type",
+            "")
+"i"->IntType#"int"
+"t"->IntType#"int"
+"___i"->IntType#"int"
+"thread_id"->PtrType#"pthread_t"
+"worksize"->IntType1#"unsigned"
+"t_WorkGroup_Type"->StructType#(
+          "t_WorkGroup_Type",
+          "")
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+"j"->IntType#"int"
+"k"->IntType#"int"
+"l0"->PtrType#FloatType#"double"
+"lnext"->PtrType#FloatType#"double"
+"t_WorkBlock_Type"->StructType#(
+          "t_WorkBlock_Type",
+          "")
+"t_params"->StructType#(
+          "t_Params_Type",
+          "")
+},
+      MAP:{
+"cur"->PtrType#StructType#(
+            "t_WorkGroup_Type",
+            "")
+"i"->IntType#"int"
+"t"->IntType#"int"
+"___i"->IntType#"int"
+"thread_id"->PtrType#"pthread_t"
+"worksize"->IntType1#"unsigned"
+"t_WorkGroup_Type"->StructType#(
+          "t_WorkGroup_Type",
+          "")
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+"j"->IntType#"int"
+"k"->IntType#"int"
+"l0"->PtrType#FloatType#"double"
+"lnext"->PtrType#FloatType#"double"
+"t_WorkBlock_Type"->StructType#(
+          "t_WorkBlock_Type",
+          "")
+"t_params"->StructType#(
+          "t_Params_Type",
+          "")
+}))#(
+    "",
+    "")
+   NULL)
+  (FunctionDecl#(
+    "t_pipeline",
+    TypeInfo#(
+      PtrType#VoidType,
+      "input",
+      ""),
+    PtrType#VoidType,
+    StmtBlock#DeclStmt#TypeDecl#StructType#(
+            "t_Params_Type",
+            DeclarationBlock#DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "temp_ptr",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  FloatType#"double",
+                  "fac",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ldc",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "Anext",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ldb",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#ConstType#FloatType#"double",
+                  "B",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "timesteps",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  PtrType#FloatType#"double",
+                  "A0",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  FloatType#"double",
+                  "alpha",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "nz",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "ny",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "nx",
+                  "")
+                 NULL
+              EmptyStmt NULL#MAP:{
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+})
+         NULL
+      DeclStmt#TypeDecl#StructType#(
+            "t_WorkBlock_Type",
+            DeclarationBlock#DeclStmt#TypeInfo#(
+                  PtrType#StructType#(
+                      "t_Params_Type",
+                      ""),
+                  "params",
+                  "")
+                 NULL
+              DeclStmt#TypeInfo#(
+                  IntType#"int",
+                  "begin",
+                  "")
+                TypeInfo#(
+                  IntType#"int",
+                  "end",
+                  "")
+                 NULL
+               NULL#MAP:{
+"params"->PtrType#StructType#(
+                    "t_Params_Type",
+                    "")
+"begin"->IntType#"int"
+"end"->IntType#"int"
+"t_Params_Type"->StructType#(
+                  "t_Params_Type",
+                  "")
+})
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#StructType#(
+              "t_WorkBlock_Type",
+              ""),
+          "cur",
+          VarInit#CastExp#(
+              StructType#(
+                "t_WorkBlock_Type",
+                ""),
+              "*",
+              "input"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "___BEGIN",
+          VarInit#PtrAccess#(
+              "cur",
+              "begin"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "___END",
+          VarInit#PtrAccess#(
+              "cur",
+              "end"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#StructType#(
+              "t_Params_Type",
+              ""),
+          "cur_params",
+          VarInit#PtrAccess#(
+              "cur",
+              "params"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "temp_ptr",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "temp_ptr"))
+         NULL
+      DeclStmt#TypeInfo#(
+          FloatType#"double",
+          "fac",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "fac"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "ldc",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "ldc"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "Anext",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "Anext"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "ldb",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "ldb"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#ConstType#FloatType#"double",
+          "B",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "B"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "timesteps",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "timesteps"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "A0",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "A0"))
+         NULL
+      DeclStmt#TypeInfo#(
+          FloatType#"double",
+          "alpha",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "alpha"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "nz",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "nz"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "ny",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "ny"))
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "nx",
+          VarInit#PtrAccess#(
+              "cur_params",
+              "nx"))
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "lnext",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          PtrType#FloatType#"double",
+          "l0",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "t",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "k",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "j",
+          "")
+         NULL
+      DeclStmt#TypeInfo#(
+          IntType#"int",
+          "i",
+          "")
+         NULL
+      Nest#(
+        Loop#(
+          "t",
+          0,
+          "timesteps",
+          1)#"",
+        Nest#(
+          Loop#(
+            "k",
+            Bop#(
+              "+",
+              1,
+              "___BEGIN"),
+            FunctionCall#(
+              "min",
+              (Bop#(
+                  "+",
+                  1,
+                  "___END")
+                Bop#(
+                  "-",
+                  "nz",
+                  1)
+                 NULL)),
+            1)#"",
+          (Nest#(
+              If#Bop#(
+                  "<",
+                  "k",
+                  Bop#(
+                    "+",
+                    Uop#(
+                      "-",
+                      1),
+                    Bop#(
+                      "-",
+                      "nz",
+                      1))),
+              StmtBlock#DeclStmt#TypeInfo#(
+                    PtrType#StructType#(
+                        "t_WorkGroup_Type",
+                        ""),
+                    "cur",
+                    VarInit#Bop#(
+                        "+",
+                        Bop#(
+                          "+",
+                          "t_workgroup",
+                          1),
+                        "k"))
+                   NULL
+                ExpStmt#FunctionCall#(
+                    "pthread_mutex_lock",
+                    Uop#(
+                      "&",
+                      PtrAccess#(
+                        "cur",
+                        "mutex")))
+                Nest#(
+                  While#Bop#(
+                      "<",
+                      PtrAccess#(
+                        "cur",
+                        "ready"),
+                      Bop#(
+                        "+",
+                        Uop#(
+                          "-",
+                          1),
+                        "t")),
+                  ExpStmt#FunctionCall#(
+                      "pthread_cond_wait",
+                      (Uop#(
+                          "&",
+                          PtrAccess#(
+                            "cur",
+                            "cond"))
+                        Uop#(
+                          "&",
+                          PtrAccess#(
+                            "cur",
+                            "mutex"))
+                         NULL)))#(
+                  "",
+                  "")
+                ExpStmt#FunctionCall#(
+                    "pthread_mutex_unlock",
+                    Uop#(
+                      "&",
+                      PtrAccess#(
+                        "cur",
+                        "mutex")))
+                 NULL#(
+                MAP:{
+"cur"->PtrType#StructType#(
+                      "t_WorkGroup_Type",
+                      "")
+},
+                MAP:{
+"cur"->PtrType#StructType#(
+                      "t_WorkGroup_Type",
+                      "")
+}))#(
+              "",
+              "")
+            Nest#(
+              If#Bop#(
+                  ">=",
+                  "k",
+                  2),
+              StmtBlock#DeclStmt#TypeInfo#(
+                    PtrType#StructType#(
+                        "t_WorkGroup_Type",
+                        ""),
+                    "cur",
+                    VarInit#Bop#(
+                        "+",
+                        Bop#(
+                          "+",
+                          "t_workgroup",
+                          Uop#(
+                            "-",
+                            1)),
+                        "k"))
+                   NULL
+                ExpStmt#FunctionCall#(
+                    "pthread_mutex_lock",
+                    Uop#(
+                      "&",
+                      PtrAccess#(
+                        "cur",
+                        "mutex")))
+                Nest#(
+                  While#Bop#(
+                      "<",
+                      PtrAccess#(
+                        "cur",
+                        "ready"),
+                      Bop#(
+                        "+",
+                        Uop#(
+                          "-",
+                          1),
+                        "t")),
+                  ExpStmt#FunctionCall#(
+                      "pthread_cond_wait",
+                      (Uop#(
+                          "&",
+                          PtrAccess#(
+                            "cur",
+                            "cond"))
+                        Uop#(
+                          "&",
+                          PtrAccess#(
+                            "cur",
+                            "mutex"))
+                         NULL)))#(
+                  "",
+                  "")
+                ExpStmt#FunctionCall#(
+                    "pthread_mutex_unlock",
+                    Uop#(
+                      "&",
+                      PtrAccess#(
+                        "cur",
+                        "mutex")))
+                 NULL#(
+                MAP:{
+"cur"->PtrType#StructType#(
+                      "t_WorkGroup_Type",
+                      "")
+},
+                MAP:{
+"cur"->PtrType#StructType#(
+                      "t_WorkGroup_Type",
+                      "")
+}))#(
+              "",
+              "")
+            Nest#(
+              Loop#(
+                "j",
+                1,
+                Bop#(
+                  "-",
+                  "ny",
+                  1),
+                1)#"",
+              Nest#(
+                Loop#(
+                  "i",
+                  1,
+                  Bop#(
+                    "-",
+                    "nx",
+                    1),
+                  1)#"",
+                (Nest#(
+                    If#Bop#(
+                        "==",
+                        Bop#(
+                          "%",
+                          "t",
+                          2),
+                        0),
+                    (ExpStmt#Assign#(
+                          "l0",
+                          "A0")
+                      ExpStmt#Assign#(
+                          "lnext",
+                          "Anext")
+                       NULL))#(
+                    "",
+                    "")
+                  Nest#(
+                    Else#(
+                      "",
+                      ""),
+                    (ExpStmt#Assign#(
+                          "lnext",
+                          "A0")
+                      ExpStmt#Assign#(
+                          "l0",
+                          "Anext")
+                       NULL))#(
+                    "",
+                    "")
+                  ExpStmt#Assign#(
+                      ArrayAccess#(
+                        "lnext",
+                        FunctionCall#(
+                          "Index3D",
+                          ("nx""ny""i""j""k" NULL))),
+                      Bop#(
+                        "-",
+                        Bop#(
+                          "+",
+                          Bop#(
+                            "+",
+                            Bop#(
+                              "+",
+                              Bop#(
+                                "+",
+                                Bop#(
+                                  "+",
+                                  ArrayAccess#(
+                                    "l0",
+                                    FunctionCall#(
+                                      "Index3D",
+                                      ("nx""ny""i""j"Bop#(
+                                          "+",
+                                          "k",
+                                          1)
+                                         NULL))),
+                                  ArrayAccess#(
+                                    "l0",
+                                    FunctionCall#(
+                                      "Index3D",
+                                      ("nx""ny""i""j"Bop#(
+                                          "-",
+                                          "k",
+                                          1)
+                                         NULL)))),
+                                ArrayAccess#(
+                                  "l0",
+                                  FunctionCall#(
+                                    "Index3D",
+                                    ("nx""ny""i"Bop#(
+                                        "+",
+                                        "j",
+                                        1)
+                                      "k" NULL)))),
+                              ArrayAccess#(
+                                "l0",
+                                FunctionCall#(
+                                  "Index3D",
+                                  ("nx""ny""i"Bop#(
+                                      "-",
+                                      "j",
+                                      1)
+                                    "k" NULL)))),
+                            ArrayAccess#(
+                              "l0",
+                              FunctionCall#(
+                                "Index3D",
+                                ("nx""ny"Bop#(
+                                    "+",
+                                    "i",
+                                    1)
+                                  "j""k" NULL)))),
+                          ArrayAccess#(
+                            "l0",
+                            FunctionCall#(
+                              "Index3D",
+                              ("nx""ny"Bop#(
+                                  "-",
+                                  "i",
+                                  1)
+                                "j""k" NULL)))),
+                        Bop#(
+                          "*",
+                          ArrayAccess#(
+                            "l0",
+                            FunctionCall#(
+                              "Index3D",
+                              ("nx""ny""i""j""k" NULL))),
+                          "fac")))
+                   NULL))#(
+                "",
+                ""))#(
+              "",
+              "")
+            StmtBlock#DeclStmt#TypeInfo#(
+                  PtrType#StructType#(
+                      "t_WorkGroup_Type",
+                      ""),
+                  "cur",
+                  VarInit#Bop#(
+                      "+",
+                      "t_workgroup",
+                      "k"))
+                 NULL
+              ExpStmt#FunctionCall#(
+                  "pthread_mutex_lock",
+                  Uop#(
+                    "&",
+                    PtrAccess#(
+                      "cur",
+                      "mutex")))
+              ExpStmt#VarRef#(
+                  PtrAccess#(
+                    "cur",
+                    "ready"),
+                  "++")
+              ExpStmt#FunctionCall#(
+                  "pthread_cond_signal",
+                  Uop#(
+                    "&",
+                    PtrAccess#(
+                      "cur",
+                      "cond")))
+              ExpStmt#FunctionCall#(
+                  "pthread_mutex_unlock",
+                  Uop#(
+                    "&",
+                    PtrAccess#(
+                      "cur",
+                      "mutex")))
+               NULL#(
+              MAP:{
+"cur"->PtrType#StructType#(
+                    "t_WorkGroup_Type",
+                    "")
+},
+              MAP:{
+"cur"->PtrType#StructType#(
+                    "t_WorkGroup_Type",
+                    "")
+})
+             NULL))#(
+          "",
+          ""))#(
+        "",
+        "")
+       NULL#(
+      MAP:{
+"cur"->PtrType#StructType#(
+            "t_WorkBlock_Type",
+            "")
+"i"->IntType#"int"
+"t"->IntType#"int"
+"___BEGIN"->IntType#"int"
+"___END"->IntType#"int"
+"cur_params"->PtrType#StructType#(
+            "t_Params_Type",
+            "")
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+"j"->IntType#"int"
+"k"->IntType#"int"
+"l0"->PtrType#FloatType#"double"
+"lnext"->PtrType#FloatType#"double"
+"t_WorkBlock_Type"->StructType#(
+          "t_WorkBlock_Type",
+          "")
+},
+      MAP:{
+"cur"->PtrType#StructType#(
+            "t_WorkBlock_Type",
+            "")
+"i"->IntType#"int"
+"t"->IntType#"int"
+"___BEGIN"->IntType#"int"
+"___END"->IntType#"int"
+"cur_params"->PtrType#StructType#(
+            "t_Params_Type",
+            "")
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+"j"->IntType#"int"
+"k"->IntType#"int"
+"l0"->PtrType#FloatType#"double"
+"lnext"->PtrType#FloatType#"double"
+"t_WorkBlock_Type"->StructType#(
+          "t_WorkBlock_Type",
+          "")
+}))#(
+    "",
+    "")
+   NULL)
+   NULL#MAP:{
+"input"->PtrType#VoidType
+"t_WorkGroup_Type"->StructType#(
+      "t_WorkGroup_Type",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "pthread_mutex_t",
+            "mutex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "pthread_cond_t",
+            "cond",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            IntType#"int",
+            "ready",
+            "")
+           NULL
+         NULL#MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+})
+"t_workgroup"->PtrType#StructType#(
+        "t_WorkGroup_Type",
+        DeclarationBlock#DeclStmt#TypeInfo#(
+              "pthread_mutex_t",
+              "mutex",
+              "")
+             NULL
+          DeclStmt#TypeInfo#(
+              "pthread_cond_t",
+              "cond",
+              "")
+             NULL
+          DeclStmt#TypeInfo#(
+              IntType#"int",
+              "ready",
+              "")
+             NULL
+           NULL#MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+})
+"t_pipeline"->FunctionType#(
+      TypeInfo#(
+        PtrType#VoidType,
+        "input",
+        ""),
+      PtrType#VoidType)
+"jacobi7_4"->FunctionType#(
+      (TypeInfo#(
+          ConstType#IntType#"int",
+          "nx",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ny",
+          "")
+        TypeInfo#(
+          IntType#"int",
+          "nz",
+          "")
+        TypeInfo#(
+          ConstType#FloatType#"double",
+          "alpha",
+          "")
+        TypeInfo#(
+          PtrType#FloatType#"double",
+          "A0",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "timesteps",
+          "")
+        TypeInfo#(
+          PtrType#ConstType#FloatType#"double",
+          "B",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ldb",
+          "")
+        TypeInfo#(
+          PtrType#FloatType#"double",
+          "Anext",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ldc",
+          "")
+         NULL),
+      VoidType)
+"nx"->ConstType#IntType#"int"
+"ny"->ConstType#IntType#"int"
+"nz"->IntType#"int"
+"alpha"->ConstType#FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->ConstType#IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->ConstType#IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->ConstType#IntType#"int"
+}

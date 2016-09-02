@@ -1,0 +1,204 @@
+include Cfront.code
+
+<define PARSE LIST(CODE.Pattern|CODE.UnknownUntilEOL, "\n")/>
+<define BACKTRACK FALSE />
+
+<code Pattern pars=(content:Nest) rebuild=((content[Nest.ctrl]:Loop|Loop_r|For)? XFORM.RecognizePatterns(content):
+    (if((content[Nest.body]):Nest)
+     XFORM.RecognizePatterns(content[Nest.body]);)) >
+@content@
+</code>
+
+<code MM_pat pars=(content:Nest) type="" tri_array="" static_arrays="" loopmap="" pre_compute=""> 
+@content@ </code>
+
+<* return index of the index variable; if not ivar, return -1 *>
+<xform IsLoopIvar pars=(cur, ivars) >
+for ( (i = 1,p_i=ivars); car(p_i) != "" && car(p_i) != cur; (p_i=cdr(p_i),i=i+1)) {}<****ZYY i=1 intead of i=0,use car(p_i)!= cur instead of p_i != cur ****>
+(car(p_i) == "") ? (-1) : i
+</xform>
+
+<*QY: find all loop index and loop variant variables*>
+<xform CategorizeVariables pars=(input) index="" variant=""  unknown=""
+output=(_index,_variant,_unknown) >
+switch (input) {
+  case Nest#(ctrl,body):
+    switch (ctrl) {
+      case CODE.If | CODE.Else : CategorizeVariables(body)
+      case Loop#(i,_,_,_): CategorizeVariables[index=BuildList(i,index)](body)
+                 <<********ZYY add Loop_r#()***********
+      case Loop_r#(i,_,_,_): CategorizeVariables[index=BuildList(i,index)](body)
+      case For#(i,_,_): CategorizeVariables[index=BuildList(i,index)](body)
+    }
+  case (first second): 
+    (index,variant,unknown) = CategorizeVariables(first); 
+    CategorizeVariables(second)
+  case ExpStmt#Assign#(lhs,rhs):
+      switch(lhs) {
+        case STRING|Name: (index,BuildList(lhs,variant), unknown)
+        case ArrayAccess#(n,_): (index,BuildList(n,variant),unknown)
+        case VALUE#STRING: (index,BuildList(lhs,variant), unknown)<***ZYY adds **>
+        case Bop#("."|"->",a,b): (index,BuildList(lhs,variant), unknown)
+      }
+
+      <*******ZYY adds some other type styles in the loops********>
+  case VarDeclStmt#(type,var):   <<*matching int i;
+                   (index,BuildList(var,variant),unknown)
+
+  case  ExpStmt#VarRef#(var, _) : (index,BuildList(var,variant),unknown)
+  case ExpStmt#Uop#("++",VALUE):
+                     (index,BuildList(VALUE,variant),unknown) <**Does it right to add VALUE to variants?***>
+
+  case ExpStmt#VALUE#TypeCast#(UnsignedType#PtrType,Assign#(lhs,rhs)):
+                       (index,BuildList(lhs,variant), unknown)
+  case ExpStmt#TypeCast#(UnsignedType#PtrType,Assign#(VALUE#lhs,rhs)):
+                      (index,BuildList(lhs,variant), unknown)
+
+  case Return#EXP:
+                       (index,variant,unknown)
+                         <<*case EmptyStmt:(index,variant,unknown) <<**matching emptyloop
+                         <<*default:(index,variant,unknown)
+
+}
+</xform>
+
+<* check each array subscript is single constant or a linear function of 
+a single surrouding loop
+i.e., a * i + b, where a, b are loop invariant constant 
+if invariant, return 0; if projection, return loop level; else, return -1
+*>
+  <xform IsLoopProjection pars=(ivars, variants, exp)>
+switch (exp)
+{
+  case INT: 0
+  case (cur=STRING): 
+        level = IsLoopIvar(cur,ivars);
+        if (level > 0) { level }
+        else if (Lookup(cur,variants)) { -1} <<*violating constraints
+        else { 0 }
+  case Bop#("+",a,b) : 
+        l1 = IsLoopProjection(ivars,variants,a);
+        if (l1 < 0)   RETURN (-1);
+        l2 = IsLoopProjection(ivars, variants, b); 
+        if (l2 < 0)   RETURN (-1);
+        if(l1 == 0) { l2 } 
+        else if(l2 == 0) { l1 }
+        else { (l1 :: l2) }
+  case Bop#("*",a,b) :
+        l1 = IsLoopProjection(ivars,variants,a);
+        if (l1<0) RETURN (-1);
+        l2 =  IsLoopProjection(ivars, variants, b);
+        if (l2<0) RETURN (-1);
+        if(l1 == 0) {l2}
+        else if(l2 == 0) {l1}
+        else {-1}
+  case Uop#("-",a): <*****add Uop#("-",1)*>
+            l3 = IsLoopProjection(ivars,variants,a);
+            if(l3 > 0) { l3}
+            else if (Lookup(a,variants)) { -1 } <<*violating constraints
+            else { 0 }
+  default: {-1}
+}
+</xform>
+
+<xform LoopVariantCounter pars=(level) >
+count=0;
+for(cur=level;car(level)!="";level=cdr(level))
+{
+  if(!Lookup(car(level),cdr(level)))
+    count += 1;
+}
+count
+</xform>
+
+<xform RecognizePatterns pars=(input)>
+PRINT(input);
+if (!(input[Nest.ctrl] : Loop|Loop_r|For))
+{
+  PRINT("Error:Neat.Ctrl not match Loop!\n");
+  if(Lookup(Loop|Loop_r|For, input))
+  {
+    PRINT("chm" Lookup(Loop|Loop_r|For, input));
+    <<*foreach(input[Nest.body] : (cur=Nest) :TRUE)
+                          <<*  RecognizePatterns(cur);
+
+    RecognizePatterns(input[Nest.body]);
+  }
+  else
+  {
+    PRINT("Error:Neat.Ctrl not match Loop!\n");
+    RETURN input;
+  }
+}
+if (Lookup(GotoStmt, input)) 
+{
+  PRINT("Error:GotoStmt\n");
+  RETURN input;
+}
+if (Lookup(FunctionCall, input)) 
+{
+  PRINT("Error:Functioncall\n");
+  RETURN input;
+}
+  <*********
+if (Lookup(VALUE, input)) 
+{
+  PRINT("Error:input is a pointer.\n");
+  RETURN input;
+}
+*****>
+(ivars, variants,unknown) = CategorizeVariables(input);
+if (unknown != "") 
+{
+  PRINT("error:unknown!=""\n");
+  RETURN input;
+}
+level = LEN(ivars);
+<<*PRINT("level=" level);
+<* check each array is accessed with a single subscript which 
+is a single constant or a linear function of 
+a single surrouding loop
+i.e., a * i + b, where a, b are loop invariant constant *>
+
+loopmap = MAP(STRING,((INT)...)); 
+
+foreach (input : ArrayAccess#(CLEAR arr, CLEAR sub) : TRUE)
+{
+  prev = loopmap[arr];
+  <*******ZYY:do not use this  cond**>
+    <*if (prev != "" && prev != sub) <<*why is "prev != sub" ?
+    {
+      PRINT("Don't allow different subscript!\n");
+      PRINT("sub=" sub);
+      RETURN input; <<*don't allow different subscript ----what does this mean?
+    }*>
+  dimlist = "";
+  for (p_sub = sub; p_sub != ""; p_sub=cdr(p_sub)) 
+  {
+    l = IsLoopProjection(ivars, variants, car(p_sub));
+    <<*PRINT (l);
+    if (l < 0)
+    {
+      PRINT("exp="car(p_sub));
+      PRINT("Array subscript is not a loop projection.\n");
+      RETURN input; <<* array subscript must be a loop projection
+    }
+    else if (l != 0)
+    {
+      <<*PRINT(LoopVariantCounter(l));
+      if(LoopVariantCounter(l)<level)
+        dimlist = BuildList(l,dimlist);
+      else
+      {
+        PRINT("The ivars number of subscript if not less than loop level!");
+        RETURN input;
+      }
+
+    }
+  } 
+  loopmap[arr] = dimlist;
+}
+
+PRINT loopmap;
+MM_pat[loopmap=loopmap]#input
+</xform>

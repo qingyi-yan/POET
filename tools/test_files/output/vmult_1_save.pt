@@ -1,0 +1,35 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default="MACRO" message="number of threads to parallelize loop Nest1" />
+<parameter tp2 type=1.._ default="MACRO" message="number of loop iterations to run by different threads for Nest1" />
+<trace inputCode />
+<trace Nest1,Nest2 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest1_group1 = (Nest1) />
+<trace Nest1_group3 = (Nest1_group1) />
+<trace Nest1_ParallelizeLoop_private_th2 = (("row" "j")) />
+<trace Nest1_ScalarRepl_aref_th1 = (CODE.ArrayAccess#("dst","row")) />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_VARS (Nest1_ParallelizeLoop_private_th2) />
+<define TRACE_EXP (Nest1_ScalarRepl_aref_th1) />
+
+<eval EraseTraceHandle[repl=Nest1_group3](Nest1,inputCode);
+	ParallelizeLoop[factor=tp2;threads=tp1;private=Nest1_ParallelizeLoop_private_th2](Nest1_group3);
+	ScalarRepl[data_type="double";init=1;save=1](Nest1_ScalarRepl_aref_th1,(Nest1_group1),Nest1_group1[Nest.body]); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

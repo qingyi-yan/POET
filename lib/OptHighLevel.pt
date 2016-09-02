@@ -1,0 +1,291 @@
+<********
+ TODO: Need to add type checking function.
+     Hopefully try to "store" typeinfo for 
+     each expression in the input code
+********>
+
+<xform GetExpressionType pars=(node)>
+ERROR ("We did not implement type checking right now!");
+</xform>
+
+<xform invoke_blocking pars=(input) ret_new_vars="" factor="MACRO" inner=NULL>
+  if (factor == "") return input;
+  nbsizes = factor; index=0;
+  for (p=cdr(input); p != NULL && cdr(p)!= NULL; p = cdr(p)) {
+    index=index+1;
+    nbsizes = factor::nbsizes;
+  }
+  (p==NULL)?(p=input):(nbsizes=factor::nbsizes);
+  bnest = car(input);
+  binner= (car(p))[Nest.body];
+  tile_handle = COPY(bnest);
+  BlockLoops[factor=nbsizes;trace_ivars=ret_new_vars;cleanup=0;
+             trace_innerNest=tile_handle](binner, bnest);
+  if (inner != NULL) {
+    p = car(input);
+    for (q=nbsizes; q!=NULL; q=cdr(q)) p = p[Nest.body];
+    q = inner;
+    foreach (p:(cur=Nest):FALSE) {
+      if (q != NULL) {
+        t1 = t2 = car(q);
+        MoveTraceHandle(t1, cur);
+        q = cdr(q);
+      }
+    }
+  }
+</xform>
+
+<xform invoke_array_copying pars=(exp, loops, loc, info)
+  memalign=16 data_type="" ret_new_vars="">
+  if (data_type == "") {
+    data_type = GetExpressionType(car(exp));
+    if (data_type == "") ERROR("No type for this node!");
+  }
+  (Lookup("RW", info)) ? (save_loc = loc) : (save_loc = "");
+  if ((Lookup("R", info))||(Lookup("RW", car(info)))) {
+    init_loc = loc;
+  } else {init_loc = "";}
+
+  if (exp : (CLEAR arr1 CLEAR arr2)) {
+    ((ref1, loop1) (ref2, loop2)) = loops;
+    (info1 info2) = info;
+    if ((Lookup("diag", info1))) {
+      extra = (arr1, loop1);
+      exp = arr2; loops = loop2;
+    } else {
+      extra = (arr2, loop2);
+      exp = arr1; loops = loop1;
+    }
+  } else {extra = ""; (ref1, loop) = loops; loops=loop;}
+  CopyRepl[extra_dims=extra;trace_vars=ret_new_vars;data_type=data_type;
+           init_loc=init_loc;save_loc=save_loc;delete_loc=init_loc;
+           align_loc=memalign](exp,loops,loc);
+  info=REPLACE("copy","copied",info);
+  info 
+</xform>
+
+<xform invoke_unroll_and_jam pars=(loops) factor=1>
+for (p=loops; p != NULL && cdr(p) != NULL; p=cdr(p)) {""}
+innermost = car(p);
+nest = car(loops);
+UnrollJam[factor=factor;cleanup=0](innermost, nest);
+</xform>
+
+<xform invoke_scalar_repl pars=(r, loops, info) data_type="" ret_new_vars=NULL>
+  if (data_type == "") {
+    data_type = GetExpressionType(car(r));
+    if (data_type == "") ERROR("No type for this node!");
+  }
+  svars = NULL;
+  foreach (car(r) : ArrayAccess#(aname,_)|Uop#("*",Bop#("+",aname,_)|(aname=ID)) : TRUE){}
+
+  for ((pr=r, pl=loops, pi=info); pr!=NULL; (pr=cdr(pr), pl=cdr(pl), pi=cdr(pi))) {
+    (_,cur_loop) = car(pl); cur_info = car(pi); cur_r = car(pr);
+    for (pd=cur_loop; pd!=NULL; pd=cdr(pd)) inner = car(pd);
+    (Lookup("RW", cur_info)) ? (save_loc = inner[Nest.body]) : (save_loc = "");
+    if ((Lookup("R", cur_info)) || (Lookup("RW", cur_info))) {
+      init_loc = inner[Nest.body];
+    } else {init_loc = "";}
+    if (Lookup("W", cur_info)) BREAK;
+    TRACE(ret_new_vars, 
+        ScalarRepl[prefix=aname;trace_vars=ret_new_vars;
+        data_type=data_type;init_loc=init_loc;save_loc=save_loc]
+        (cur_r,cur_loop,inner[Nest.body]));
+    aname = (aname "_n");
+    svars = (cur_r, ret_new_vars) :: svars;
+    ret_new_vars=NULL;
+  }
+  ret_new_vars=ReverseList(svars);
+  RETURN (ret_new_vars);
+</xform>
+
+<xform invoke_simd 
+       pars=(info, array_name_to_scalars, array_name_to_loop_dimensions, scope) 
+       ret_new_vars = "" global_vars="" data_type = "" pthrds="" omp_reduce_vars="" >
+  if (data_type == "") {
+    data_type = GetExpressionType(car(exps));
+    if (data_type == "") ERROR("No type for this node!");
+  }
+  for (p=scope; p!=NULL; p=cdr(p)) innermost = car(p);
+  scope = car(scope);
+  save_vars = NULL; init_vars=NULL; reduce_vars=NULL; aligned_arrays = NULL;
+  arrsplit = NULL; reg=""; 
+  foreach entry=(arrname=_,arrinfo=_) \in info do 
+    cur_scalars=array_name_to_scalars[arrname];
+    cur_dim=array_name_to_loop_dimensions[arrname]; 
+    for (pi = arrinfo; pi != NULL; pi = cdr(pi)) {
+      cur_info = car(pi); 
+      if (car(cur_scalars) : (arr_ref=_,scalar=_)) {
+         cur_scalars=cdr(cur_scalars);  
+         TRACE(arrsplit, SplitStmt[prefix="tmp";var_type=data_type;
+             trace_newVars=arrsplit](scalar,innermost));
+      }
+      if (car(cur_dim) : (arr_ref=_, loop_dim=_)) { 
+          cur_dim = cdr(cur_dim); 
+          for (q=loop_dim; q!=NULL; q=cdr(q)) innerloop=car(q);
+      }
+      if (innerloop == innermost) reg = BuildList((scalar,1),reg);
+      else {
+        reg = BuildList((scalar,0), reg);
+        if (innerloop != scope) {
+          if (Lookup("R",cur_info)) init_vars=scalar::init_vars;
+          if (Lookup("W",cur_info)) save_vars=scalar::save_vars;
+        }
+        if (Lookup("RW",cur_info)) reduce_vars=scalar::reduce_vars;
+      }
+      if (Lookup("copied", cur_info)) aligned_arrays=scalar::aligned_arrays;
+    }
+  enddo
+  ret_new_vars = AppendList(ERASE(ret_new_vars), arrsplit);
+  reg = BuildList((arrsplit,1),reg);
+  rename_vars = NULL;
+  foreach (global_vars : (CLEAR idx, CLEAR sinfo) : TRUE) {
+    if (Lookup(idx, innermost)) {
+      reg = BuildList((idx, 0), reg);
+      if (Lookup("R", sinfo)) init_vars = idx::init_vars;
+      if (Lookup("W", sinfo)) save_vars = idx::save_vars;
+      if (Lookup("RW", sinfo)) {
+             reduce_vars = idx::reduce_vars;
+             rename_vars = idx :: rename_vars; 
+      }
+    }
+  }
+  newscope = scope;
+  foreach var=ID|CODE.Name \in rename_vars do 
+    if (!(var : CODE.Name#(tmp=_))) tmp = var;
+    var_reg = Name#(AppendList(tmp,"_reg")); 
+    if (!pthrds  <* no openmp has been done before*>
+         || !(Lookup(var, omp_reduce_vars)))  { 
+      newscope = ExpStmt#(Assign#(var_reg, Uop#("*",Uop#("&",var))))
+              ::newscope
+              ::ExpStmt#(Assign#(Uop#("*",Uop#("&",var)), var_reg));
+    }
+    else  { <* handling openmp interaction of reduction variables*>
+      new_local_variable = Name#(AppendList(tmp, "_local"));
+      newscope = ExpStmt#(Assign#(new_local_variable,"0.0")) 
+              ::ExpStmt#(Assign#(var_reg,Uop#("*",Uop#("&",new_local_variable))))
+              ::newscope
+              ::ExpStmt#(Assign#(Uop#("*",Uop#("&",new_local_variable)),var_reg))
+              ::ExpStmt#(Assign#(var,Bop#("+",var,new_local_variable)));
+    }
+    REPLACE(var, var_reg, newscope);
+    reg = REPLACE(var, var_reg, reg);
+    reduce_vars = REPLACE(var, var_reg, reduce_vars);
+  enddo
+  if (scope != newscope)
+     REPLACE(scope, newscope, GLOBAL.TRACE_TARGET);
+  scope = newscope;
+  if (scope : Nest) {scope = scope[Nest.body];}
+  VectorizeLoop[init_vars=init_vars;save_vars=save_vars;reduce_vars=reduce_vars;
+                ext=scope;aligned_arrays=aligned_arrays](reg,innermost);
+</xform>
+
+<xform invoke_strength_reduction pars=(exps, infos, dims)
+  data_type="" outside_loc="" ret_new_vars="" tag=0>
+  if (data_type == "") {
+    data_type = GetExpressionType(car(exps));
+    if (data_type == "") ERROR("No type for this node!");
+  }
+  refs = COPY(exps);
+  foreach (exps : ArrayAccess#(CLEAR arr,_) : TRUE) {} 
+  outloops = "";
+  if (outside_loc:Nest) outloops = outside_loc[Nest.ctrl];
+  FiniteDiff[scalar=(tag/1);copied_array=(Lookup("copied",infos));refs=refs;
+             outside_loops=outloops;trace_newVars=ret_new_vars;exp_type=PtrType#(data_type)]
+  (arr, dims, car(dims));
+</xform>
+
+<xform invoke_loop_unrolling pars=(scope) factor=1>
+if (1>=factor) RETURN scope;
+else {
+  for (p=scope; p!=NULL; p=cdr(p)) innermost=car(p);
+  UnrollLoop[factor=factor;cleanup=1](innermost);  
+}
+</xform>
+
+<xform invoke_loop_splitting pars=(scope) lmap=("","","")>
+switch (scope)
+{
+  case Nest#(ctrl,body):
+    lmap1 = append_ENV(ctrl, lmap); 
+    body1 = invoke_loop_splitting[lmap=lmap1](body);
+    result = scope;
+    if (body1 != body) { 
+      result = ModifyTraceHandle(scope,Nest[annot=scope[Nest.annot]]#(ctrl,body1));
+    }
+    if (ctrl : (cur=Loop)|BlockLoopCleanup#((cur=Loop),_)) {
+      tag = cur[Loop.tag];
+      if (tag != "") {
+        bnest_before = ""; bnest_after="";
+        if (Lookup(BlockLoopSplitStop#(tag,_,_),result)){
+          (bnest_before, bnest_after) = CleanupBlockSplit[split_dir=-1](L_map=lmap, result);
+          result = BuildList(bnest_before, bnest_after);
+        }
+        if (Lookup(BlockLoopTileEnd#(tag,_,_),result)) {
+          output = ""; tail = 0;
+          for (p=result; p!=NULL; p=cdr(p)) {
+            (bnest_before1, bnest_after1) = CleanupBlockTileEnd[tail=tail](L_map=lmap, car(p));
+            output = BuildList(output, BuildList(bnest_before1, bnest_after1));
+            tail = 1;
+          }
+          result = output;
+        }
+        if ((Lookup(BlockLoopSplitStart#(tag,_,_),result))||
+          (Lookup(StripmineTileStart#(tag,_,_),result))) {
+          output = "";
+          for (p=result; p!=NULL; p=cdr(p)) {
+            for (q=car(p); q!=NULL; q=cdr(q)) {
+              (bnest_before1, bnest_after1) = CleanupBlockSplit(L_map=lmap, car(q));
+              output = BuildList(output, BuildList(bnest_before1, bnest_after1));
+            }
+          }
+          result = output;
+        }
+      }
+    }
+    if (ctrl : UnrolledLoopCheck#(tag,_,_)) {
+      if (tag != "") {
+        if (Lookup(UnrolledLoopCheck#(tag,_,_),result)) {
+          result = CleanupBoundCheck[L_map=lmap](result);
+        }
+      }
+    }
+    result
+  case StmtList#cur : StmtList#(invoke_loop_splitting(cur))
+  case OMPPragma#cur : OMPPragma#(invoke_loop_splitting(cur))
+  case OMPParallelBlock#cur : OMPParallelBlock#(invoke_loop_splitting(cur))
+  case (first second): BuildList(invoke_loop_splitting(first), invoke_loop_splitting(second))
+  case UnrolledFromIvar#(ivar,size,cur): UnrolledFromIvar#(ivar,size,invoke_loop_splitting(cur))
+  case CODE.FunctionDecl|CODE.ExpStmt|CODE.VarDeclStmt|CODE.AllocateStore|CODE.AllocateStoreWithAlign|CODE.DeleteStore|CODE.OMPSetNumThreads|""|NULL: scope
+}
+</xform>
+
+<xform setup_loop_optimizations pars=(input) 
+  trace_outerLoops="" trace_innerLoops="" trace_privateVars="" 
+  target=GLOBAL.TRACE_TARGET>
+
+  inner_loops=outer_loops=private_vars=NULL;
+  foreach (ERASE(input):(cur_loop=Nest#(Loop#(CLEAR i,_,_,_),_)):FALSE) {
+    if (trace_innerLoops : VAR) {
+       t1 = TRACE(cur_loop);
+       inner_loops = t1 :: inner_loops;
+    }
+    else t1 = cur_loop;
+    if (trace_outerLoops : VAR) {
+       t2 = TRACE(t1);
+       outer_loops = t2 :: outer_loops;
+    }
+    else t2 = t1;
+    if (t2 : VAR) REPLACE(cur_loop, t2, target);
+    if (trace_privateVars : VAR) private_vars = i::private_vars;
+    else
+      private_vars = BuildList(i, private_vars);
+  }
+  if (trace_outerLoops : VAR) 
+     REPLACE(ERASE(trace_outerLoops), ReverseList(outer_loops), trace_outerLoops); 
+  if (trace_innerLoops : VAR) 
+     REPLACE(ERASE(trace_innerLoops), ReverseList(inner_loops), trace_innerLoops); 
+  if (trace_privateVars : VAR) 
+     REPLACE(ERASE(trace_privateVars), private_vars, trace_privateVars); 
+  input 
+</xform>

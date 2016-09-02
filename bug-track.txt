@@ -1,0 +1,8 @@
+1. When I compiled POET use "make". I found there's A Macro POET_LIB_DIR which is assigned by source code's lib rather than the destination's lib.
+$ make
+g++ ……   -DPOET_LIB_DIR=\"/home/doer/Downloads/poet-1.03.07/lib\"   -DPOET_DEST_DIR=\"//opt/poet-1.03.07/lib/\"   ……
+
+So, if I don't delete source code after I install poet, the pcg will still treate source code's lib directory as the lib directory.
+
+Can we  delete POET_LIB_DIR or push POET_DEST_DIR/lib first??? 
+

@@ -1,0 +1,51 @@
+include utils.incl
+include list_tools.incl
+
+<code Transformation pars=(name, nests, params) />
+<code Parameter pars=(name, value) />
+<code NestWithAccessor pars=(nest, accessor) />
+<code Accessor pars=(before, after) />
+<code NestWithGroup pars=(nest, group) />
+
+<*	This takes a transformation and parameter. The given parameter replaces the old parameter in the transformation.
+ * The new transformation is returned *>
+<xform ReplaceParameter pars=(xform, new_parameter) >
+
+	new_xform = "";
+	new_params = "";
+	xform_name = xform[Transformation.name];
+	xform_nests = xform[Transformation.nests];
+	xform_params = xform[Transformation.params];
+	np_name = new_parameter[Parameter.name];
+
+	<*	Replace the old parameter with the new parameter, and keep the others.*>
+	for(remaining_params = xform_params; remaining_params != ""; remaining_params = cdr(remaining_params)) {
+		xp = car(remaining_params);
+		xp_name = xp[Parameter.name];
+
+		if(np_name == xp_name) {
+			new_params = AppendElementToList(new_params, new_parameter);
+		} else {
+			new_params = AppendElementToList(new_params, xp);
+		}
+	}
+
+	new_xform = Transformation#(xform_name, xform_nests, new_params);
+
+	new_xform
+</xform>
+
+<*	Takes a block name and returns the base name of it*>
+<xform GetBaseBlockName pars=(block) >
+
+	base_name = "";
+
+	switch(block) {
+		case ID|NestWithGroup: 
+			base_name = block
+		case NestWithAccessor#(nest, accessor):
+			base_name = nest;
+        }
+	base_name 
+
+</xform>

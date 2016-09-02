@@ -1,0 +1,27 @@
+        subroutine ATL_USERMM(M,N,K,alpha,A,lda,B,ldb,beta,C,ldc) 
+          integer M 
+        integer N 
+        integer K 
+        double precision alpha 
+        double precision A 
+        dimension A(*) 
+        integer lda 
+        double precision B 
+        dimension B(*) 
+        integer ldb 
+        double precision beta 
+        double precision C 
+        dimension C(*) 
+        integer ldc 
+          integer i 
+        integer j 
+        integer l 
+        do j=0,-1+N,1
+           do i=0,-1+M,1
+           C(j*ldc+i) = beta*C(j*ldc+i)
+        do l=0,-1+K,1
+           C(j*ldc+i) = C(j*ldc+i)+alpha*A(i*lda+l)*B(j*ldb+l)
+        enddo
+        enddo
+        enddo
+        end

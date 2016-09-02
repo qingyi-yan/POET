@@ -1,0 +1,48 @@
+include utils.incl
+
+<define PARSE CODE.CommandList/>
+<define UNPARSE CODE.CommandList/>
+<define BACKTRACK TRUE/>
+
+<code CommandList parse=LIST(CODE.ParamDecl|CODE.ThrowAway, "\n")/>
+
+<code ParamDecl pars=(param:CODE.OMPScheduleDefault|CODE.NumOfThreads|CODE.ParBlockFactor|CODE.BlockFactor|CODE.UnrollJamFactor|CODE.UnrollFactor|CODE.CopyArrayConfig|CODE.ScalarReplConfig,extra)>
+<parameter @param@ />
+</code>
+
+<code NumOfThreads pars=(parName:Name,loopNest:Name, defval:INT)>
+name=@parName@ loopnest=@loopNest@ opt=ParallelizeLoop config=NumOfThreads default=@defval@ max=32 trial=4
+</code>
+
+<code IntList parse=LIST(INT,",")/>
+<code MacroVal pars=(val) > @val@ </code>
+
+<code ParBlockFactor pars=(parName:Name, loopNest:Name, defval:IntList)>
+name=@parName@ loopnest=@loopNest@ opt=ParallelizeLoop config=BlockFactor default=@defval@ max=512 trial=4
+</code>
+
+
+<code BlockFactor pars=(parName:Name, loopNest:Name, dim:INT, defval:IntList)>
+name=@parName@ loopnest=@loopNest@ opt=BlockLoops config=BlockFactor dim=@dim@ default=@defval@ max=128 trial=64
+</code>
+
+<code UnrollJamFactor pars=(parName:Name, loopNest:Name, dim:INT, defval:IntList)>
+name=@parName@ loopnest=@loopNest@ opt=UnrollJam config=UnrollJamFactor dim=@dim@ default=@defval@ max=16 trial=8
+</code>
+
+<code UnrollFactor pars=(parName:Name, loopNest:Name, defval:INT)>
+name=@parName@ loopnest=@loopNest@ opt=UnrollLoop config=UnrollFactor dim=1 default=@defval@ max=32 trial=8
+</code>
+
+<code CopyArrayConfig pars=(parName:Name, loopNest:Name, arrayName:Name, defval:INT, extra)>
+name=@parName@ loopnest=@loopNest@ opt=CopyArray config=switch arrayName=@arrayName@ enum=0,1,2 default=@defval@
+</code>
+
+<code ScalarReplConfig pars=(parName:Name, loopNest:Name, arrayName:Name, defval:INT)>
+name=@parName@ loopnest=@loopNest@ opt=ScalarRepl config=switch arrayName=@arrayName@ enum=0,1,2 default=@defval@
+</code>
+
+<code OMPScheduleDefault pars=(parName:Name) >
+name=@parName@ opt=ParallelizeLoop config=OMP_SCHEDULE enum="static,dynamic,runtime" default="auto"
+</code>
+

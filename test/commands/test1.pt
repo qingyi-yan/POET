@@ -1,0 +1,111 @@
+<* code templates *>
+<code MyCodeTemplate pars=(input) info=""/>
+
+<xform foo pars=(bar)> bar </xform>
+
+<eval DEBUG{
+       "3" : STRING;
+       3 : STRING;
+       "3" : ID;
+        "A3" : ID;
+       a = MyCodeTemplate[info="this"]#"123";
+       MyCodeTemplate#"123" : STRING;
+      MyCodeTemplate#123 : MyCodeTemplate;
+       3 : MyCodeTemplate;
+       MyCodeTemplate#123 : MyCodeTemplate#INT;
+       ("abc" "." "ext") : STRING;
+       ("3" "4" "5") : (INT ...);
+       3 : (INT ...);
+       (3 4 5) : (INT ...);
+       (3 4 5 "abc") : (INT ...);
+       (3 4 5 "abc") : (_ ...);
+        3 : (0 .. 2);
+        3 : (0 .. 5);
+        "a" : (0 .. 5);
+       "a" : CODE;
+       MyCodeTemplate : CODE;
+       MyCodeTemplate#123 : CODE;
+       ("abc" "." "ext") : CODE;
+       MyCodeTemplate#123 : XFORM;
+       ("abc" "." "ext") : XFORM;
+       foo : XFORM; 
+       "abc" : TUPLE;
+       ("abc",2) : TUPLE;
+        MyCodeTemplate#123 : TUPLE; 
+}/>
+
+<eval DEBUG {
+       "3"=>STRING;
+       a = ("3" "5");
+       a  => STRING;
+       3 => STRING;
+       - "3.2";
+       ("abc" "." "ext") => STRING;
+       ("3" => INT) => STRING;
+}/>
+
+<eval DEBUG {
+    a1 = (3 4 5);
+    a2 = (1 2 a1); 
+    a3 =  (1 2) :: a1;
+    a4 = 1 :: 2 :: a1;
+    car(a2);
+    cdr(a2);
+    car(a3);
+    cdr(a3);
+}/>
+
+<eval DEBUG{
+       LEN(235);
+       LEN("abc");
+       LEN(1 2 3);
+       LEN(2,3,4,5);
+}/>
+
+
+<eval DEBUG{
+   amap=MAP(_,_);
+   bmap=MAP{"abc"=>3,"def"=>4};
+   cmap=MAP{};
+   amap["abc"] = 3;
+   amap[4] = "def";
+   abc = amap["abc"];
+
+   LEN(amap) ;
+   foreach (amap :  (CLEAR from, CLEAR to) : FALSE) {
+       (from) "=>" (to);
+   }
+} />
+
+<eval  DEBUG{
+    input="bc ade lkd";
+    input : STRING;
+    345 : STRING;
+    input : INT;
+    345 : INT;
+    345 : (INT | STRING);
+    345 : (INT _);
+    input : MAP;
+    amap : MAP(_,_);
+    amap : MAP(INT,_);
+    input : (_ _);
+    (2 3) : (_ _);
+    (2,3) : (_,_);
+    (3 2) : (first second);
+    SPLIT("",input) => var=(STRING STRING STRING); 
+    SPLIT("",input) => var=(STRING,STRING,STRING); 
+}/>
+
+<eval  DEBUG{
+    "abc" ^ "def" ^ 3;
+    ("abc" "def") ^ 3 ;
+    input="bc,ade,lkd";
+    SPLIT (1, "abc");
+    SPLIT(",",input);
+    SPLIT(",", MyCodeTemplate#input);
+}/>
+
+<eval DEBUG{
+    myFunc = DELAY { x = 100; } ;
+}/>
+

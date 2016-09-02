@@ -1,0 +1,4 @@
+int i;
+int b;
+[float] c;
+for (i = 0; i < b+10; i++) { b = b + 1; c[i]=0.1; }

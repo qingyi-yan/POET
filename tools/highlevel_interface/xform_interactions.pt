@@ -1,0 +1,615 @@
+include tables_generated.incl
+include utils.incl
+
+<code Transformation pars=(name, nests, params) />
+<code Parameter pars=(name, value) />
+<code TracingHandleName pars=(id, target, xform, param) />
+<code TracingHandle pars=(name, val) />
+<code TracingHandleSingle pars=(name, val) />
+<code TargetTracingHandleName pars=(block, group) />
+<code TargetTracingHandle pars=(name, value) />
+<code Accessor pars=(before, after) />
+<code VarList pars=(variables) />
+<code Definition pars=(name, value) />
+<code NestWithGroup pars=(nest, group) />
+
+<define tracing_handle_id_counter 0 />
+<define tuning_parameter_id_counter 0 />
+<define parameter_id_counter 0 />
+<define tuning_parameter_table MAP{} />
+<define all_tth_list "" />
+
+<xform get_target_parameter pars=(xform_nests)>
+  for (xform_target=xform_nests; cdr(xform_target)!=NULL; xform_target=cdr(xform_target)) {}
+  xform_target=car(xform_target);
+  if (xform_target : CODE.HandleAccess#(CLEAR nest,CLEAR xform_accessor))
+       { xform_target = nest; }
+  else { xform_accessor=""; }
+  (xform_target, xform_accessor) 
+</xform>
+
+<xform get_tuning_parameter pars=(target_name,xform_name,param_name, default_value)> 
+  key = (target_name xform_name param_name);   
+  tp_name=GLOBAL.tuning_parameter_table[key];
+  param="";
+  if (tp_name  == "") {
+     tuning_parameter_id_counter = tuning_parameter_id_counter + 1;
+     tp_name = CODE.TuningParameterName#(tuning_parameter_id_counter);
+     GLOBAL.tuning_parameter_table[key]=tp_name;
+     switch (param_name) {
+     case "threads":param=CODE.NumOfThreads#(tp_name, target_name, default_value) 
+     case "factor":
+          switch (xform_name) {
+          case "ParallelizeLoop": param=CODE.ParBlockFactor#(tp_name, target_name, default_value);
+          case "BlockLoops": param=CODE.BlockFactor#(tp_name, target_name,"INT",default_value) ;
+          case "SkewLoops": param=CODE.SkewFactor#(tp_name, target_name,default_value) ;
+          case "UnrollJam": param=CODE.UnrollJamFactor#(tp_name, target_name,"INT",IntList#default_value) ;
+          case "UnrollLoops"|"UnrollLoop": param=CODE.UnrollFactor#(tp_name, target_name,CODE.IntList#default_value); 
+          }
+     }
+     param=CODE.ParamDecl#(param,"");
+  }
+  (tp_name,param)
+</xform>
+
+<* Get the value of a parameter from a transformation*>
+<xform GetParameterValue pars=(parameter_name, xform) >
+   Transformation#(xform_name, xform_nests, xform_params) = xform; 
+   param_value = "";
+   foreach (xform_params : Parameter#(parameter_name, CLEAR param_value) 
+                : TRUE)  { }
+   if (param_value != "") RETURN (param_value, "");
+
+   (req,_,_,_,_) = car(transformations_table[xform_name]);
+   for ((p1=xform_nests;p2=req); p2 != NULL; (p1=cdr(p1); p2=cdr(p2)))
+     { if ((car p2)[0] == parameter_name) {
+          param_value=car(p1);
+       }
+     }
+   if (param_value != "") RETURN (param_value, "");
+   
+   <* use the parameters default value because it wasn't specified*>
+   (type,_,default_value,_) = car(transformation_parameter_table[parameter_name]);
+
+   if (!(parameter_name : "factor"|"threads")) RETURN (default_value,"");
+
+   <*create a tuning parameter as value of the original parameter*>
+   (xform_target,_) = get_target_parameter(xform_nests);
+   if (xform_target : NestWithGroup#(target,_)) 
+      xform_target=target;
+   get_tuning_parameter(xform_target, xform_name, parameter_name, default_value)
+</xform>
+
+<*add a set of tracing handles to a transformation and return the transformation with new handles*>
+<xform AddTracingHandles pars=(tracing_handles, xform) >
+   
+   new_xform = ""; <*the new transformation with tracing handles as values to be returned*>
+   new_param_list = NULL; <*a list of all parameters that gets put into new_xform*>
+   xform_params = xform[Transformation.params];
+
+   for(remaining_params = xform_params; remaining_params!= NULL; remaining_params = cdr(remaining_params)) {
+      
+      xform_param = car(remaining_params);
+      xform_param_name = xform_param[Parameter.name];   
+      new_param_val = "";
+      handle_param_name = "";
+
+      <*go through each tracing handle in the list*>
+      for(remaining_handles = tracing_handles; remaining_handles != NULL; remaining_handles = cdr(remaining_handles)) {
+         tracing_handle = car(remaining_handles);
+         th_name = tracing_handle[TracingHandle.name];
+         handle_param_name = th_name[TracingHandleName.param];
+         
+         if(handle_param_name == xform_param_name) 
+            new_param_val = th_name;
+      }
+
+
+      <*If the param didn't use a trace handle, use the old value*>
+      if(new_param_val == "")
+         new_param_val = xform_param[Parameter.value];
+      new_param = Parameter#(xform_param_name, new_param_val);
+      new_param_list = new_param::new_param_list;
+   }
+   
+   Transformation#(xform[Transformation.name], xform[Transformation.nests], new_param_list);
+</xform>
+
+<* Create the tuning parameters for the transformations. 
+ * If a value is already specified, use that value.*>
+<xform CreateTuningParameters pars=(xform_list)>
+   tuning_parameters = NULL;   
+   new_xform_list = NULL;
+   foreach (xform_list : Transformation#(CLEAR xform_name,CLEAR xform_nests,CLEAR xform_params) : TRUE) {
+      <* go through each tuning parameter in the table. If it was previously
+       * specified, use that value. Otherwise, add a new parameter to the xform
+       * and use the tuning parameter as the value*>
+      (_,_,table_tuning_params,_,_)= car(transformations_table[xform_name]);
+      new_param_list = NULL; xform_tps = NULL;
+      for(p_ttp = table_tuning_params; p_ttp != NULL; p_ttp = cdr(p_ttp)) {
+         ttp_name = car(p_ttp);
+         param_val = ""; xform_p="";
+         foreach_r (xform_params : (xform_p=Parameter#(ttp_name,CLEAR xform_param_value)) : TRUE) {
+               param_val = xform_param_value;
+               BREAK;
+         }
+         <* if the xform didn't specify the tuning param value, use the default*>
+         if(param_val == "") {
+            table_tp = car(transformation_parameter_table[ttp_name]);
+            if (table_tp == "") 
+               ERROR("parameter not defined: " xform_name "." ttp_name);
+            param_val = table_tp[2];
+         }
+
+        (used_nest_name,_) = get_target_parameter(xform_nests);
+        (tp_name,new_tuning_parameter) = get_tuning_parameter(used_nest_name, xform_name, ttp_name, param_val);
+        if (new_tuning_parameter != "") {
+          tuning_parameters = new_tuning_parameter :: tuning_parameters;
+          xform_tps = new_tuning_parameter :: xform_tps;
+        } 
+        if (xform_p != "") {
+            xform_params = REPLACE(xform_p, CODE.Parameter#(ttp_name, tp_name), xform_params);
+        }
+        else {
+            <* if tp not used, add it to the param_list*>
+            new_param = Parameter#(ttp_name, tp_name);
+            xform_params = BuildList(new_param, xform_params);
+         }
+      }
+      new_xform = Transformation#(xform_name, xform_nests, xform_params);
+      new_xform_list = new_xform :: new_xform_list;
+   }
+   (ReverseList(new_xform_list),ReverseList(tuning_parameters))
+</xform>
+
+<xform CreateFixXform pars=(fix_xform, xform, ifx) >
+   (fix_xform_name,fix_param_specs) = fix_xform;
+   switch (fix_xform_name) {
+     case "ifx": 
+        Transformation#(fix_xform_name,xform_nests,xform_params)=ifx;
+     case "xform": 
+        Transformation#(fix_xform_name,xform_nests,xform_params)=xform;
+        (xform_target,_) = get_target_parameter(xform_nests);
+     default:
+        xform_nests=NULL; xform_params=NULL;
+   }
+   (req,_,_,_,_) = car(transformations_table[fix_xform_name]);
+   added_fix_params = NULL;
+   new_params = NULL;
+   tuning_parameters = NULL;
+
+   <*go through each fix param spec and add it to the new xform*>
+   for(fps = fix_param_specs; fps != NULL; fps = cdr(fps)) {
+      (fix_param_name, (used_xform,used_param_name,fix_param_accessor))= car(fps);
+      switch (used_xform) {
+      case "xform":
+         (used_param_value, param) = GetParameterValue(used_param_name,xform);
+         if(param != "") 
+            tuning_parameters = param::tuning_parameters;
+      case "ifx":
+         (used_param_value, param) = GetParameterValue(used_param_name,ifx);
+         if(param != "") 
+            tuning_parameters = param::tuning_parameters;
+      case "literal": used_param_value = used_param_name;
+      case "new": <* create a new parameter *>
+         used_param_name = used_param_name^"_"^fix_param_name;
+         (tp_name,add) = get_tuning_parameter(xform_target, fix_xform_name, used_param_name);
+         if (add) {
+            tuning_parameter = DefinedParameter#(name, used_param_value);
+            tuning_parameters = tuning_parameter::tuning_parameters;
+         }
+         used_param_value = tp_name;
+      case "group_list":
+         switch (used_param_name) {
+         case "xform":
+            <* returns a parameter value and tuning parameter*>
+            (used_param_value,param) = GetParameterValue(fix_param_accessor, xform);
+            if(tuning_parameter != "") {
+               tuning_parameters = param::tuning_parameters;
+            }
+            if  (!(used_param_value : NestWithGroup#(_,used_group)))
+                used_group = "";
+         case "ifx":
+            <*Get parameter value and tuning parameter*>
+            (used_param_value, param) = GetParameterValue(fix_param_accessor,ifx);
+            if(param != "") 
+               tuning_parameters = param :: tuning_parameters;
+            if  (!(used_param_value : NestWithGroup#(_,used_group)))
+                used_group = "";
+            fix_param_accessor=""; 
+         case "literal": used_group=fix_param_accessor;
+         }
+         nest_list = NULL;
+         <* go through the list of required params to put the tth_list 
+          * in the proper order *>
+         foreach (all_tth_list : (cur=NestWithGroup#(CLEAR cur_nest,used_group)):TRUE) {
+                nest_list = cur::nest_list;
+         }
+         used_param_value = CODE.HandleList#nest_list;
+      }
+
+      <*Add the accessor to the parameter value*>
+      if(fix_param_accessor != "") {
+         for (p_fix = fix_param_accessor; p_fix != NULL; p_fix = cdr(p_fix)) {
+           used_param_value = HandleAccess#(used_param_value, car(p_fix));
+         }
+      }
+
+      if (Lookup(fix_param_name,req)) 
+            { xform_nests = used_param_value::xform_nests; }
+      else {
+         new_param = Parameter#(fix_param_name,used_param_value);
+         new_params = BuildList(new_param, new_params);
+         if (!Lookup(fix_param_name, xform_params)) 
+            added_fix_params = new_param :: added_fix_params;
+      }
+   }
+
+   <* Add the remaining parameters from used_xform to new_params*>
+   foreach (xform_params : Parameter#(CLEAR param_name, CLEAR param_value) : TRUE) {
+      if (!(Lookup(param_name, added_fix_params))) {
+         new_params = Parameter#(param_name,param_value) :: new_params;
+      }
+   }
+   if (new_params == NULL) new_params = "";
+   new_xform = Transformation#(fix_xform_name, xform_nests,new_params);
+   (new_xform,tuning_parameters)
+</xform>
+
+<* Create a list of new transformations that replaces a given transformation *>
+<xform CreateFixXforms pars=(fix_specs, xform, ifx, new_xform_map)>
+   new_xforms = NULL;
+   tuning_parameters = "";
+
+   for(p_specs = fix_specs; p_specs != NULL; p_specs = cdr(p_specs)) {
+      (unique,xform_specs) = car(p_specs);
+
+      <* create a new transformation and a list of new tuning parameters *>
+      (new_xform, tp) = CreateFixXform(xform_specs, xform, ifx);
+      new_xforms = new_xform :: new_xforms;
+      if (tp != "")
+            tuning_parameters = BuildList(tp, tuning_parameters);
+   }
+   (new_xforms,tuning_parameters)
+</xform>
+
+<* Add needed transformations to the list to fix modified parameters
+ * between transformations *>
+<xform AddFixTransformations pars=(xform_list)>
+   
+   new_xform_map = MAP{};
+   new_xforms = NULL;
+   tuning_parameters = NULL;
+
+   <* start new_xform_map with base transformations*>
+   foreach (xform_list : (xform=CODE.Transformation) : TRUE) {
+      new_xform_map[xform] = xform;
+   }
+
+   for ( p_table=interference_table; p_table!=NULL; p_table=cdr(p_table)) {
+      (xform_names,ifx_names,configuration_fix,insert_before_fix,insert_after_fix,check)= car(p_table);
+      
+      xform_name=ifx_name = "";
+      foreach (xform_list : (cur = 
+                 Transformation#(CLEAR name,CLEAR nests,CLEAR params))
+                 : TRUE) {
+          if (xform_name == "" && Lookup(name, xform_names)) 
+                { xform=cur; xform_name=name; xform_nests=nests; xform_params=params; }
+          if (ifx_name == "" && Lookup(name, ifx_names)) 
+                { ifx=cur; ifx_name=name; ifx_nests=nests; ifx_params=params; }
+      }
+      if (xform_name != "" && ifx_name != "") {
+          (xform_target,_) = get_target_parameter(xform_nests); 
+          if (xform_target : CODE.NestWithGroup#(CLEAR t,_)) xform_target=t;
+          <* go through each transformation again to check for interferences.*>
+         (ifx_target,_) = get_target_parameter(ifx_nests); 
+         if (ifx_target : CODE.NestWithGroup#(CLEAR t,_)) ifx_target=t;
+         switch (check) {
+           case NULL :  ""
+           case "same_target": if (ifx_target != xform_target) CONTINUE; 
+         }
+         
+         <* replace an old transformation with a new configured xform*>
+         if(configuration_fix != NULL) {
+              (_,(used_xform,_)) = car(configuration_fix);
+              if(used_xform == "xform")
+                      used_xform = xform;
+              else
+                      used_xform = ifx;
+              <* used as placeholder for all xforms in the new_xform_map[used_xform] *>
+              new_map_xforms = NULL;
+              (new_xform, xform_tps) = CreateFixXforms(configuration_fix, xform, ifx, new_xform_map);
+              if (xform_tps != "") tuning_parameters = xform_tps :: tuning_parameters;
+              <* go through each xform in the map for the used xform and when the configured xform                          * is found, replace it with the new xform*>
+                 for(p_map_xforms = new_xform_map[used_xform]; p_map_xforms != NULL; p_map_xforms = cdr(p_map_xforms)) {
+                    map_xform = car(p_map_xforms);
+                 
+                    <* replace this xform*>
+                    if(map_xform == used_xform) 
+                       new_map_xforms = new_xform::new_map_xforms;
+                    else
+                        new_map_xforms = map_xform::new_map_xforms;
+                 }
+                 new_xform_map[used_xform] = ReverseList(new_map_xforms);
+         }
+         <* add new xforms before the interfering xform*>
+         if(insert_before_fix != "") {
+            (before_xforms, param) = CreateFixXforms(insert_before_fix, xform, ifx, new_xform_map);
+            if (param != "")
+               tuning_parameters = param :: tuning_parameters;
+            if(before_xforms != NULL && !Lookup(before_xforms, new_xform_map[ifx]))
+               new_xform_map[ifx] = before_xforms :: new_xform_map[ifx];
+         }
+   
+         <* add new xforms before the interfering xform*>
+         if(insert_after_fix != "") {
+            (after_xforms, param) = CreateFixXforms(insert_after_fix, xform, ifx, new_xform_map);
+            if (param != "")
+               tuning_parameters = param :: tuning_parameters;
+            if(after_xforms != NULL && !Lookup(after_xforms, new_xform_map[ifx]))
+               new_xform_map[ifx] = new_xform_map[ifx]::after_xforms;
+         }
+      }
+   }
+
+   new_xforms = NULL;
+   foreach_r (xform_list : (xform = CODE.Transformation) : TRUE) {
+       new_xforms = new_xform_map[xform] :: new_xforms;
+   }
+
+   (new_xforms,ReverseList(tuning_parameters))
+</xform>
+
+<* creates a GroupHandle from an id and group name.
+ * Returns (tth id <map of last tth used>)*>
+<xform CreateGroupHandle pars=(id, group, last_tth_map) >
+   switch(id) {
+      case CODE.HandleAccess#(nest, _) | (nest=ID):
+         new_id = NestWithGroup#(nest, group);
+      default: RETURN (id, last_tth_map)
+   }
+   prev_id=last_tth_map[nest];
+   last_tth_map[nest] = new_id;
+   if (!Lookup(new_id, all_tth_list)) 
+       all_tth_list = BuildList(new_id, all_tth_list);
+   if (nest != id) new_id = REPLACE(nest,new_id, id);
+   (new_id,last_tth_map)
+</xform>
+
+<* adds the group for each handle that uses one*>
+<xform AddGroupHandles pars=(xforms, tth_map, last_tth_map, nests, funcs) >
+   new_xforms=NULL;
+   foreach_r (xforms : (cur_xform=Transformation#(CLEAR xform_name,CLEAR xform_nests, CLEAR xform_params)) : TRUE) {
+      group_name = "";
+      <* go through each group*>
+      foreach( xform_groups_table : (CLEAR from, CLEAR to) : FALSE) {
+         if (Lookup(xform_name, to)) 
+            { group_name = from; BREAK; }
+      }
+      new_xform = 0;
+      <* go through each xform parameter*>
+      (req,_,_,_,_) = car(transformations_table[xform_name]);
+      p_nests = xform_nests; new_nests=NULL; param_acc="";
+      foreach ( (req xform_params) : (cur_param=((param_name=ID)|Parameter#(CLEAR param_name, CLEAR param_value)|( (param_name=ID),(param_acc=STRING)))) : TRUE) {
+         is_req=0;
+         if (p_nests != NULL) { <* required parameter *> 
+            param_value=car(p_nests); 
+            p_nests=cdr(p_nests);
+            is_req=1;
+         }
+         else if (!(cur_param : CODE.Parameter)) { ERROR("Missing required parameter: " param_name); }
+         (param_type,_,_,param_uses_group) = car(transformation_parameter_table[param_name]);
+         if(param_uses_group == "group" && group_name != "") {
+            new_value = param_value;
+            if (param_value : CODE.HandleList#(CLEAR handles)) param_value=handles;
+            for (pv = param_value; pv != NULL; pv = cdr(pv)) { 
+               id = car(pv);
+               (new_id, last_tth_map) = CreateGroupHandle(id, group_name, last_tth_map);
+               if (new_id != id) new_value = REPLACE(id, new_id, new_value);
+            }
+          }
+          else new_value = param_value;
+          if (param_acc != "") 
+              { 
+                if(new_value : NestWithGroup#(CLEAR id, _)) {
+                  if (LookupList(id, nests))
+                    new_value=HandleAccess#(new_value,"Nest.body");
+                  else if (LookupList(id, funcs))
+                    new_value=HandleAccess#(new_value,"FunctionDecl.body");
+                  else
+                    ERROR("[AddGroupHandles] Cannot find handle: " id);
+                } else
+                  new_value=HandleAccess#(new_value,param_acc);
+                param_acc="";
+              }
+          if (new_value != param_value) {
+               if (is_req) new_nests = new_value :: new_nests;
+               else 
+                 xform_params=REPLACE(cur_param, Parameter#(param_name,new_value), xform_params);
+               new_xform=1;
+          }
+          else { if (is_req) new_nests = param_value :: new_nests; }
+      }
+      if (new_xform != 0) 
+         new_xforms=Transformation#(xform_name,ReverseList(new_nests),xform_params)::new_xforms; 
+      else new_xforms=cur_xform::new_xforms;
+   }<* end for(xforms)*>
+   (new_xforms,all_tth_list,last_tth_map)
+</xform>
+
+<* sort the target tracing handles for each nest in the map*>
+<xform SortTargetTracingHandles pars=(group_handles, handles)>
+    new_tth_map = MAP{};
+    new_tth_value = MAP{};
+    last_tth_map = MAP{};
+
+    <*go through each group precedence*>
+    for(i = 1; i <= GROUP_PRECEDENCES; i = i + 1) {
+       <* go through each group in the table to find precedence i*>
+       foreach(xform_groups_table 
+              : (CLEAR group_name, (CLEAR xform_groups i)) 
+              : TRUE) {
+           <* go through each group in the used transformations*>
+          foreach( group_handles : (cur=NestWithGroup#(CLEAR tth_nest,group_name))
+                   :TRUE){ 
+                  if(new_tth_value[tth_nest] == "")
+                          new_tth_value[tth_nest] = tth_nest;
+                  <* add the new target tracing handle *>
+                  new_tth = TargetTracingHandle#(cur, new_tth_value[tth_nest]);
+                  new_tth_map[tth_nest] = BuildList(new_tth_map[tth_nest],new_tth);
+                  last_tth_map[tth_nest] = new_tth;
+                  new_tth_value[tth_nest] = cur;
+           } 
+         }
+       }
+    target_tracing_handles = NULL; new_group_handles=NULL;
+    for ( p = handles; p != NULL ; p = cdr(p)) {
+       cur_h = car(p);
+       cur_tth = new_tth_map[cur_h]; 
+       foreach_r (cur_tth : (cur=CODE.TargetTracingHandle) : TRUE) 
+          target_tracing_handles= cur :: target_tracing_handles;
+       foreach_r (group_handles : (curgroup=NestWithGroup#(cur_h,_)) : TRUE) {
+          new_group_handles = curgroup::new_group_handles;
+       }
+    }
+    all_tth_list=new_group_handles;
+    (target_tracing_handles,new_group_handles,last_tth_map)
+</xform>
+
+<* Add fix transformations at the end *>
+<xform GetEndTransformations pars=(xforms_orig, tuning_parameters) >
+
+   <* list to store new transformations*>
+   end_xforms = NULL;   
+   for ( p_table=cleanup_table; p_table!=NULL; p_table=cdr(p_table)) {
+      (xform_names,cleanup)= car(p_table);
+      xform_name="";
+      foreach (xforms_orig : (xform = 
+                 Transformation#(CLEAR name,CLEAR nests,CLEAR params))
+                 : TRUE) {
+          if (xform_name == "" && Lookup(name, xform_names)) 
+                { xform_name=name; xform_nests=nests; xform_params=params; BREAK; }
+      }
+      if (xform_name != "") {
+         for (p_cleanup = ReverseList(cleanup); p_cleanup != NULL; p_cleanup=cdr(p_cleanup)) {
+             cur=car(p_cleanup);
+             (new_xform,param)= CreateFixXform(cur, xform, "");
+             tuning_parameters = BuildList(param,tuning_parameters);
+             end_xforms = new_xform :: end_xforms;
+         }
+      }
+   }
+   (BuildList(xforms_orig,end_xforms),tuning_parameters)
+</xform>
+
+<* Create a set of tracing handles for the transformations. 
+ * This uses the tracing handles defined in transformations_table.
+ * This will also create a set of values used for <define> tags in the
+ * poet file.
+ * Returns (new_xforms, tracing_handles definitions)*>
+<xform CreateTracingHandles pars=(xform_list,definitions)>
+   tracing_handles = NULL; new_xforms=NULL;
+   foreach_r (xform_list : (xform=Transformation#(CLEAR xform_name, CLEAR xform_nests, CLEAR xform_params)) : TRUE) {
+      (xform_target, _) = get_target_parameter(xform_nests);
+      xform_table_entry = transformations_table[xform_name];
+      (_,_,_,table_tracing_handles,_) = car(xform_table_entry);
+      for(p_tth = table_tracing_handles; p_tth!=NULL; p_tth = cdr(p_tth)) {
+         (tth_param_name,tth_info) = car(p_tth);
+         (tth_type,code_template_name,tth_definition_name) = tth_info;
+         tracing_handle_id_counter = tracing_handle_id_counter + 1;
+         <* the type decides how to handle this tracing handle*>
+         (xform_param_value,param) = GetParameterValue(tth_param_name, xform);
+         th_name = TracingHandleName#(tracing_handle_id_counter, xform_target, xform_name, tth_param_name);
+         switch (xform_param_value) {
+           case ID:
+             tracing_handles = TracingHandleSingle#(th_name, xform_param_value)::tracing_handles;
+           default:
+             tracing_handles = TracingHandle#(th_name, xform_param_value)::tracing_handles;
+         }
+         xform=REPLACE(xform_param_value,th_name, xform);
+         <* go through each definition and see if any try to use the same defintion*>
+         cur = "";
+         foreach (definitions : 
+                (cur=CODE.Definition#(tth_definition_name,CLEAR v)):TRUE) {
+                definitions=REPLACE(cur, CODE.Definition#(tth_definition_name, th_name::v), definitions);
+                  BREAK;
+          }
+          if (cur == "") { <* add the definition to the list*>
+              definitions = BuildList(Definition#(tth_definition_name, th_name),definitions);
+         }
+      }
+      new_xforms=xform :: new_xforms;
+   }
+   (new_xforms, definitions, tracing_handles)
+</xform>
+
+<* creates a new transformation from a set of confurations*>
+<xform CreateConfigurationXform pars=(configuration, nest, last_tth)>
+   (_,xform_name,configuration_params) = configuration;
+   (required_params,_,_,_,_) = car(transformations_table[xform_name]);
+   if (last_tth : CODE.TargetTracingHandle)
+         last_tth = last_tth[TargetTracingHandle.name];
+
+   xform_nests=NULL; xform_params = NULL;
+   <* configure each parameter for the new transformation*>
+   for(remaining_cps = configuration_params; remaining_cps != NULL; remaining_cps = cdr(remaining_cps)) {
+      (cp_name, (cp_type, cp_value)) = car(remaining_cps);
+      switch(cp_type) {
+         case "literal": ""
+         case "nest":
+            cp_value = nest;
+         case "last_tth":
+            cp_value = last_tth;
+      }
+      if (Lookup(cp_name, required_params))
+         xform_nests=cp_value :: xform_nests;
+      else 
+         xform_params = Parameter#(cp_name, cp_value) :: xform_params;
+   }
+
+   Transformation#(xform_name, xform_nests, xform_params);
+</xform>
+
+<* Configures the target tracing handles to allow them to be used*>
+<xform CreateConfigurationXforms pars=(last_tth_map) >
+
+   table_configurations = configuration_table["target_tracing_handle"];
+   new_xforms = NULL;
+   <* go through each of the last target tracing handles for each nest*>
+   foreach( last_tth_map : (CLEAR from, CLEAR to) : TRUE) {
+      <* go through each configuration and do it*>
+      for(p_tc = table_configurations; p_tc != NULL; p_tc = cdr(p_tc)) {
+         (tc_type, _, _) = car(p_tc);
+         if (tc_type == "xform")
+               new_xforms = CreateConfigurationXform(car(p_tc), from, to) :: new_xforms;
+      }
+   }
+
+   new_xforms
+</xform>
+
+<*   Separates parameters of an xform into a list of code templates, and changes the xform parameter
+ * value to the name of the parameter code template. *>
+<xform DefineParameters pars=(xforms, defined_params)>
+   new_xforms = xforms;  
+   foreach_r (xforms : 
+              CODE.Transformation#(CLEAR xform_name,CLEAR xform_nest, CLEAR xform_params) : TRUE) {
+      <*   Go through all specified parameters.*>
+      foreach_r (xform_params : 
+               (param=Parameter#(CLEAR param_name, CLEAR param_val)) : TRUE) { 
+         <* If the value has already been declared a tuning parameter or tracing handle, don't redefine it*>
+         switch(param_val) {
+            case CODE.TracingHandleName | CODE.TuningParameterName | CODE.DefinedParameterName | CODE.NestWithGroup | CODE.HandleAccess:   
+               1; <*   Do nothing because the old param is used *>
+            default:
+               <*   Create and add a new DefinedParameter to the new_parameters*>
+               (xform_target,_) = get_target_parameter(xform_nest); 
+               parameter_id_counter = parameter_id_counter + 1;
+               dp_name = DefinedParameterName#(parameter_id_counter, xform_target, xform_name, param_name);
+               defined_params = DefinedParameter#(dp_name,param_val)::defined_params;
+               new_xforms = REPLACE(param, Parameter#(param_name, dp_name),new_xforms);
+         }
+      }
+   }
+   (new_xforms, defined_params)
+</xform>

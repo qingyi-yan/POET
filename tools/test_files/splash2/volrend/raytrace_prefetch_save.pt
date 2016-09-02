@@ -1,0 +1,31 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+
+<trace Stmt1,Stmt2 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+
+
+<trace _decl1="" />
+<eval Stmt1_decl=Stmt1;
+      if (Stmt1 : CODE.FunctionDecl) 
+          Stmt1_decl=Stmt1[FunctionDecl.body][StmtBlock.stmts];
+      else Stmt1_decl = Stmt1;
+      EraseTraceHandle[repl=(_decl1 Stmt1_decl)](Stmt1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval ;
+	SoftwarePrefetch[compiler="icc"](CODE.Uop#("&", CODE.ArrayAccess#("_shift_array_0",0)),Stmt1);
+	SoftwarePrefetch[compiler="icc"](CODE.Uop#("&", CODE.ArrayAccess#("_shift_array_0",0)),Stmt2); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

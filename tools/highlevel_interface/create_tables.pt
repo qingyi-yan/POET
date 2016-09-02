@@ -1,0 +1,137 @@
+include list_tools.incl
+include tables.pt
+
+<parameter outputFile  default="specifications/internal/tables_generated.incl" message="output file name"/>
+<parameter outputSyntax default="code_files/internal_map.code" message="output syntax file name"/>
+
+<code Input pars=(input) />
+<code Statements pars=(precomments, includes, statements) />
+<code Statement pars=(statement) />
+<code Include pars=(file) />
+<code IncludeFileName pars=(name, extension) />
+<code Extension pars=(name) />
+<code ObjectDeclaration pars=(type, name, configurations) />
+<code MapTransformation pars=(name, required_params, optional_params, tuning_params, tracing_handles, precedence) />
+<code IDList pars=(ids) />
+<code AllMaps pars=(transformations, parameters, interferences, groups, num_xform_precedences, num_group_precedences) />
+
+<input from=("specifications/interferences.txt") syntax="code_files/table_info.code" to=main_input/>
+
+<xform GetIncludeFiles pars=(includes)>
+	include_files = "";
+
+	for(remaining_includes = includes; remaining_includes != ""; remaining_includes = cdr(remaining_includes)) {
+		include = car(remaining_includes);
+		filename = include[Include.file];
+		extension = filename[IncludeFileName.extension];
+		extension = extension[Extension.name];
+		filename = filename[IncludeFileName.name];
+		
+		if(extension != "")
+			filename = filename^"."^extension;
+		
+		include_files = AppendElementToList(include_files, filename);
+	}
+
+	include_files
+</xform>
+
+<eval
+	input = main_input[Input.input];
+	includes = GetIncludeFiles(input[Statements.includes]);
+/>
+
+<input from=includes syntax="code_files/table_info.code" to=includes />
+
+<eval
+	transformations = "";
+	parameters = "";
+	interferences = "";
+	groups = "";
+	orders = "";
+
+	all_statements = "";
+
+	<*	Include the files from the main file (interferences.txt)*>
+	for(remaining_includes = includes; remaining_includes != ""; remaining_includes = cdr(remaining_includes)) {
+		include = car(remaining_includes);
+		input = include[Input.input];
+		statements = input[Statements.statements];
+
+		for(remaining_statements = statements; remaining_statements != ""; remaining_statements = cdr(remaining_statements)) {
+			statement = car(remaining_statements);
+			all_statements = AppendElementToList(all_statements, statement[Statement.statement]);
+		}
+	}
+
+	input = main_input[Input.input];
+	statements = input[Statements.statements];
+	
+	for(remaining_statements = statements; remaining_statements != ""; remaining_statements = cdr(remaining_statements)) {
+		statement = car(remaining_statements);
+		all_statements = AppendElementToList(all_statements, statement[Statement.statement]);
+	}
+
+	transformations = GetObjects("Transformation", all_statements);
+	groups = GetObjects("Group", all_statements);
+	interferences = GetObjects("Interference", all_statements);
+	orders = GetObjects("Order", all_statements);
+
+	map_transformations = "";
+	map_parameters = "";
+
+	<*	Go through each order and convert everything into a poet table map*>
+	for(remaining_orders = orders; remaining_orders != ""; remaining_orders = cdr(remaining_orders)) {
+		order = car(remaining_orders);
+		order_name = order[ObjectDeclaration.name];
+		order_list = order[ObjectDeclaration.configurations];
+		order_list = order_list[IDList.ids];
+		
+		if(order_name == "transformations") {
+			SetObjectPrecedences(order_list, transformation_precedences);
+		} else if (order_name == "groups") {
+			SetObjectPrecedences(order_list, group_precedences);
+		}
+	}
+
+	transformation_names = ConfigureTransformations(transformations);
+	ConfigureGroups(groups);
+	ConfigureInterferences(interferences);
+
+	<* To Add:
+	 *	parameter_group_values
+	 *	*>
+
+	map_transformations = CreateInternalMapTransformations(transformation_names);
+	map_parameters = CreateInternalMapParameters("");
+	map_interferences = CreateInternalInterferences(transformation_names);
+	map_groups = CreateInternalMapGroups("");
+
+	xform_precedences_total = 0;
+	group_precedences_total = 0;
+
+	<*	Get the number of transformations that use precedence*>
+	foreach(transformation_precedences : (CLEAR from, CLEAR to) : TRUE) {
+		
+		<*	The precedence on this transformation is higher than the previous one*>		
+		if(xform_precedences_total < to) {
+			xform_precedences_total = to;
+		}
+	}
+
+	<*	Get the number of groups that use precedence*>
+	foreach(group_precedences : (CLEAR from, CLEAR to) : TRUE) {
+		
+		<*	The precedence on this transformation is higher than the previous one*>		
+		if(group_precedences_total < to) {
+			group_precedences_total = to;
+		}
+	}
+
+
+	output = AllMaps#(map_transformations, map_parameters, map_interferences, map_groups, xform_precedences_total, group_precedences_total);
+/>
+
+<output to=(outputFile) syntax=outputSyntax from=(output) />
+
+

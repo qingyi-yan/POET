@@ -1,0 +1,35 @@
+<parameter infile message="input file name"/>
+
+<******* a global variable named symTable is used to save all variable info*****>
+<define symTable MAP(ID,"int"|"float"|"") />
+
+<* look up a variable name from a list of symble tables*>
+<xform LookupVariable pars=(varName)  symTableList=GLOBAL.symTable >
+  for ( p = symTableList; p != NULL; p = TAIL(p)) {
+     curTable = HEAD(p);
+     res = curTable[varName];
+     if (res != "") RETURN res;
+  }
+</xform>
+
+<xform insert_entry pars=(id,type) symTableList=GLOBAL.symTable >
+  (HEAD(symTableList))[id]=type;
+  ""
+</xform>
+
+<xform pop_scope > 
+  top = HEAD(GLOBAL.symTable);
+  GLOBAL.symTable = TAIL(GLOBAL.symTable);
+  top 
+</xform>
+
+<xform push_scope> 
+  GLOBAL.symTable = MAP{} :: GLOBAL.symTable; 
+</xform>
+
+<* parse the in File using syntax defined in file "compiler_input_3.code"; 
+   save the parsing result (the abstract syntax tree) to ast variable *>
+<input from=(infile) syntax="compiler_input_3.code" to=ast/>
+
+<* print out the internal representation of the input program*>
+<eval PRINT(ast); />

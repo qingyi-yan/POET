@@ -1,0 +1,67 @@
+include opt.pi
+<code ArrayAccess match=FunctionCall#("arr_ref_a",((array subscript)))/>
+<trace target/>
+<input to=target syntax="Cfront.code" from=("rose_chfac.C")/>
+<trace top_nest1,decl_top_nest1,nest1,body1,nest4,nest3,nest2/>
+<eval decl_top_nest1 = "";
+      top_nest1 = (decl_top_nest1 nest1);
+      EraseTraceHandle[repl=top_nest1](nest1,target)/>
+
+
+<trace var_tile_nest1/>
+<eval var_clnup_top_nest1 = top_nest1/>
+<eval body1_1_a_dim = (1,1);
+      body1_1_a = FunctionCall#("arr_ref_a",(("a" (("k" "k")))))/>
+
+<parameter bsize_nest1 type=(INT INT INT) default=(16 16 16) message="Blocking factor for loop nest nest1"/>
+<parameter ujsize_nest1 type=(INT INT) default=(2 2) message="Unroll and Jam factor for loop nest nest1"/>
+<parameter scalar1_config_a type=0..2 default=1 message="configuration for scalarRepl array a at loop body1: 0-no opt; 1-scalarRepl; 2-strength reduction."/>
+<parameter usize_nest4 type=1.._ default=4 message="Unroll factor for loop nest4"/>
+<parameter usize_nest2 type=1.._ default=4 message="Unroll factor for loop nest2"/>
+<parameter usize_nest3 type=1.._ default=4 message="Unroll factor for loop nest3"/>
+
+<cond (HEAD(bsize_nest1))==1||((HEAD(ujsize_nest1))<=(HEAD(bsize_nest1))&&(HEAD(bsize_nest1)%HEAD(ujsize_nest1))==0)&&(HEAD(TAIL(bsize_nest1)))==1||((HEAD(ujsize_nest1))<=(HEAD(TAIL(bsize_nest1)))&&(HEAD(TAIL(bsize_nest1))%HEAD(ujsize_nest1))==0)&&usize_nest2<=(HEAD(TAIL(TAIL(bsize_nest1))))&&(HEAD(TAIL(TAIL(bsize_nest1)))%usize_nest2)==0&&usize_nest3<=(HEAD(TAIL(bsize_nest1)))&&(HEAD(TAIL(bsize_nest1))%usize_nest3)==0/>
+
+<eval block_nest1 = DELAY{
+         bdim_nest1 = (BlockDim#("k","k_bk",HEAD(bsize_nest1)) BlockDim#("j","j_bk",HEAD(TAIL(bsize_nest1))) BlockDim#("i","i_bk",HEAD(TAIL(TAIL(bsize_nest1)))));
+         var_tile_nest1 = COPY(nest1);
+         AppendDecl[trace=decl_top_nest1](IntegerType,(("i_bk" "j_bk" "k_bk")));
+         TRACE((body1_1_a),BlockLoops[factor=bdim_nest1;cleanup=0;trace_innerNest=var_tile_nest1;trace_decl=decl_top_nest1;nonPerfect=(NonPerfectLoops#(nest1,nest3) NonPerfectLoops#(nest1,((nest4 nest2))));trace_mod=(body1_1_a)](nest2[Nest.body],nest1))
+      }/>
+
+<eval unrolljam_nest1 = DELAY{
+         ERASE((nest1 body1 nest3 nest2 nest4),top_nest1);
+         TraceNestedLoops[trace=top_nest1](((nest1 nest3 nest2)),ERASE(var_tile_nest1));
+         nest4 = ERASE(nest2);
+         REPLACE(ERASE(nest2),nest4,nest2);
+         body1 = nest1[Nest.body];
+         EraseTraceHandle[repl=body1](ERASE(body1),nest1);
+         REPLACE(ERASE(var_tile_nest1),nest1,top_nest1);
+         UnrollJam[factor=((HEAD(ujsize_nest1)) (HEAD(TAIL(ujsize_nest1))));cleanup=0;trace=top_nest1](nest2,nest1)
+      }/>
+<eval scalar1_body1 = DELAY{
+         if (scalar1_config_a)  {
+            TRACE((body1_1_a),CopyRepl[prefix="a_1_scalar";data_type="double";scalar=1;init_loc=body1;save_loc=body1;trace=top_nest1;trace_decl=decl_top_nest1;trace_mod=(body1_1_a)](body1_1_a,((CopyDim#("body1_1_a_cp0",1,1,body1_1_a_dim[0]) CopyDim#("body1_1_a_cp1",1,1,body1_1_a_dim[1]))),body1))
+         }
+      }/>
+<eval unroll_nest4 = DELAY{
+         UnrollLoops[factor=usize_nest4;cleanup=0](nest4[Nest.body],nest4)
+      }/>
+<eval unroll_nest2 = DELAY{
+         UnrollLoops[factor=usize_nest2;cleanup=0](nest2[Nest.body],nest2)
+      }/>
+<eval unroll_nest3 = DELAY{
+         UnrollLoops[factor=usize_nest3;cleanup=0](nest3[Nest.body],nest3)
+      }/>
+<eval cleanup_nest1 = DELAY{
+         CleanupBlockedNests[trace=top_nest1](var_clnup_top_nest1)
+      }/>
+
+<eval APPLY{block_nest1};
+      APPLY{unrolljam_nest1};
+      APPLY{scalar1_body1};
+      APPLY{unroll_nest4};
+      APPLY{unroll_nest2};
+      APPLY{unroll_nest3};
+      APPLY{cleanup_nest1}/>
+<output from=(target) syntax=("Cfront.code")/>

@@ -1,0 +1,11 @@
+
+<parameter infile default="" message="input file name" />
+<parameter outfile default="" message="output file name" />
+<parameter header default="" message="header file name"/>
+
+<input from=infile parse=LIST(CODE.SubroutineDecl,"\n") syntax="Ffront.code" to=inputCode/>
+
+<eval if (header == "") inputCode=CODE.F2CInclude::inputCode;
+      else inputCode=("#include \""header"\"\n")::inputCode;  />
+<output cond=(header!="") syntax="F2C.code" to=header from=CODE.F2CInclude/>
+<output to=outfile syntax="F2C.code" from=inputCode/>

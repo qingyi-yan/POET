@@ -1,0 +1,8 @@
+<code Program/>
+
+<parameter infile type=STRING default="" message="input file name" />
+<parameter outfile type=STRING default="" message="optimized output file name" />
+
+
+<input from=infile to=inputCode syntax="Transformation_syntax.code"/>
+<output to=outfile syntax="Transformation_syntax.code" from=(Program#inputCode)/>
