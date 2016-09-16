@@ -5,10 +5,10 @@ void dgemvT(const int M,const int N,const double alpha,const double *A,const int
   int j;
 /*@; BEGIN(nest1=Nest) @*/
   for (i = 0; i <= -1 + M; i += 1) {
-    Y[i] = (beta * Y[i]);
+    Y[i] = beta * Y[i];
 /*@; BEGIN(nest2=Nest) @*/
     for (j = 0; j <= -1 + N; j += 1) {
-      Y[i] += (A[(i * lda) + j] * X[j]);
+      Y[i] += A[i * lda + j] * X[j];
     }
   }
 }

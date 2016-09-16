@@ -58,8 +58,10 @@ switch (vars)
            body[n1] = type; 
        }
        foreach cur=(CLEAR n,CLEAR t) \in body do
-          t1 = REPLACE(name, CODE.TypeName#(name,type),t);
-          if (t1 != t) body[n]=t1;
+          if (!Lookup(CODE.TypeName#(name,_), t)) {
+            t1 = REPLACE(name, CODE.TypeName#(name,type),t);
+            if (t1 != t) body[n]=t1;
+          }
        enddo
        tab[name]=TemplateType#(ClassType#(name,body,inherit),type); 
     }
@@ -105,12 +107,12 @@ switch (vars)
       }
       res
   case CODE.ArrayAccess#(var,sub): 
-      CODE.PtrType#t|CODE.AtomicPtrType#t = get_type(var); 
+      CODE.ArrayType#(t,_)|CODE.PtrType#t|CODE.AtomicPtrType#t = get_type(var); 
       t 
   case CODE.PtrAccess#(var,fd) | CODE.ObjAccess#(var,fd):
       CODE.PtrType#t|CODE.AtomicPtrType#t|t = get_type(var); 
       param=arg="";
-      if (t : CODE.TypeName#(t1,arg=_) | (t1=ID)) { 
+      if (t : CODE.TypeName#(t1=_,arg=_) | (t1=ID)) { 
          for (t2 = get_type(t1); t2 : CODE.TypeName#(t1=_,_)|ID; t2=get_type(t1)) { }
           t = t2;
       }
@@ -414,6 +416,12 @@ switch (vars)
        if (Lookup(var, exp)) 
          { found_stmt? (NULL,input) : (input,NULL) } 
        else { (NULL,NULL) }
+  case CODE.For#(s1,s2,s3) | CODE.Loop_r#(_,s1,s2,s3): 
+        if (s1 == stmt) found_stmt = 1;
+        if (Lookup(var, (s1 s2 s3))) { 
+           (found_stmt)? (NULL,input) : (input, NULL)
+        }
+        else { (NULL,NULL) }
   case CODE.BookKeeping|Else|""|NULL|CODE.Break: (NULL,NULL)
   case (first second):
       (res_before, res_after) = collect_variable_uses(var,stmt,first);
@@ -431,7 +439,13 @@ switch (vars)
       }
       (AppendList(res_before, res2_before), AppendList(res_after, res2_after))
   case CODE.Nest#(ctrl,body):
-     if (ctrl : CODE.While) { found_stmt=Lookup(stmt,body); }
+     switch(ctrl) {
+      case CODE.While: found_stmt=Lookup(stmt,body); 
+      case For#(DeclStmt#TypeInfo#(_,i,_),_,Uop#("++",i)|VarRef#(i,"++"))|Loop_r#(i,_,_,_):
+           if (!(Lookup(i, var))) found_stmt=Lookup(stmt,body); 
+      case CODE.If|CODE.Else: ""
+
+     }
      (res_before, res_after) = collect_variable_uses(var,stmt,ctrl);
      (res2_before, res2_after) = collect_variable_uses(var,stmt,body);
      (AppendList(res_before, res2_before), AppendList(res_after, res2_after))

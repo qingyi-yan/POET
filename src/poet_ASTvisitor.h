@@ -30,6 +30,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 #include <poet_ASTeval.h>
 #include <poet_ASTinterface.h>
+#include <set>
 
 class CollectInfoVisitor : public POETCodeVisitor, public EvaluatePOET
 {
@@ -112,6 +113,7 @@ class ReplInfoVisitor : public EvaluatePOET, public POETCodeVisitor
 {
  protected:
   POETCode* res;
+  std::set<LocalVar*> modvars;
  public:
   ReplInfoVisitor() { res = 0; }
   virtual void defaultVisit(POETCode* c)  = 0;
@@ -185,6 +187,11 @@ class ReplInfoVisitor : public EvaluatePOET, public POETCodeVisitor
 };
 
 inline void ReplInfoVisitor:: visitLocalVar(LocalVar* v) { 
+          if (modvars.find(v) != modvars.end()) {
+               if (user_debug)
+                 std::cerr << "LocalVar visited more than--so skip:" << v->toString() << "\n";
+               res = v; return;
+          }
           LvarSymbolTable::Entry e = v->get_entry();
           POETCode* save = e.get_code(); 
           if (save == 0)  {
@@ -198,6 +205,7 @@ inline void ReplInfoVisitor:: visitLocalVar(LocalVar* v) {
                if (user_debug)
                   std::cerr << "setting LocalVar " << v->toString() << " with " << res->toString() << "\n";
                 e.set_code(res);
+                modvars.insert(v);
                 if (e.get_entry_type() == LVAR_TRACE)
                     res = v;
              }

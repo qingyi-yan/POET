@@ -7,7 +7,7 @@ void dger(const int M,const int N,const double alpha,const double *X,const int i
   for (j = 0; j <= -1 + N; j += 1) {
 /*@; BEGIN(nest2=Nest) @*/
     for (i = 0; i <= -1 + M; i += 1) {
-      A[(j * lda) + i] = (A[(j * lda) + i] + (X[i] * Y[j * incY]));
+      A[j * lda + i] = A[j * lda + i] + X[i] * Y[j * incY];
     }
   }
 }

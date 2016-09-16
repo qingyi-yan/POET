@@ -2,6 +2,7 @@
  TODO: fix search engine scripts and add tuning to POET release
  TODO: change pcg main function to automatically check the include directories of POET, using the make install directories first and the original install directory, including POET/include
 *** poet-1.05.03
+Sep 15, 2016: fix traversal of AST with multiple modifications to the same handle
 Apr 8, 2016: fix the lost of surrounding lists when passing them as parameters
 Mar 3, 2016: fix POETInputList::set_next bug which causes tokenizer infinite recursion
 Mar 2, 2016: fix CopyRepl/ReplExp bug for negative loop ivars in subscripts

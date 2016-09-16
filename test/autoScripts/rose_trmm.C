@@ -17,18 +17,18 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float *a,float *b)
 /*@; BEGIN(body1=Stmt) @*/
 {
       if (j <= -1 + n) {
-        arr_ref_b(b,l,j) = (beta * arr_ref_b(b,l,j));
+        arr_ref_b(b,l,j) = beta * arr_ref_b(b,l,j);
       }
-      else {
+       else {
       }
       if (j <= -1 + m) {
 /*@; BEGIN(nest2=Nest) @*/
         for (i = 0; i <= -1 + l; i += 1) {
-          arr_ref_b(b,i,j) = ((alpha * arr_ref_b(b,l,j)) * arr_ref_a(a,i,l));
+          arr_ref_b(b,i,j) = alpha * arr_ref_b(b,l,j) * arr_ref_a(a,i,l);
         }
-        arr_ref_b(b,l,j) = (alpha * arr_ref_b(b,l,j));
+        arr_ref_b(b,l,j) = alpha * arr_ref_b(b,l,j);
       }
-      else {
+       else {
       }
     }
   }

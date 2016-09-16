@@ -11,7 +11,7 @@ include opt.pi
 <trace var_tile_nest1/>
 <eval var_clnup_top_nest1 = top_nest1/>
 <eval body1_1_a_dim = (1,1);
-      body1_1_a = FunctionCall#("arr_ref_a",(("a" (("k" "k")))))/>
+      body1_1_a = FunctionCall#("arr_ref_a",(("a" ("k" "k"))))/>
 
 <parameter bsize_nest1 type=(INT INT INT) default=(16 16 16) message="Blocking factor for loop nest nest1"/>
 <parameter ujsize_nest1 type=(INT INT) default=(2 2) message="Unroll and Jam factor for loop nest nest1"/>

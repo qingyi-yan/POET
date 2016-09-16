@@ -9,7 +9,7 @@
 <xform gen_default_init pars=(type)>
   switch (type) {
    case CODE.VoidType: ("int", CODE.VarInit#0)
-   case CODE.PtrType|CODE.IntType1: (type, CODE.VarInit#0)
+   case CODE.PtrType|CODE.IntType1: (type, CODE.VarInit#(CODE.CastExp#(type,"",-1)))
    case "bool" : ("int",CODE.VarInit#(-1))
    case CODE.IntType|"int"|"size_t"|ScopedName#("std" "size_t") : (type,CODE.VarInit#0)
    case ID : t1=get_type(type); 
