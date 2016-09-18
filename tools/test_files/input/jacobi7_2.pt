@@ -1,0 +1,32 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default=(1) message="number of times to skew loop Nest1" />
+<trace inputCode />
+<trace Nest1,Nest2,Nest3,Nest4 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest2_group3 = (Nest2) />
+<trace Nest1_group3 = (Nest1) />
+
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval EraseTraceHandle[repl=Nest2_group3](Nest2,inputCode);
+	EraseTraceHandle[repl=Nest1_group3](Nest1,inputCode);
+	SkewLoops[factor=tp1](Nest2_group3,Nest1_group3); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

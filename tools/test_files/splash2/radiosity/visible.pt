@@ -1,0 +1,35 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5,Stmt6,Stmt8,Stmt10,Stmt11 />
+<trace FunctionDecl1 />
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+<trace Stmt1_StrengthReduction_subexpression_th1 = () />
+
+<trace _decl1="" />
+<eval FunctionDecl1_decl=FunctionDecl1;
+      if (FunctionDecl1 : CODE.FunctionDecl) 
+          FunctionDecl1_decl=FunctionDecl1[FunctionDecl.body][StmtBlock.stmts];
+      else FunctionDecl1_decl = FunctionDecl1;
+      EraseTraceHandle[repl=(_decl1 FunctionDecl1_decl)](FunctionDecl1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Stmt1_StrengthReduction_subexpression_th1) />
+
+<eval ;
+	StrengthReduction(2,Stmt1);
+	RedundancyElimination(2,Stmt4);
+	RedundancyElimination[function_definition=FunctionDecl1;ret_statement=Stmt5](3,Stmt6);
+	RedundancyElimination[function_definition=FunctionDecl1;ret_statement=Stmt5](3,Stmt8);
+	RedundancyElimination[function_definition=FunctionDecl1;ret_statement=Stmt5](3,Stmt10);
+	RedundancyElimination[function_definition=FunctionDecl1;ret_statement=Stmt5](3,Stmt11); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

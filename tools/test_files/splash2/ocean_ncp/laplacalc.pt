@@ -1,0 +1,30 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest1,Nest2 />
+
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+
+
+<eval ;
+	PermuteLoops[order=((2) (1))](Nest2[Nest.body],Nest1); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

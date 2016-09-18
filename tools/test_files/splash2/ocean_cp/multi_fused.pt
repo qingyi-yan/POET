@@ -1,0 +1,32 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest1,Nest2_Nest4,Nest5,Nest6_Nest8 />
+<trace Stmt1,Stmt2 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+
+<trace Nest2_Nest4_DistributeLoop_private_th2 = (("newerr")) />
+<trace Nest6_Nest8_DistributeLoop_private_th1 = (("newerr")) />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_VARS (Nest2_Nest4_DistributeLoop_private_th2 Nest6_Nest8_DistributeLoop_private_th1) />
+
+<eval ;
+	DistributeLoop[outer_nest=Nest1;private=Nest2_Nest4_DistributeLoop_private_th2;private_size=CODE.Bop#("-", "jend", "oddistart");data_type="double"](Stmt1,Nest2_Nest4);
+	DistributeLoop[outer_nest=Nest5;private=Nest6_Nest8_DistributeLoop_private_th1;private_size=CODE.Bop#("-", "jend", "oddistart");data_type="double"](Stmt2,Nest6_Nest8); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

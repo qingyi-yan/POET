@@ -1,0 +1,11 @@
+\BOOKMARK [1][]{section.1}{Parsing}{}% 1
+\BOOKMARK [1][]{section.2}{Writing Syntax Specifications For Parsing}{}% 2
+\BOOKMARK [1][]{section.3}{Type Checking}{}% 3
+\BOOKMARK [1][]{section.4}{Constructing The AST}{}% 4
+\BOOKMARK [1][]{section.5}{Unparsing AST}{}% 5
+\BOOKMARK [1][]{section.6}{Three-address code generation}{}% 6
+\BOOKMARK [1][]{section.7}{Building A Control Flow Graph }{}% 7
+\BOOKMARK [1][]{section.8}{Traversing The Control-flow Graph}{}% 8
+\BOOKMARK [1][]{section.9}{Data-flow Analysis}{}% 9
+\BOOKMARK [1][]{section.10}{Modifying the AST}{}% 10
+\BOOKMARK [1][]{section.11}{Other Tasks}{}% 11

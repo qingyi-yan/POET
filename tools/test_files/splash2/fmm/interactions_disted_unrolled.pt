@@ -1,0 +1,32 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+
+<trace inputCode />
+<trace Nest1_1,Nest1_2,Nest2,Nest3,Nest4,Nest5 />
+<trace Stmt1,Stmt2,Stmt3,Stmt4,Stmt5 />
+
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest1_1_group1 = (Nest1_1) />
+<trace Nest1_1_ScalarRepl_aref_th1 = (CODE.ArrayAccess#("z0_pow_minus_n","k")) />
+
+<trace _decl1="" />
+<eval Nest1_1_decl=Nest1_1;
+      if (Nest1_1 : CODE.FunctionDecl) 
+          Nest1_1_decl=Nest1_1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_1_decl = Nest1_1;
+      EraseTraceHandle[repl=(_decl1 Nest1_1_decl)](Nest1_1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Nest1_1_ScalarRepl_aref_th1) />
+
+<eval EraseTraceHandle[repl=Nest1_1_group1](Nest1_1,inputCode);
+	ScalarRepl[data_type="complex";init=0;save=1](Nest1_1_ScalarRepl_aref_th1,(Nest1_1_group1),Nest1_1_group1[Nest.body]);
+	RedundancyElimination[redundant_branch_flag=1;else_branch=Stmt3](1,Stmt2);
+	RedundancyElimination[redundant_branch_flag=0;else_branch=Stmt5](1,Stmt4); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 

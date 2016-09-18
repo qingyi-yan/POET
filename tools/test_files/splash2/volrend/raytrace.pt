@@ -1,0 +1,40 @@
+include opt.pi
+
+<parameter inputFile message="input file name"/>
+<parameter outputFile  message="output file name"/>
+<parameter tp1 type=1.._ default=((3)) message="Unroll factor for loop Nest1" />
+<trace inputCode />
+<trace Nest1,Nest2,Nest5 />
+<trace Stmt1,Stmt2,Stmt3,Stmt4 />
+<trace Func1 />
+<input from=inputFile syntax="Cfront.code" to=inputCode />
+
+<trace Nest1_group1 = (Nest1) />
+<trace Nest1_ScalarRepl_aref_th5 = (CODE.ArrayAccess#(CODE.ArrayAccess#("ray",0),"i")) />
+<trace Nest2_StrengthReduction_subexpression_th4 = (FunctionCall#("float",CODE.Bop#("-", CODE.ArrayAccess#("opc_len","i"), 1))) />
+<trace Nest2_StrengthReduction_subexpression_th3 = () />
+<trace Nest5_StrengthReduction_subexpression_th2 = () />
+<trace Func1_StrengthReduction_subexpression_th1 = () />
+
+<trace _decl1="" />
+<eval Nest1_decl=Nest1;
+      if (Nest1 : CODE.FunctionDecl) 
+          Nest1_decl=Nest1[FunctionDecl.body][StmtBlock.stmts];
+      else Nest1_decl = Nest1;
+      EraseTraceHandle[repl=(_decl1 Nest1_decl)](Nest1_decl, inputCode); />
+<define TRACE_DECL _decl1 />
+<define TRACE_INCL inputCode/>
+<define TRACE_TARGET inputCode />
+
+<define TRACE_EXP (Nest1_ScalarRepl_aref_th5 Nest2_StrengthReduction_subexpression_th4 Nest2_StrengthReduction_subexpression_th3 Nest5_StrengthReduction_subexpression_th2 Func1_StrengthReduction_subexpression_th1) />
+
+<eval EraseTraceHandle[repl=Nest1_group1](Nest1,inputCode);
+	ScalarRepl[init=0;save=1;scalar_num=1;data_type="float"](Nest1_ScalarRepl_aref_th5,(Nest1_group1),Nest1_group1[Nest.body]);
+	UnrollLoop[factor=tp1](Nest1_group1);
+	StrengthReduction[subexpression=Nest2_StrengthReduction_subexpression_th4;data_type="float"](3,Nest2);
+	RedundancyElimination[branch_statement=Stmt2](5,Stmt1);
+	StrengthReduction[constant="0.0";data_type="float"](4,Nest2);
+	StrengthReduction[constant="1.0";data_type="float"](4,Nest5);
+	StrengthReduction[shift_statement=(Stmt3 Stmt4);data_type="long"](5,Func1); />
+
+<output to=outputFile syntax="Cfront.code" from=inputCode /> 
