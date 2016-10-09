@@ -393,7 +393,7 @@ on `(hostname || uname -n) 2>/dev/null | sed 1q`
 "
 
 # Files that config.status was made for.
-config_files=" Makefile src/Makefile lib/Makefile doc/Makefile test/Makefile test/gemmATLAS/Makefile test/gemvATLAS/Makefile test/gerATLAS/Makefile test/autoScripts/Makefile test/commands/Makefile test/timerGeneration/Makefile test/parseF/Makefile test/tune/Makefile examples/Makefile tools/Makefile test/parseC/Makefile tools/highlevel_interface/Makefile tools/test_files/Makefile tools/test_files/input/Makefile tools/test_files/output/Makefile tools/auto_tuning/Makefile tools/matrixOpt/Makefile tools/stencil-codegen/Makefile tools/splash2Prof/Makefile"
+config_files=" Makefile src/Makefile lib/Makefile doc/Makefile test/Makefile test/gemmATLAS/Makefile test/gemvATLAS/Makefile test/gerATLAS/Makefile test/autoScripts/Makefile test/commands/Makefile test/timerGeneration/Makefile test/parseF/Makefile test/tune/Makefile examples/Makefile tools/Makefile test/parseC/Makefile"
 config_commands=" depfiles"
 
 ac_cs_usage="\
@@ -545,14 +545,6 @@ do
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
     "tools/Makefile") CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
     "test/parseC/Makefile") CONFIG_FILES="$CONFIG_FILES test/parseC/Makefile" ;;
-    "tools/highlevel_interface/Makefile") CONFIG_FILES="$CONFIG_FILES tools/highlevel_interface/Makefile" ;;
-    "tools/test_files/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/Makefile" ;;
-    "tools/test_files/input/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/input/Makefile" ;;
-    "tools/test_files/output/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/output/Makefile" ;;
-    "tools/auto_tuning/Makefile") CONFIG_FILES="$CONFIG_FILES tools/auto_tuning/Makefile" ;;
-    "tools/matrixOpt/Makefile") CONFIG_FILES="$CONFIG_FILES tools/matrixOpt/Makefile" ;;
-    "tools/stencil-codegen/Makefile") CONFIG_FILES="$CONFIG_FILES tools/stencil-codegen/Makefile" ;;
-    "tools/splash2Prof/Makefile") CONFIG_FILES="$CONFIG_FILES tools/splash2Prof/Makefile" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -662,7 +654,7 @@ S["am__isrc"]=""
 S["INSTALL_DATA"]="${INSTALL} -m 644"
 S["INSTALL_SCRIPT"]="${INSTALL}"
 S["INSTALL_PROGRAM"]="${INSTALL}"
-S["tooldirs"]="highlevel_interface test_files auto_tuning matrixOpt stencil-codegen"
+S["tooldirs"]=""
 S["testdirs"]="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune"
 S["atlas_inc"]=""
 S["atlas_exe"]="xdmmtst"

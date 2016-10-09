@@ -205,8 +205,8 @@
 #define vec_shuffle(mode,reg1,reg2) vec_shuffle_wrap(mode,reg1,reg2)
 #define vec_shuffle_wrap(mode,reg1,reg2) \
         __asm__ __volatile__ ("shufps " #mode ", " #reg1 ", " #reg2 \
-			      : /* nothing */\
-			      : /* nothing */) 
+                  : /* nothing */\
+                  : /* nothing */) 
 
 /* Hack! */
 /* To use this instruction be sure that register 7 is not in use!!! */
@@ -215,12 +215,12 @@
 #define vec_sum(reg) vec_sum_wrap(reg)
 #define vec_sum_wrap(reg) \
         __asm__ __volatile__ ("movhlps " #reg ", %%xmm7\n"\
-    			      "addps " #reg ", %%xmm7\n"\
-    			      "movaps %%xmm7, " #reg "\n"\
-                              "shufps $1, " #reg ", %%xmm7\n"\
-    			      "addss %%xmm7, " #reg "\n"\
-			      : /* nothing */\
-			      : /* nothing */) 
+                      "addps " #reg ", %%xmm7\n"\
+                      "movaps %%xmm7, " #reg "\n"\
+                      "shufps $1, " #reg ", %%xmm7\n"\
+                      "addss %%xmm7, " #reg "\n"\
+                  : /* nothing */\
+                  : /* nothing */) 
 
 /* RCW: added to safely replace vec_sum (vec reduce), and use SSE3 when avail */
 #define vec_zero(vd) __asm__ __volatile__("xorps " Mstr(vd) ", " Mstr(vd) ::)
@@ -306,15 +306,15 @@
                           "shufps $0x44, " Mstr(v2) ", " Mstr(v0) "\n"\
                           "shufps $0xEE, " Mstr(v2) ", " Mstr(w0) "\n"\
                           "addps " Mstr(w0) ", " Mstr(v0) "\n"\
-                           ::)
+                          ::)
 #endif
      
 #define vec_splat(mem,reg)      vec_splat_wrap(mem,reg)
 #define vec_splat_wrap(mem,reg) \
         __asm__ __volatile__ ("movss %0, " #reg "\n"\
-			      "unpcklps " #reg ", " #reg "\n"\
-			      "movlhps " #reg ", " #reg "\n"\
-			      : /* nothing */ \
+                  "unpcklps " #reg ", " #reg "\n"\
+                  "movlhps " #reg ", " #reg "\n"\
+                  : /* nothing */ \
                               : "m" ((mem)[0]))
 
 
@@ -322,19 +322,19 @@
 #define vec_sum_full(reg0,reg1,reg2,reg3,regout,empty0,empty1) vec_sum_full_wrap(reg0,reg1,reg2,reg3,regout,empty0,empty1)
 #define vec_sum_full_wrap(reg0,reg1,reg2,reg3,regout,empty0,empty1) \
       __asm__ __volatile__ ("movaps " #reg0 "," #empty0 "\n"\
-			    "unpcklps " #reg1 "," #reg0 "\n"\
-			    "movaps " #reg2 "," #empty1 "\n"\
-			    "unpckhps " #reg1 "," #empty0 "\n"\
-			    "unpcklps " #reg3 "," #reg2 "\n"\
-			    "addps  " #empty0 "," #reg0 "\n"\
-			    "unpckhps " #reg3 "," #empty1 "\n"\
-			    "movaps " #reg0 "," #regout "\n"\
-			    "addps  " #empty1 "," #reg2 "\n"\
-			    "shufps $0x44," #reg2 "," #reg0 "\n"\
-			    "shufps $0xee," #reg2 "," #regout "\n"\
-			    "addps  " #reg0 "," #regout "\n"\
-			    : /* nothing */  \
-			    : /* nothing */)			    
+                "unpcklps " #reg1 "," #reg0 "\n"\
+                "movaps " #reg2 "," #empty1 "\n"\
+                "unpckhps " #reg1 "," #empty0 "\n"\
+                "unpcklps " #reg3 "," #reg2 "\n"\
+                "addps  " #empty0 "," #reg0 "\n"\
+                "unpckhps " #reg3 "," #empty1 "\n"\
+                "movaps " #reg0 "," #regout "\n"\
+                "addps  " #empty1 "," #reg2 "\n"\
+                "shufps $0x44," #reg2 "," #reg0 "\n"\
+                "shufps $0xee," #reg2 "," #regout "\n"\
+                "addps  " #reg0 "," #regout "\n"\
+                : /* nothing */  \
+                : /* nothing */)                
 
 
 
@@ -413,12 +413,12 @@ typedef float vector[VECLEN];
 
 /****************************************************************/
 #ifndef vec_sub_rr
-#define vec_sub_rr(reg1,reg2)	gen_vec_rr(subpd,reg1,reg2)
+#define vec_sub_rr(reg1,reg2)    gen_vec_rr(subpd,reg1,reg2)
 #endif
 #ifndef vec_sub_rr_1
-#define vec_div_rr(reg1,reg2)	gen_vec_rr(divpd,reg1,reg2)
+#define vec_div_rr(reg1,reg2)    gen_vec_rr(divpd,reg1,reg2)
 #endif
-#define vec_sub_rr_1(reg1,reg2)	gen_vec_rr(subsd,reg1,reg2)
+#define vec_sub_rr_1(reg1,reg2)    gen_vec_rr(subsd,reg1,reg2)
 #define vec_div_rr_1(reg1,reg2) gen_vec_rr(divsd,reg1,reg2)
 /***************************************************************/
 
@@ -426,18 +426,18 @@ typedef float vector[VECLEN];
 #define vec_splat(mem,reg)      vec_splat_wrap(mem,reg)
 #define vec_splat_wrap(mem,reg) \
         __asm__ __volatile__ ("movsd %0, " #reg "\n"\
-			      "unpcklpd " #reg ", " #reg \
-			      : /* nothing */ \
-                              : "m" ((mem)[0]))
+                  "unpcklpd " #reg ", " #reg \
+                  : /* nothing */ \
+                  : "m" ((mem)[0]))
 
 /* Hack! */
 /* To use this instruction be sure that register 7 is not in use!!! */
 #define vec_sum(reg) vec_sum_wrap(reg)
 #define vec_sum_wrap(reg) \
         __asm__ __volatile__ ("movhlps " #reg ", %%xmm7\n"\
-    			      "addpd %%xmm7, " #reg "\n"\
-			      : /* nothing */\
-			      : /* nothing */) 
+                      "addpd %%xmm7, " #reg "\n"\
+                  : /* nothing */\
+                  : /* nothing */) 
 /* 
  * Added by RCW to improve performance and avoid xmm7 hack (replace vec_sum)
  */
@@ -493,9 +493,9 @@ typedef float vector[VECLEN];
 #define vec_sum_full_wrap(reg1,reg2,empty1) \
         __asm__ __volatile__ ("movhlps " #reg2 ", " #empty1 "\n"\
                               "movlhps " #reg2 ", " #empty1 "\n"\
-    			      "addpd " #empty1 ", " #reg1 "\n"\
-			      : /* nothing */\
-			      : /* nothing */) 
+                      "addpd " #empty1 ", " #reg1 "\n"\
+                  : /* nothing */\
+                  : /* nothing */) 
 
      
 typedef double vector[VECLEN];
@@ -521,7 +521,7 @@ typedef double vector[VECLEN];
 #define gen_vec_rm(op,reg,mem) \
         __asm__ __volatile__ (#op " " #reg ", %0" \
                               : "=m" (((mem)[0])), "=m" (((mem)[1])) \
-			      :  /* nothing */ )                            
+                  :  /* nothing */ )                            
 
 
 
@@ -560,16 +560,16 @@ typedef double vector[VECLEN];
 #define vec_splat(mem,reg)      vec_splat_wrap(mem,reg)
 #define vec_splat_wrap(mem,reg) \
         __asm__ __volatile__ ("movd %0, " #reg "\n"\
-			      "punpckldq " #reg ", " #reg \
-			      : /* nothing */ \
+                  "punpckldq " #reg ", " #reg \
+                  : /* nothing */ \
                               : "m" ((mem)[0]))
 
 
 #define vec_load_apart(mem1,mem2,reg) vec_load_apart_wrap(mem1,mem2,reg)
 #define vec_load_apart_wrap(mem1,mem2,reg) \
         __asm__ __volatile__ ("movd %0, " #reg "\n"\
-			      "punpckldq %1, " #reg \
-			      : /* nothing */ \
+                  "punpckldq %1, " #reg \
+                  : /* nothing */ \
                               : "m" ((mem1)[0]), "m" (((mem2)[0])))
 
 

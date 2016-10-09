@@ -3353,22 +3353,14 @@ ac_config_files="$ac_config_files tools/Makefile"
 
 ac_config_files="$ac_config_files test/parseC/Makefile"
 
-ac_config_files="$ac_config_files tools/highlevel_interface/Makefile"
-
-ac_config_files="$ac_config_files tools/test_files/Makefile"
-
-ac_config_files="$ac_config_files tools/test_files/input/Makefile"
-
-ac_config_files="$ac_config_files tools/test_files/output/Makefile"
-
-ac_config_files="$ac_config_files tools/auto_tuning/Makefile"
-
-ac_config_files="$ac_config_files tools/matrixOpt/Makefile"
-
-ac_config_files="$ac_config_files tools/stencil-codegen/Makefile"
-
-ac_config_files="$ac_config_files tools/splash2Prof/Makefile"
-
+#AC_CONFIG_FILES([tools/highlevel_interface/Makefile])
+#AC_CONFIG_FILES([tools/test_files/Makefile])
+#AC_CONFIG_FILES([tools/test_files/input/Makefile])
+#AC_CONFIG_FILES([tools/test_files/output/Makefile])
+#AC_CONFIG_FILES([tools/auto_tuning/Makefile])
+#AC_CONFIG_FILES([tools/matrixOpt/Makefile])
+#AC_CONFIG_FILES([tools/stencil-codegen/Makefile])
+#AC_CONFIG_FILES([tools/splash2Prof/Makefile])
 
 test -n "$atlas_obj" || atlas_obj="";
 test -n "$rose_srcdir" || rose_srcdir="";
@@ -3376,8 +3368,8 @@ test -n "$atlas_exe" || atlas_exe=xdmmtst;
 test -e "$atlas_obj" && atlas_inc="${atlas_obj}/Make.inc";
 
 testdirs="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune"; 
-#tooldirs=""
-tooldirs="highlevel_interface test_files auto_tuning matrixOpt stencil-codegen";
+tooldirs=""
+#tooldirs="highlevel_interface test_files auto_tuning matrixOpt stencil-codegen";
 
 
 
@@ -5051,14 +5043,6 @@ do
     "examples/Makefile") CONFIG_FILES="$CONFIG_FILES examples/Makefile" ;;
     "tools/Makefile") CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
     "test/parseC/Makefile") CONFIG_FILES="$CONFIG_FILES test/parseC/Makefile" ;;
-    "tools/highlevel_interface/Makefile") CONFIG_FILES="$CONFIG_FILES tools/highlevel_interface/Makefile" ;;
-    "tools/test_files/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/Makefile" ;;
-    "tools/test_files/input/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/input/Makefile" ;;
-    "tools/test_files/output/Makefile") CONFIG_FILES="$CONFIG_FILES tools/test_files/output/Makefile" ;;
-    "tools/auto_tuning/Makefile") CONFIG_FILES="$CONFIG_FILES tools/auto_tuning/Makefile" ;;
-    "tools/matrixOpt/Makefile") CONFIG_FILES="$CONFIG_FILES tools/matrixOpt/Makefile" ;;
-    "tools/stencil-codegen/Makefile") CONFIG_FILES="$CONFIG_FILES tools/stencil-codegen/Makefile" ;;
-    "tools/splash2Prof/Makefile") CONFIG_FILES="$CONFIG_FILES tools/splash2Prof/Makefile" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

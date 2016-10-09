@@ -3,7 +3,7 @@ files=
 
 EXTRA_DIST=tester.c driver.c $(files) 
 
-SUB_DIRS=input output
+SUBDIRS=input output
 
 CC=gcc
 

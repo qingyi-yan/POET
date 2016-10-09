@@ -43,7 +43,7 @@ TOKENS
 <code Comment2 pars=(content:(~"\n")...) 
   rebuild=(GLOBAL.Save_Comment=content;"") > //@content@ </code>
 
-<define C_TOKENS ((":" ":") ("." ".") ("+" "+") ("-" "-") ("=""=") CODE.Comment2 CODE.Comment ("<""=") (">""=") ("!""=") ("+""=") ("-""=") ("*""=") ("/""=") ("&""&") ("|""|") ("-"">") ("<""<") (">"">") ("*" "/") CODE.INT_UL CODE.EXPO CODE.Char CODE.INT_0x CODE.String)/>
+<define C_TOKENS ((":" ":") ("." ".") ("+" "+") ("-" "-") ("=""=") CODE.Comment2 CODE.Comment ("<""=") (">""=") ("!""=") ("+""=") ("-""=") ("*""=") ("&""=") ("/""=") ("&""&") ("|""|") ("-"">") ("<""<") (">"">") ("*" "/") CODE.INT_UL CODE.EXPO CODE.Char CODE.INT_0x CODE.String)/>
 
 <define TOKEN C_TOKENS/>
 
@@ -69,7 +69,7 @@ Parsing Macros
 <define VAR_UOP "++"|"--" />
 <define C_EXP_BASE (CODE.FLOAT_ext|INT|INT_UL|String|Char|CODE.SizeOf|CODE.INT_0x|CODE.CastExp|CODE.VarRefParse) />
 <define EXP_BASE C_EXP_BASE />
-<define EXP_BOP ( ("?" ":") (">>" "<<") ("=" "+=" "-=" "*=" "/=" "%=") ("&" "|") ("&&" "||") ("==" ">=" "<=" "!=" ">" "<") ("+" "-") ("*" "%" "/") ("->" ".")) />
+<define EXP_BOP ( ("?" ":") (">>" "<<") ("=" "+=" "-=" "*=" "/=" "%=" "&=") ("&" "|") ("&&" "||") ("==" ">=" "<=" "!=" ">" "<") ("+" "-") ("*" "%" "/") ("->" ".")) />
 <define EXP_UOP ("++" "--" "&" "*" "~" "!" "+" "-")/>
 <define EXP_MATCH ID />
 
@@ -215,7 +215,8 @@ case ArraySubscript#e : ArrayAccess#(base, e)
 
 <*********** declarations  ********************>
 <code Macro pars=(content:UnknownUntilEOL)> #@content@ </code>
-<code TypeDef pars=(decl : TypeInfoDeclParse)>
+<code TypeDef pars=(decl : TypeInfoDeclParse)
+          rebuild=(r=TypeDef#decl; insert_typeInfo("",r); r)>
 typedef @decl@ </code>
 
 <code ExternDecl pars=(content:CODE.TypeInfoDeclParse) >
@@ -326,6 +327,7 @@ extern @content@
         | ("+=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("+",INHERIT,e)))))
         | ("-=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("-",INHERIT,e)))))
         | ("*=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("*",INHERIT,e)))))
+        | ("&=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("&",INHERIT,e)))))
         | ("/=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("/",INHERIT,e)))))
         | ("%=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("%",INHERIT,e)))))
         | ("<<" (e=CODE.ExpList) ";" eval(return ExpStmt#(Bop#("<<",INHERIT,ExpList#e))))

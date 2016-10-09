@@ -75,7 +75,7 @@
                               : /* nothing */)
 
 #define gen_vece_mr3(op,mem,reg1,reg2)\
-		__asm__ __volatile__ (#op " %0, "Y(reg1) ", "Y(reg2)\
+		__asm__ __volatile__ (#op " %0, " Y(reg1) ", " Y(reg2)\
 							  : /* nothing*/\
 							  : "m" (((mem)[0])), "m" (((mem)[1])))
 
@@ -132,49 +132,116 @@
 #define vec_mov_rm_1(reg,mem)   gen_vec_rm(movsd,reg,mem)
 #define vec_mov_rr_1(reg1,reg2) gen_vec_rr(movsd,reg1,reg2)
 
-/* New conditions here!! */
-//c is a temp register to store the comparison results
-#define vec_cmp_lt(a, b, c)	gen_cmp(vcmpltpd, a, b, c)
-#define vec_cmp_le(a, b, c) gen_cmp(vcmplepd, a, b, c)
-#define vec_cmp_eq(a, b, c) gen_cmp(vcmpeqpd, a, b, c)
-
-
-#define gen_cmp(op, reg1, reg2, reg3) \
-	__asm__ __volatile__ (#op " " Y(reg1) ", " Y(reg2) "," Y(reg3) \
-		                  : /*nothing*/\
+// 256bit <=
+#define gen_cmp_nle(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $05," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
 			              : /*nothing*/)
 
-//reg2 stores (1, 1, 1, 1) which is used to translate -nan to a valid number
-//reg1 stores the reduced results of the comparison results
-#define red_cmp_res(reg1, reg2) \
-	__asm__ __volatile__ ("vandpd " Y(reg1) ", " Y(reg2) ", " Y(reg1) "\n" \
-			              "vperm2f128 $0x03, " Y(reg1) ", " Y(reg1) ", " Y(reg2) "\n" \
-			              "vaddpd " Y(reg1) ", " Y(reg2) ", " Y(reg1) "\n" \
-			              "vhaddpd " Y(reg1) ", " Y(reg1) ", " Y(reg1) "\n"\
-			              : /* nothing */\
-                          : /* nothing */)
-
-#define vec_cmp_lt_sse(a, b, c)	gen_cmp_sse(cmpltpd, a, b, c)
-#define vec_cmp_le_sse(a, b, c) gen_cmp_sse(cmplepd, a, b, c)
-#define vec_cmp_eq_sse(a, b, c) gen_cmp_sse(cmpeqpd, a, b, c)
-
-
-#define gen_cmp_sse(op, reg1, reg2, reg3) \
-	__asm__ __volatile__ ("movupd " X(reg2) ", "X(reg3) "\n"\
-                          #op " "X(reg1) ", " X(reg3) \
-		                  : /*nothing*/\
+#define gen_cmp_ngt(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $10," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
 			              : /*nothing*/)
 
-//reg2 stores (1, 1, 1, 1) which is used to translate -nan to a valid number
-//reg1 stores the reduced results of the comparison results
-#define red_cmp_res_sse(reg1, reg2) \
-	__asm__ __volatile__ ("andpd " X(reg2) "," X(reg1) "\n" \
-			              "haddpd " X(reg1) ", " X(reg1) \
-			              : /* nothing */\
-                          : /* nothing */)
+#define gen_cmp_nge(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $09," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+// 256bit <
+#define gen_cmp_nlt(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $06," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+// 256bit ==
+#define gen_cmp_eq(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $0," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+//!=
+#define gen_cmp_neq(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("vcmppd $04," Y(reg1) ", " Y(reg2) "," Y(reg3) "\n"\
+	                      "vmovmskpd " Y(reg3) ", %%eax\n" \
+			              "movl %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
 
 
+// 128bit ==
+#define gen_cmp_eq_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd " X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $0," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%rax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
 
+// 128bit ==
+#define gen_cmp_neq_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd " X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $04," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%rax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+
+// 128bit <=
+#define gen_cmp_nle_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd " X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $5," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%rax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+// 128bit <
+#define gen_cmp_nlt_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd "X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $6," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+// 128bit <=
+#define gen_cmp_nge_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd "X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $09," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%rax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+// 128bit <
+#define gen_cmp_ngt_sse(reg1, reg2, reg3, mem) \
+	__asm__ __volatile__ ("movupd "X(reg2) ", " X(reg3) "\n"\
+			              "cmppd $10," X(reg1) ", " X(reg3)  "\n"\
+	                      "movmskpd " X(reg3) ", %%rax\n" \
+			              "movq %%eax, %0\n"\
+                          :"=m" (((mem)[0])) \
+			              : /*nothing*/)
+
+#define vec_bitand_rr(reg1, reg2) \
+	__asm__ __volatile__ ("vandpd " Y(reg1)", " Y(reg2) "," Y(reg2) "\n" \
+			              ::)
+
+
+#define vec_bitand_rr_1(reg1, reg2) \
+	__asm__ __volatile__ ("andpd " X(reg1)", " X(reg2) "\n" \
+			              ::)
 #else
 
 #include <SSE3Dnow.h>

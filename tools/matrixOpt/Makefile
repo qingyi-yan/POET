@@ -200,7 +200,7 @@ srcdir = .
 sysconfdir = ${prefix}/etc
 target_alias = 
 testdirs = commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune
-tooldirs = highlevel_interface test_files auto_tuning matrixOpt stencil-codegen
+tooldirs = 
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
@@ -238,7 +238,7 @@ NREP = 5
 eval_num = 200
 tri = 1
 files = matrixOpt.pt
-EXTRA_DIST = $(files) daxpy.c dgemm.c dgemvT.c dsyrk.c dtrmm_ru.c dtrmm_rl.c dscal.c dgemvN.c dtrsm.c dger.c trisolv.c lufac.c daxpy.c_save dscal.c_save dgemvT.c_save dgemvN.c_save dger.c_save dgemm.c_save dsyrk.c_save  dtrmm_rl.c_save dtrmm_ru.c_save dtrsm_ru.c_save trisolv.c_save
+EXTRA_DIST = $(files) testfiles/daxpy.c testfiles/dgemm.c testfiles/dgemvT.c testfiles/dsyrk.c testfiles/dtrmm_ru.c testfiles/dtrmm_rl.c testfiles/dscal.c testfiles/dgemvN.c testfiles/dtrsm_ll.c testfiles/dtrsm_ru.c testfiles/dger.c testfiles/trisolv.c testfiles/lufac.c testfiles/daxpy.c_save testfiles/dscal.c_save testfiles/dgemvT.c_save testfiles/dgemvN.c_save testfiles/dger.c_save testfiles/dgemm.c_save testfiles/dsyrk.c_save  testfiles/dtrmm_rl.c_save testfiles/dtrmm_ru.c_save testfiles/dtrsm_ll.c_save testfiles/dtrsm_ru.c_save testfiles/trisolv.c_save
 all: all-am
 
 .SUFFIXES:

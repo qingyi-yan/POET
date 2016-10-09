@@ -235,20 +235,22 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
   if (function_definition : CODE.InlineDecl#(tmp=_)) function_definition=tmp;
   FunctionDecl#(fname, CLEAR fpara, CLEAR ftype, CLEAR fbody) = function_definition;
   if (fname : CODE.ScopedName#a) fname = car(cdr(a));
-  if (input : CODE.ExpStmt#e|CODE.StmtBlock#e) { call_stmt=input; input=e; }
+  if (input : CODE.DeclStmt#e|CODE.ExpStmt#e|CODE.StmtBlock#e) { call_stmt=input; input=e; }
   else {
     call_stmt="";
     foreach c=CODE.Stmt \in ERASE(trace) s.t. FALSE do
       if (Lookup(input, c)) { call_stmt=c; }
     enddo
   }
-  if (input : CODE.Assign#(ret_orig=_,c)) { input = c; ret_decl=""; }
+  foreach FunctionCall#(fname2=_, function_para=_) \in input do
+    break;
+  enddo
+  if (car(input) : CODE.Assign#(ret_orig=_,c)|CODE.TypeInfo#(_,ret_orig=_,VarInit#(c=_))) { input = c; ret_decl=""; }
   else if (call_stmt : ExpStmt#input) { ret_orig = ""; ret_decl=""; }
   else { 
          (t,v) = gen_default_init(ftype);
          ret_orig = gen_return_var(""); ret_decl=DeclStmt#(TypeInfo#(t,ret_orig, v)); }
 
-  FunctionCall#(fname2, function_para)=input;
   if (fname2 : CODE.TypeName#(fname, CODE.TemplateInstantiation#arg)) {
       assert(template_par != NULL);
       for ( (p1=template_par; p2=arg); p1 != NULL; (p1=cdr(p1);p2=cdr(p2))) {
@@ -301,8 +303,9 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
       if (Lookup(input, init)) {
         (t,init2) = gen_default_init(t);         
         nc1=REPLACE(init, init2, call_stmt);
-        nc2=ExpStmt#(Assign#(v, ret_orig));
-        REPLACE(call_stmt, nc1 :: StmtBlock#(res nc2), trace); 
+        if (v != ret_orig) 
+           res=res::ExpStmt#(Assign#(v, ret_orig));
+        REPLACE(call_stmt, nc1 :: StmtBlock#(res), trace); 
       }
     enddo
   }

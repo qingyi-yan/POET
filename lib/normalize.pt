@@ -10,6 +10,7 @@
   switch (type) {
    case CODE.VoidType: ("int", CODE.VarInit#0)
    case CODE.PtrType|CODE.IntType1: (type, CODE.VarInit#(CODE.CastExp#(type,"",-1)))
+   case CODE.RefType#t: (CODE.PtrType#t, VarInit#(CODE.CastExp#(PtrType#t,"",-1)))
    case "bool" : ("int",CODE.VarInit#(-1))
    case CODE.IntType|"int"|"size_t"|ScopedName#("std" "size_t") : (type,CODE.VarInit#0)
    case ID : t1=get_type(type); 
@@ -19,8 +20,8 @@
       (t1,VarInit#v1) = gen_default_init(t1);
       (t2,VarInit#v2) = gen_default_init(t2);
       (type, VarInit#(CODE.FunctionCallParameter#(v1 v2)))
-   case CODE.ScopedName: 
-        (type,"")
+   case CODE.ScopedName: (type,"")
+   case CODE.TemplateParameterDecl#("class",t): (t, "")
   }
 </xform>
 

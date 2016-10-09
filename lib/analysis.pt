@@ -44,8 +44,10 @@ switch (vars)
  case CODE.Constructor#(name,_,_,_)|CODE.Destructor#(name,_) 
      | CODE.TemplateType#(ClassType#(name,_,_),_): 
         tab[name]=vars; 
+ case TypeDef#d : insert_typeInfo(type,d)
  case CODE.TypeDecl#decl | CODE.InlineDecl#decl : insert_typeInfo(type,decl);
  case CODE.TemplateDecl#(param,decl): insert_typeInfo(param,decl);
+ case CODE.ClassTypeName: (vars, NULL)
  case CODE.StructType#(name,body): 
        if (tab[name] == "" || body != "") 
              tab[name]=vars; <<*StructType#(name,"");
@@ -106,6 +108,7 @@ switch (vars)
         assert(0);
       }
       res
+  case CODE.Uop#("&",deref): PtrType#(get_type(deref))
   case CODE.ArrayAccess#(var,sub): 
       CODE.ArrayType#(t,_)|CODE.PtrType#t|CODE.AtomicPtrType#t = get_type(var); 
       t 
@@ -201,7 +204,7 @@ switch (vars)
     case INT|CODE.Break | CODE.EmptyStmt| NULL | CODE.True | CODE.False |
          CODE.DeclStmt | CODE.VariableParse | ID | CODE.Name |
          CODE.PtrAccess | CODE.ArrayAccess | CODE.Bop | CODE.Uop: NULL
-    case CODE.FunctionCall#("memset",args): car(args)
+    case CODE.FunctionCall#("memset"|"memcpy"|"memmove"|ScopedName#("std" "memset"|"memcpy"|"memmove"),args): car(args)
     case CODE.FunctionCall#("assert"|CODE.ScopedName#("std" "make_pair"),_) : NULL
     <<*     CODE.FunctionCall | <* for now ignores side effects *>
    }
@@ -268,7 +271,7 @@ switch (vars)
    switch (name) {
     case CODE.ScopedName#("std" "to_string"|"make_pair") | "assert" :
           TRUE
-    case "memset": TRUE;
+    case CODE.ScopedName#("std" "memset"|"memcpy"|"memmove")|"memset"|"memcpy"|"memmove": TRUE;
     default: FALSE
    }
 </xform>
@@ -276,7 +279,7 @@ switch (vars)
 <xform known_operator_mod pars=(name, args) >
    switch (name) {
     case CODE.ScopedName#("std" "to_string"|"make_pair") | "assert": NULL
-    case "memset": car(args)
+    case CODE.ScopedName#("std" "memset"|"memcpy"|"memmove")|"memset"|"memcpy"|"memset": car(args)
    }
 </xform>
 
@@ -416,7 +419,7 @@ switch (vars)
        if (Lookup(var, exp)) 
          { found_stmt? (NULL,input) : (input,NULL) } 
        else { (NULL,NULL) }
-  case CODE.For#(s1,s2,s3) | CODE.Loop_r#(_,s1,s2,s3): 
+  case CODE.For#(s1,s2,s3) | CODE.Loop_r#(_,s1,s2,s3) | CODE.Loop#(_,s1,s2,s3): 
         if (s1 == stmt) found_stmt = 1;
         if (Lookup(var, (s1 s2 s3))) { 
            (found_stmt)? (NULL,input) : (input, NULL)
@@ -440,9 +443,9 @@ switch (vars)
       (AppendList(res_before, res2_before), AppendList(res_after, res2_after))
   case CODE.Nest#(ctrl,body):
      switch(ctrl) {
-      case CODE.While: found_stmt=Lookup(stmt,body); 
-      case For#(DeclStmt#TypeInfo#(_,i,_),_,Uop#("++",i)|VarRef#(i,"++"))|Loop_r#(i,_,_,_):
+      case For#(DeclStmt#TypeInfo#(_,i,_),_,Uop#("++",i)|VarRef#(i,"++"))|Loop_r#(i,_,_,_)|Loop#(i,_,_,_):
            if (!(Lookup(i, var))) found_stmt=Lookup(stmt,body); 
+      case CODE.While|CODE.For: found_stmt=Lookup(stmt,body); 
       case CODE.If|CODE.Else: ""
 
      }

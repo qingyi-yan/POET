@@ -1,4 +1,4 @@
-AC_INIT([POET], 1.05.03, qyi@uccs.edu)
+AC_INIT([POET], 1.05.04, qyi@uccs.edu)
 AC_PREREQ([2.61])
 AC_PROG_RANLIB
 AC_PROG_CXX

@@ -71,6 +71,7 @@ template <@params@>
 <code ClassType 
    pars=(name : ID, body : CODE.ClassBody | "", 
          parents : LIST(CODE.BaseClassDecl,",")) 
+   rebuild=(r=ClassType#(name,body,parents);insert_typeInfo("",r);r) 
    > 
 class @name@ @parents@ 
   @body@
