@@ -317,10 +317,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "")
                NULL
              NULL#MAP:{
-"index"->"INT"
 "name"->ArrayType#(
                 "CHAR",
                 (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
 "next"->PtrType#StructType#(
                   "object",
                   "")
@@ -433,11 +433,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "")
                NULL
              NULL#MAP:{
-"i"->ArrayType#(
-                "INT",
-                (ArrayDim#3 NULL))
 "p"->ArrayType#(
                 "REAL",
+                (ArrayDim#3 NULL))
+"i"->ArrayType#(
+                "INT",
                 (ArrayDim#3 NULL))
 "n"->ArrayType#(
                 "INT",
@@ -2180,10 +2180,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "")
            NULL
          NULL#MAP:{
-"index"->"INT"
 "name"->ArrayType#(
             "CHAR",
             (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
 "next"->PtrType#StructType#(
               "object",
               "")
@@ -2652,10 +2652,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "")
            NULL
          NULL#MAP:{
-"index"->"INT"
 "name"->ArrayType#(
             "CHAR",
             (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
 "next"->PtrType#StructType#(
               "object",
               "")
@@ -2898,11 +2898,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "")
            NULL
          NULL#MAP:{
-"i"->ArrayType#(
-            "INT",
-            (ArrayDim#3 NULL))
 "p"->ArrayType#(
             "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
             (ArrayDim#3 NULL))
 "n"->ArrayType#(
             "INT",
@@ -2974,11 +2974,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "")
            NULL
          NULL#MAP:{
-"i"->ArrayType#(
-            "INT",
-            (ArrayDim#3 NULL))
 "p"->ArrayType#(
             "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
             (ArrayDim#3 NULL))
 "n"->ArrayType#(
             "INT",

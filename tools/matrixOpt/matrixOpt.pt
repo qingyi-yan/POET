@@ -130,7 +130,7 @@ foreach (pattern:Nest#(CLEAR loop,_):FALSE) {
 scalars = NULL;
 foreach (input : (var=ID) : FALSE) {
   if (!(Lookup(var, GLOBAL.XFORM_ARRAY_REFS))) {
-    if (var != "double") {<*do not handle other types right now*>
+    if (var != GLOBAL.XFORM_ETYPE) {<*do not handle other types right now*>
       flag = 0;
       for (p = GLOBAL.XFORM_LOOPS_INNER; p != NULL; p = cdr(p)) {
         Nest#(loop, _) = car(p);

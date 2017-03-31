@@ -1,8 +1,8 @@
 #include <atlas_prefetch.h>
 #ifdef BETA0
-#define SSE2
-#include <ASMHead.h>
-#include <stdlib.h>
+
+#include <SSE3Dnow.h>
+
 void ATL_dgemvT_a1_x1_b0_y1(const int M,const int N,const double alpha,const double* A,const int lda,const double* X,const int incX,const double beta,double* Y,const int incY) {
    int i;int j;
    double _a_buf_0_0;
@@ -118,9 +118,9 @@ void ATL_dgemvT_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
 #endif 
 #include <atlas_prefetch.h>
 #ifdef BETA1
-#define SSE2
-#include <ASMHead.h>
-#include <stdlib.h>
+
+#include <SSE3Dnow.h>
+
 void ATL_dgemvT_a1_x1_b1_y1(const int M,const int N,const double alpha,const double* A,const int lda,const double* X,const int incX,const double beta,double* Y,const int incY) {
    int i;int j;
    double _a_buf_0_0;
@@ -236,9 +236,9 @@ void ATL_dgemvT_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
 #endif 
 #include <atlas_prefetch.h>
 #ifdef BETAX
-#define SSE2
-#include <ASMHead.h>
-#include <stdlib.h>
+
+#include <SSE3Dnow.h>
+
 void ATL_dgemvT_a1_x1_bX_y1(const int M,const int N,const double alpha,const double* A,const int lda,const double* X,const int incX,const double beta,double* Y,const int incY) {
    int i;int j;
    double _a_buf_0_0;

@@ -2,7 +2,7 @@
 POET_LIB=$(top_srcdir)/lib
 pcg = ${top_builddir}/src/pcg
 debug=
-input=jacobi7_4_opt
+input=2mm
 output=
 syntax=$(srcdir)/parseC.pt
 comp=diff
@@ -11,12 +11,6 @@ F95=0
 
 files = parseC.pt
 EXTRA_DIST = $(files) tri.c jacobi7_4_opt.c poet_tri.c.save poet_tri.out.save poet_jacobi7_4_opt.c.save poet_jacobi7_4_opt.out.save
-
-
-all:  
-
-
-now:
 
 
 parse:

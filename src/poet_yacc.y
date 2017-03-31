@@ -553,7 +553,7 @@ code9 :
      | CDR {$$.config=$0.config;} codeUnit { $$.ptr = make_sourceUop(POET_OP_CDR, $3.ptr); }
      | LEN {$$.config=$0.config;} codeUnit { $$.ptr = make_sourceUop(POET_OP_LEN, $3.ptr); }
      | INT {$$.config=$0.config;} codeUnit { $$.ptr = make_sourceUop(TYPE_INT, $3.ptr); }
-     | CLEAR ID { $$.ptr = make_sourceUop(POET_OP_CLEAR, make_varRef($2.ptr,ASSIGN_VAR)); }
+     | CLEAR {$$.config=ASSIGN_VAR;} codeUnit { $$.ptr = make_sourceUop(POET_OP_CLEAR, $3.ptr); }
      | varInvoke { $$.ptr=$1.ptr; }
 
 codeUnit: 

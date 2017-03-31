@@ -198,6 +198,8 @@ by applying $op$ to all elements in the list
     Routine implementations 
 *******************************************>
 
+<code Tuple pars=(elems : CODE.ExpList) > _(@elems@) </code>
+
 <xform EvalCall pars=(op,opd)>
  len = LEN(opd);
  ismin=("min"^len); ismax = ("max"^len);
@@ -208,6 +210,7 @@ by applying $op$ to all elements in the list
  case ismax : 
          opd1 = MAX#(car(opd), car(cdr(opd)));
          return (len==2)? opd1 : MAX#(opd1, car(cdr(cdr(opd))));
+ case "_" : return CODE.Tuple#(opd);
  default: return (CODE.FunctionCall#(op,opd));
  }
 </xform>
@@ -230,7 +233,7 @@ else {
            (res1[0] + res2[0], res1[1] + res2[1])
        case (Bop#("*", opd1, opd2) ):
            (q1,r1) = IntDiv(opd1, div); 
-           if (q1 != 0) return (opd2,r1 * opd2);
+           if (q1 != 0) return (q1*opd2,r1 * opd2);
            (q2,r2) = IntDiv(opd2, div);
            if (q2 != 0) { (opd1*q2, opd1*r2) }
            else  { (0, exp) }

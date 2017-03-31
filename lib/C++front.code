@@ -29,7 +29,7 @@ include Cfront.code
 
 <code ClassType/>
 <code TemplateType pars=(type,param)> @type@<@param@> </code>
-<code ClassTypeName pars=(name:CODE.TypeName)> class @name@ </code>
+<code ClassTypeName pars=(name:CODE.TypeName|ID)> class @name@ </code>
 
 <define STMT_BASE CODE.DeleteStmt|C_STMT_BASE/>
 
@@ -54,7 +54,7 @@ new @t@ @((param:ArraySubscript)? param : ("(" param ")"))@
 inline @content@ 
 </code>
 
-<code Operator pars=(op : "!="|"=="|"="|"+="|"*"|"++"|("(" ")")|("[" "]"))>
+<code Operator pars=(op : "!="|"=="|"="|"+"|"-"|"++"|"--"|"+="|"*"|"++"|("(" ")")|("[" "]"))>
 operator @op@
 </code>
 

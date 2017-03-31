@@ -85,7 +85,7 @@ Abstract syntax tree nodes
 
 <code TypeDecl pars=(type:CODE.Type)> @type@ </code>
 
-<code TypeInfo pars=(type, name, init)> 
+<code TypeInfo pars=(type, name, init)>
 @switch(type) {
  case CODE.ArrayType#(base,extra): type1=base;
  case CODE.FunctionType#(extra,ret) : type1=ret;
@@ -119,10 +119,23 @@ start  parsing
 @stmts@
 </code>
 
-<code FinalOutput pars=(res : CODE.DeclarationBlock)>
-@(if (XFORM.Lookup(GLOBAL.NEED_MIN_MAX,res)) {@#define max(a,b) (((a) < (b))? (b) : (a))
+<code Include_MaxMin >
+#define max(a,b) (((a) < (b))? (b) : (a))
 #define min(a,b) (((a) < (b))? (a) : (b))
-@}) res@
+</code>
+
+<define INSERT_MAX_MIN ""/>
+
+<code FinalOutput pars=(res) pat=GLOBAL.INSERT_MAX_MIN>
+@(if (XFORM.Lookup(GLOBAL.NEED_MIN_MAX,res)) { 
+  p = NULL;
+  if (pat != "") {
+    foreach p=pat \in res do break; enddo
+  }
+  if (p == NULL) { CODE.Include_MaxMin :: "\n" :: CODE.DeclarationBlock#res }
+  else { REPLACE(p, (CODE.Include_MaxMin "\n" p), CODE.DeclarationBlock#res) }
+  } 
+else { CODE.DeclarationBlock#res })@
 
 </code>
 
@@ -215,8 +228,7 @@ case ArraySubscript#e : ArrayAccess#(base, e)
 
 <*********** declarations  ********************>
 <code Macro pars=(content:UnknownUntilEOL)> #@content@ </code>
-<code TypeDef pars=(decl : TypeInfoDeclParse)
-          rebuild=(r=TypeDef#decl; insert_typeInfo("",r); r)>
+<code TypeDef pars=(decl : TypeInfoDeclParse)>
 typedef @decl@ </code>
 
 <code ExternDecl pars=(content:CODE.TypeInfoDeclParse) >
@@ -323,7 +335,8 @@ extern @content@
 
 <code AfterExpStmt
   parse=( (";" eval(return((INHERIT:FunctionDecl)?INHERIT:ExpStmt#(INHERIT))))
-        | ("=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,e))))
+        | ("," (e=EXP) eval(AppendList(INHERIT,e)) (r=AfterExpStmt) eval(return r))
+        | ("=" (e=EXP) eval(Assign#(INHERIT,e)) (r=AfterExpStmt) eval(return r))
         | ("+=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("+",INHERIT,e)))))
         | ("-=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("-",INHERIT,e)))))
         | ("*=" (e=EXP) ";" eval(return ExpStmt#(Assign#(INHERIT,Bop#("*",INHERIT,e)))))
@@ -441,7 +454,7 @@ goto @target@;
 </code>
 
 <code For pars=(init:CODE.ExpOrVarDeclStmt|CODE.EmptyStmt,
-                test:EXP|"",incr:EXP|"") 
+                test:EXP|"",incr:LIST(EXP,",")) 
           rebuild=(RebuildLoop(init,test,incr)) >
 for (@init@ @test@; @incr@)
 </code>
@@ -631,7 +644,6 @@ vec_mov_rm_a(reg@reg@,@ptr@)
 vec_mov_mr_a(@ptr@,reg@reg@)
 </code>
 
-
 <code VecRegMul pars=(reg1,reg2)>
 vec_mul_rr(reg@reg1@,reg@reg2@)
 </code>
@@ -695,27 +707,27 @@ vzeroupper()
 * Adding 4 operands sse code template
 *****************************************>
 <code VecRegCmpNLE pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_nle(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_nle(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <code VecRegCmpNGE pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_nge(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_nge(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <code VecRegCmpNLT pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_nlt(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_nlt(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <code VecRegCmpNGT pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_ngt(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_ngt(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <code VecRegCmpEQ pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_eq(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_eq(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <code VecRegCmpNEQ pars=(reg1,reg2,reg3,scalar)>
-gen_cmp_neq(reg@reg1@,reg@reg2@,reg@reg3@,scalar)
+gen_cmp_neq(reg@reg1@,reg@reg2@,reg@reg3@,@scalar@)
 </code>
 
 <*******************************************>
@@ -729,9 +741,9 @@ ATL_pfl1R(@addr@)
 </code>
 
 <code SSEincl pars=(pre, reg_len)>
-@ ((pre=="d")? @#define SSE2@ : @#define SSE @)@
-@ ((reg_len == 16)?@#include <ASMHead.h>@:@#include <ASMHead.h> @)@
-#include <stdlib.h>
+@ if(pre=="d") @#define SSE2@;@
+@ ((reg_len == 16)?@#include <SSE3Dnow.h>@:@#include <ASMHead.h> @)@
+
 </code>
 
 <code Include_Allocate>

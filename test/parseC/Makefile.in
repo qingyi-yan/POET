@@ -208,7 +208,7 @@ top_srcdir = @top_srcdir@
 POET_LIB = $(top_srcdir)/lib
 pcg = ${top_builddir}/src/pcg
 debug = 
-input = jacobi7_4_opt
+input = 2mm
 output = 
 syntax = $(srcdir)/parseC.pt
 comp = diff
@@ -421,10 +421,6 @@ uninstall-am:
 	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
 	pdf-am ps ps-am tags-am uninstall uninstall-am
 
-
-all:  
-
-now:
 
 parse:
 	$(pcg) $(debug) -pinputFile="$(srcdir)/$(input).c" -poutputFile="poet_$(input).c" "$(syntax)"

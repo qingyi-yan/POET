@@ -38,7 +38,8 @@
 
 <* representation of the whole program *>
 <code Goal pars=(program:LIST(CODE.For | CODE.ExpStmt | CODE.Decl, "\n")) > 
-@program@ </code>
+@program@
+</code>
 
 <* ExpStmt is a type of AST node and is a a struct with two member variables: exp and its type*>
 <code ExpStmt pars=(exp : CODE.Exp, type)
@@ -59,6 +60,7 @@ for (@var@=@lb@; @var@ < @ub@; @incr@)
 {
   @body@
 }
+
 </code>
 
 <* Decl is a type of AST node and is a struct with two member variables: t and id *>

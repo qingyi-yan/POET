@@ -185,11 +185,9 @@ switch (input)
    if (target : CODE.DeclarationBlock#content) target=content;
    incl=NULL; routine="";
    for (p = target; p != NULL; p = cdr(p)) {
-DEBUG{
      cur = car(p);
      if (car(cur) : CODE.FunctionDecl|CODE.SubroutineDecl) { routine=car(cur); break; }
      else incl = cur::incl;
-};
    } 
    if (incl != NULL) incl=IncludeSpec#(ReverseList(incl)); 
    else incl = "";

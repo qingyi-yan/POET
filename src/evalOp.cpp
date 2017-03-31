@@ -60,6 +60,7 @@ class CodeReplVisitor : public ReplInfoVisitor
   virtual void visitMap(POETMap* m) { res = m; }
   virtual void visitIconst(POETIconst* l) { res=Repl.apply(l); }
   virtual void visitString(POETString* l) { res=Repl.apply(l); }
+  virtual void visitType( POETType* t) { res = Repl.apply(t); }
   virtual void visitLocalVar(LocalVar* v) {
     res = Repl.apply(v);
     if (res == v) ReplInfoVisitor::visitLocalVar(v);
@@ -907,7 +908,7 @@ class MatchASTVisitor :  public ReplInfoVisitor
        apply(v1->get_args(),args);
        return (res != 0);
      }
-     if (v2->get_entry().get_code() == 0 && (match_unknown(_r1, v2, args))) {
+     if (match_unknown(_r1, v2, args)) {
        if (debug_pattern()) {
          std::cerr << "Matched unknown: " << _r1->toString() << " with code template " << v2->toString() << "\n";
        }
@@ -936,10 +937,11 @@ class MatchASTVisitor :  public ReplInfoVisitor
      else res = 0;
   }
   virtual void visitLocalVar(LocalVar* v2) { 
-      if (any == v2) { res = r1; return; }
       LvarSymbolTable::Entry e2 = v2->get_entry();
       if (e2.get_code() != 0 && e2.get_code() != v2) 
-          { apply(r1, e2.get_code()); return; }
+          { apply(r1, e2.get_code()); 
+            return; 
+          }
       else if (config==MATCH_AST_EQ) return; 
       if (lvar == 0)
          e2.set_code(r1); 

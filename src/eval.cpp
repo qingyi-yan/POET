@@ -537,6 +537,7 @@ void XformEvalVisitor::visitOperator(POETOperator* op)
      case POET_OP_RANGE:
      case POET_OP_TUPLE:
      case POET_OP_LIST:
+     case POET_OP_LIST1:
      case POET_OP_ANNOT:
          res = op; return;
      case POET_OP_ASSERT:

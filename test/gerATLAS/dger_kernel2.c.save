@@ -1,7 +1,7 @@
 #include <atlas_prefetch.h>
-#define SSE2
-#include <ASMHead.h>
-#include <stdlib.h>
+
+#include <SSE3Dnow.h>
+
 void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double* X,const int incX,const double* Y,const int incY,const double beta,const double* W,int incW,const double* Z,int incZ,double* A,const int lda) {
    int i;int j;
    double _w_buf_0;

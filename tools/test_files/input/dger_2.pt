@@ -2,11 +2,11 @@ include opt.pi
 
 <parameter inputFile message="input file name"/>
 <parameter outputFile  message="output file name"/>
-<parameter tp1 type=1.._ default=16 message="number of threads to parallelize loop nest1" />
+<parameter tp1 type=1.._ default="MACRO" message="number of threads to parallelize loop nest1" />
 <parameter tp2 type=1.._ default="MACRO" message="number of loop iterations to run by different threads for nest1" />
-<parameter tp3 type=INT default=(32) message="Blocking factor for loop nest nest1" />
-<parameter tp4 type=INT default=((4)) message="Unroll and Jam factor for loop nest nest1" />
-<parameter tp5 type=1.._ default=((4)) message="Unroll factor for loop nest2" />
+<parameter tp3 type=INT default="MACRO" message="Blocking factor for loop nest nest1" />
+<parameter tp4 type=INT default=(MACRO) message="Unroll and Jam factor for loop nest nest1" />
+<parameter tp5 type=1.._ default=(MACRO) message="Unroll factor for loop nest2" />
 <trace inputCode />
 <trace nest1,nest2 />
 
@@ -39,14 +39,14 @@ include opt.pi
 <eval EraseTraceHandle[repl=nest2_group2](nest2,inputCode);
 	EraseTraceHandle[repl=nest1_group3](nest1,inputCode);
 	BlockLoops[factor=tp2](nest1_group3[Nest.body],nest1_group3);
-	ParallelizeLoop[factor=tp2;private=nest1_ParallelizeLoop_private_th3;threads=tp1](nest1_group3);
+	ParallelizeLoop[factor=tp2;threads=tp1;private=nest1_ParallelizeLoop_private_th3](nest1_group3);
 	TraceNestedLoops(nest1_group2,nest1_group3[Nest.body]);
 	TraceNestedLoops(nest1_cleanup,nest1_group3[Nest.body]);
 	BlockLoops[factor=tp3;trace_ivars=nest1_ParallelizeLoop_private_th3](nest2_group2[Nest.body],nest1_group2);
 	TraceNestedLoops[orig_nested=1;report_err=0]((nest1_group1 nest2_group1),nest2_group2[Nest.body]);
 	UnrollJam[factor=tp4;cleanup=0](nest2_group1,nest1_group1);
-	ScalarRepl[data_type="double";init=1;save=0](nest2_ScalarRepl_aref_th2,(nest2_group1),nest2_group1[Nest.body]);
-	ScalarRepl[data_type="double";init=1;save=0](nest1_ScalarRepl_aref_th1,(nest1_group1),nest1_group1[Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0](nest2_ScalarRepl_aref_th2,(nest2_group1),nest2_group1[Nest.body][Nest.body]);
+	ScalarRepl[data_type="double";init=1;save=0](nest1_ScalarRepl_aref_th1,(nest1_group1),nest1_group1[Nest.body][Nest.body]);
 	UnrollLoop[factor=tp5;cleanup=0](nest2_group1);
 	CleanupBlockedNests(nest1_cleanup); />
 

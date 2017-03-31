@@ -22,6 +22,11 @@
       (type, VarInit#(CODE.FunctionCallParameter#(v1 v2)))
    case CODE.ScopedName: (type,"")
    case CODE.TemplateParameterDecl#("class",t): (t, "")
+   case CODE.TemplateType|CODE.TypeName : (type,"")
+   case (first second) : 
+      (r1,_) = gen_default_init(first);
+      (r2,_) = gen_default_init(second);
+      (r1::r2, "")
   }
 </xform>
 
@@ -68,7 +73,7 @@ switch (type) {
  case CODE.Return#e : 
    if (level==0 && is_last == 1) { (NULL,NULL, input) }
    else { (var, e, CODE.ExpStmt#(CODE.Assign#(var, e))) }
- case ""|NULL: (NULL,NULL,NULL)
+ case CODE.EmptyStmt|""|NULL: (NULL,NULL,NULL)
  }
 </xform>
 

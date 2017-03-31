@@ -19,8 +19,8 @@ void dgetrf(int m,int n,double* a,int* p) {
      }
    int j_bk;
    int k_bk;
-   int _p_1_scalar_0;
-   double _a_2_scalar_0_0;
+   double _a_1_scalar_0_0;
+   int _p_2_scalar_0;
    double _a_3_scalar_0_0;
    for (k_bk=0; k_bk<min(-16+m,-16+n); k_bk+=16) 
      {
@@ -28,7 +28,7 @@ void dgetrf(int m,int n,double* a,int* p) {
           {
              for (k=0; k<16; k+=2) 
                {
-                  _p_1_scalar_0 = p[k_bk+k];
+                  _p_2_scalar_0 = p[k_bk+k];
                   if ((j=k_bk+k)<min(1+k_bk,n))  
                     {
                        tmp = dabs(arr_ref(a,k_bk+k,k_bk+k));
@@ -36,26 +36,26 @@ void dgetrf(int m,int n,double* a,int* p) {
                          {
                             if (dabs(arr_ref(a,i,k_bk+k))>tmp)  
                               {
-                                 _p_1_scalar_0 = i;
+                                 _p_2_scalar_0 = i;
                                  tmp = dabs(arr_ref(a,i,k_bk+k));
                               }
                          }
                        tmp1 = arr_ref(a,k_bk+k,k_bk+k);
-                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_1_scalar_0,k_bk+k);
-                       arr_ref(a,_p_1_scalar_0,k_bk+k) = tmp1;
+                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                       arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
                        for (i=1+(k_bk+k); i<m; i+=1) 
                          {
                             arr_ref(a,i,k_bk+k) = arr_ref(a,i,k_bk+k)/arr_ref(a,k_bk+k,k_bk+k);
                          }
                     }
-                  p[k_bk+k] = _p_1_scalar_0;
+                  p[k_bk+k] = _p_2_scalar_0;
                }
           }
         for (j_bk=1+k_bk; j_bk<n; j_bk+=1) 
           {
              for (k=0; k<16; k+=2) 
                {
-                  _p_1_scalar_0 = p[k_bk+k];
+                  _p_2_scalar_0 = p[k_bk+k];
                   for (j=max(j_bk,k_bk+k); j<min(1+j_bk,n); j+=1) 
                     {
                        /*SPLIT-START*/if (j==k_bk+k)  
@@ -65,19 +65,19 @@ void dgetrf(int m,int n,double* a,int* p) {
                               {
                                  if (dabs(arr_ref(a,i,k_bk+k))>tmp)  
                                    {
-                                      _p_1_scalar_0 = i;
+                                      _p_2_scalar_0 = i;
                                       tmp = dabs(arr_ref(a,i,k_bk+k));
                                    }
                               }
                             tmp1 = arr_ref(a,k_bk+k,k_bk+k);
-                            arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_1_scalar_0,k_bk+k);
-                            arr_ref(a,_p_1_scalar_0,k_bk+k) = tmp1;
+                            arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                            arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
                          }
                        /*Loop Bound*/if (j>=1+(k_bk+k))  
                          {
                             tmp1 = arr_ref(a,k_bk+k,j);
-                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_1_scalar_0,j);
-                            arr_ref(a,_p_1_scalar_0,j) = tmp1;
+                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                            arr_ref(a,_p_2_scalar_0,j) = tmp1;
                          }
                        /*SPLIT-START*/if (j==k_bk+k)  
                          {
@@ -132,7 +132,7 @@ void dgetrf(int m,int n,double* a,int* p) {
                               }
                          }
                     }
-                  p[k_bk+k] = _p_1_scalar_0;
+                  p[k_bk+k] = _p_2_scalar_0;
                }
           }
      }
@@ -142,7 +142,7 @@ void dgetrf(int m,int n,double* a,int* p) {
           {
              for (k=0; k<min(-k_bk+(-1+m),-k_bk+(-1+n)); k+=1) 
                {
-                  _p_1_scalar_0 = p[k_bk+k];
+                  _p_2_scalar_0 = p[k_bk+k];
                   if ((j=k_bk+k)<min(1+k_bk,n))  
                     {
                        tmp = dabs(arr_ref(a,k_bk+k,k_bk+k));
@@ -150,26 +150,26 @@ void dgetrf(int m,int n,double* a,int* p) {
                          {
                             if (dabs(arr_ref(a,i,k_bk+k))>tmp)  
                               {
-                                 _p_1_scalar_0 = i;
+                                 _p_2_scalar_0 = i;
                                  tmp = dabs(arr_ref(a,i,k_bk+k));
                               }
                          }
                        tmp1 = arr_ref(a,k_bk+k,k_bk+k);
-                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_1_scalar_0,k_bk+k);
-                       arr_ref(a,_p_1_scalar_0,k_bk+k) = tmp1;
+                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                       arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
                        for (i=1+(k_bk+k); i<m; i+=1) 
                          {
                             arr_ref(a,i,k_bk+k) = arr_ref(a,i,k_bk+k)/arr_ref(a,k_bk+k,k_bk+k);
                          }
                     }
-                  p[k_bk+k] = _p_1_scalar_0;
+                  p[k_bk+k] = _p_2_scalar_0;
                }
           }
         for (j_bk=1+k_bk; j_bk<n; j_bk+=1) 
           {
              for (k=0; k<min(-k_bk+(-1+m),-k_bk+(-1+n)); k+=1) 
                {
-                  _p_1_scalar_0 = p[k_bk+k];
+                  _p_2_scalar_0 = p[k_bk+k];
                   for (j=max(j_bk,k_bk+k); j<min(1+j_bk,n); j+=1) 
                     {
                        /*SPLIT-START*/if (j==k_bk+k)  
@@ -179,19 +179,19 @@ void dgetrf(int m,int n,double* a,int* p) {
                               {
                                  if (dabs(arr_ref(a,i,k_bk+k))>tmp)  
                                    {
-                                      _p_1_scalar_0 = i;
+                                      _p_2_scalar_0 = i;
                                       tmp = dabs(arr_ref(a,i,k_bk+k));
                                    }
                               }
                             tmp1 = arr_ref(a,k_bk+k,k_bk+k);
-                            arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_1_scalar_0,k_bk+k);
-                            arr_ref(a,_p_1_scalar_0,k_bk+k) = tmp1;
+                            arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                            arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
                          }
                        /*Loop Bound*/if (j>=1+(k_bk+k))  
                          {
                             tmp1 = arr_ref(a,k_bk+k,j);
-                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_1_scalar_0,j);
-                            arr_ref(a,_p_1_scalar_0,j) = tmp1;
+                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                            arr_ref(a,_p_2_scalar_0,j) = tmp1;
                          }
                        /*SPLIT-START*/if (j==k_bk+k)  
                          {
@@ -208,7 +208,7 @@ void dgetrf(int m,int n,double* a,int* p) {
                               }
                          }
                     }
-                  p[k_bk+k] = _p_1_scalar_0;
+                  p[k_bk+k] = _p_2_scalar_0;
                }
           }
      }

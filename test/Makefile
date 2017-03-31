@@ -179,7 +179,7 @@ CXX = g++
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.05.03\" -DPACKAGE_STRING=\"POET\ 1.05.03\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.05.03\"
+DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.05.04\" -DPACKAGE_STRING=\"POET\ 1.05.04\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.05.04\"
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -203,16 +203,16 @@ OBJEXT = o
 PACKAGE = poet
 PACKAGE_BUGREPORT = qyi@uccs.edu
 PACKAGE_NAME = POET
-PACKAGE_STRING = POET 1.05.03
+PACKAGE_STRING = POET 1.05.04
 PACKAGE_TARNAME = poet
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.05.03
+PACKAGE_VERSION = 1.05.04
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/bash
 STRIP = 
-VERSION = 1.05.03
+VERSION = 1.05.04
 YACC = bison -y
 YFLAGS = 
 abs_builddir = /home/qyi/POET/trunk/test
@@ -259,7 +259,7 @@ srcdir = .
 sysconfdir = ${prefix}/etc
 target_alias = 
 testdirs = commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune
-tooldirs = 
+tooldirs = highlevel_interface test_files auto_tuning matrixOpt stencil-codegen
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..

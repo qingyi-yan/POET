@@ -208,4 +208,4 @@ include testerGeneration.incl
 
 <eval resultCode= XFORM.TransformCode(inputCode);  />
 
-<output to=(outfile) syntax=(outLang "testerCodeTemplates.code") from=resultCode/>
+<output to=(outfile) syntax=("testerCodeTemplates.code" outLang) from=resultCode/>

@@ -242,7 +242,8 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
       if (Lookup(input, c)) { call_stmt=c; }
     enddo
   }
-  foreach FunctionCall#(fname2=_, function_para=_) \in input do
+  template_arg="";
+  foreach FunctionCall#(fname2=CODE.TypeName#(fname, CODE.TemplateInstantiation#(template_arg=_))|fname, function_para=_) \in input do
     break;
   enddo
   if (car(input) : CODE.Assign#(ret_orig=_,c)|CODE.TypeInfo#(_,ret_orig=_,VarInit#(c=_))) { input = c; ret_decl=""; }
@@ -251,9 +252,8 @@ OF THE POSSIBILITY OF SUCH DAMAGE.
          (t,v) = gen_default_init(ftype);
          ret_orig = gen_return_var(""); ret_decl=DeclStmt#(TypeInfo#(t,ret_orig, v)); }
 
-  if (fname2 : CODE.TypeName#(fname, CODE.TemplateInstantiation#arg)) {
-      assert(template_par != NULL);
-      for ( (p1=template_par; p2=arg); p1 != NULL; (p1=cdr(p1);p2=cdr(p2))) {
+   if (template_arg != "") {
+      for ( (p1=template_par; p2=template_arg); p1 != NULL; (p1=cdr(p1);p2=cdr(p2))) {
          TemplateParameterDecl#(_,n1) = car p1;
          fbody = REPLACE(n1, car p2, fbody);      
       }

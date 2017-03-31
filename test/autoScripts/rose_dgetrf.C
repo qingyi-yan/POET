@@ -40,13 +40,13 @@ void dgetrf(int m,int n,double *a,int *p)
       arr_ref(a,k,j) = arr_ref(a,p[k],j);
       arr_ref(a,p[k],j) = tmp1;
     }
-/*@; BEGIN(nest4=Nest) @*/
+/*@; BEGIN(nest5=Nest) @*/
     for (i = 1 + k; i <= -1 + m; i += 1) {
       arr_ref(a,i,k) = arr_ref(a,i,k) / arr_ref(a,k,k);
     }
 /*@; BEGIN(nest3=Nest) @*/
     for (j = 1 + k; j <= -1 + n; j += 1) {
-/*@; BEGIN(nest5=Nest) @*/
+/*@; BEGIN(nest4=Nest) @*/
       for (i = 1 + k; i <= -1 + m; i += 1) {
         arr_ref(a,i,j) = arr_ref(a,i,j) - arr_ref(a,i,k) * arr_ref(a,k,j);
       }

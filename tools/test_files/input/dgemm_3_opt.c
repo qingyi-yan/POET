@@ -1,6 +1,6 @@
-#define SSE2
-#include <ASMHead.h>
-#include <stdlib.h>
+
+#include <SSE3Dnow.h>
+
 void dgemm_test(const int M,const int N,const int K,const double alpha,const double* A,const int lda,const double* B,const int ldb,const double beta,double* C,const int ldc) {
    int i;
    int j;

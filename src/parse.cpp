@@ -774,6 +774,10 @@ class ParseMatchVisitor  : public EvaluatePOET, public POETCodeVisitor
        parseTuple(op->get_arg(0));
        break;
       }
+     case POET_OP_VAR: {
+         res = POETProgram::make_traceVar(r1); r1 = EMPTY;
+          break;
+      } 
      case TYPE_LIST1:
      case TYPE_LIST: {
          POETCode* arg = op->get_arg(0);
