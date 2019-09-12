@@ -2,8 +2,10 @@
 <parameter infile default="" message="input file name" />
 <parameter outfile default="" message="output file name" />
 <parameter header default="" message="header file name"/>
+<parameter F95 default=1 message="F95 syntax"/>
 
-<input from=infile parse=LIST(CODE.SubroutineDecl,"\n") syntax="Ffront.code" to=inputCode/>
+<input cond=(!F95) from=infile parse=LIST(CODE.SubroutineDecl,"\n") syntax="F77front.code" to=inputCode/>
+<input cond=(F95) from=infile parse=LIST(CODE.SubroutineDecl,"\n") syntax="F95front.code" to=inputCode/>
 
 <eval if (header == "") inputCode=CODE.F2CInclude::inputCode;
       else inputCode=("#include \""header"\"\n")::inputCode;  />

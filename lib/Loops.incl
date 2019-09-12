@@ -36,7 +36,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 <code Nest pars=(ctrl, body) annot="" />
 <code StmtBlock pars=(stmts) annot="" />
-<code Loop pars=(i,start,stop,step)  maxiternum="" tag="" origstep="" origivar=""/>
+<code Loop pars=(i,start,stop,step)  decl="" testop="<" maxiternum="" tag="" origstep="" origivar=""/>
 <code Assign/>
 <code ExpStmt/>
 <code If pars=(condition) tag=""/>
@@ -61,6 +61,62 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 <code UnrolledLoopTileEnd pars=(bloop, ur : INT)/>
 
 <code NestApp pars=(loop, append) /> 
+
+<******************* Try Convert For to a Loop ************>
+<xform RebuildLoop pars=(start:EXP, stop:EXP, incr:EXP)>
+  decl="";
+  if (start : (ExpStmt#(CODE.Assign#(ivar, lb))|(CODE.DeclStmt#(CODE.TypeInfo#((decl=_), ivar, CODE.VarInit#lb))))) {
+     if (stop : Bop#(compare=_,ivar,ub)) {
+         switch (compare) {
+         case "<":
+            ((incr : Assign#(ivar,Bop#("+",step,ivar)))?
+                 Loop[decl=decl]#(ivar,lb,ub,step)
+           : (incr : Uop#("++",ivar) || CODE.VarRef#(ivar,"++"))?
+                 Loop[decl=decl]#(ivar,lb,ub,1)
+           :     CODE.For#(start,stop,incr))
+         case "<=":
+            ((incr : Assign#(ivar,Bop#("+",ivar,step)|Bop#("+",step,ivar)))?
+                  Loop[decl=decl]#(ivar,lb,REBUILD(ub+1),step)
+           : (incr : Uop#("++",ivar)|CODE.VarRef#(ivar,"++"))?
+                  Loop[decl=decl]#(ivar,lb,REBUILD(ub+1),1)
+           :      CODE.For#(start,stop,incr))
+         case ">=":
+            ((incr : Assign#(ivar,Bop#("-",ivar,step)))?
+                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),step)
+           : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
+                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),1)
+           :      CODE.For#(start,stop,incr))
+         case ">":
+            ((incr : Assign#(ivar,Bop#("-",ivar,step)))?
+                 Loop_r[decl=decl]#(ivar,lb,ub,step)
+           : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
+                 Loop_r[decl=decl]#(ivar,lb,ub,1)
+           :     CODE.For#(start,stop,incr))
+         case "!=":
+            ((incr : Assign#(ivar,Bop#("+",step,ivar)))?
+                 Loop[decl=decl]#(ivar,lb,ub,step)
+           : (incr : Uop#("++",ivar) || CODE.VarRef#(ivar,"++"))?
+                 Loop[decl=decl]#(ivar,lb,ub,1)
+           : (incr : Assign#(ivar,Bop#("-",ivar,step)))?
+                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),step)
+           : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
+                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),1)
+           :      CODE.For#(start,stop,incr))
+         default:  CODE.For#(start,stop,incr)
+        }
+     }
+     else  { CODE.For#(start,stop,incr) }
+  }
+  else { CODE.For#(start,stop,incr) }
+</xform>
+
+<xform Convert2Loop pars=(l)>
+ switch (l) {
+  case CODE.Loop | CODE.Loop_r: l
+  case CODE.For#(init,test,incr): RebuildLoop(init,test,incr)
+ }
+</xform>
+
 
 <*************** 
 Find atomic statements that are outside nest and inside input
@@ -97,14 +153,14 @@ Find loop controls that are outside inner and inside input
  switch (input)
  {
  case inner: ("","")
- case (first rest): ((Lookup(inner,first))? FindLoopsInNest(inner,first) : FindLoopsInNest(inner,rest))
- case Nest#(loop,body):   (
+ case (first rest): ((Lookup(inner,first) || !(Lookup(inner,rest)))? FindLoopsInNest(inner,first) : FindLoopsInNest(inner,rest))
+ case Nest#(loop=CODE.Loop|CODE.For|CODE.While|BlockLoopSplitStart,body):   (
      (innerloops,innernests) = FindLoopsInNest(inner, body);
      (innerloops == "")? (loop,input) : (loop::innerloops,input::innernests);
   )
  case StmtBlock#body : FindLoopsInNest(inner,body)
- case CODE.ExpStmt|"": ("","")  <* did not find inner *>
- case CODE.OMPPragma#content|CODE.OMPParallelBlock#content: FindLoopsInNest(inner, content)
+ case CODE.DeclStmt|CODE.ExpStmt|""|NULL: ("","")  <* did not find inner *>
+ case CODE.Nest#(CODE.If, content=_)|CODE.Pragma#(_,content)|CODE.OMPPragma#content|CODE.OMPParallelBlock#content: FindLoopsInNest(inner, content)
 }
 </xform>
 
@@ -244,6 +300,7 @@ Rebuild a loop/if-then/Unroll nest; skip empty controls;
 *********************>
 <xform BuildNest pars=(loops,body) trace=""  annot="" >
   if (body == "")  RETURN "";
+  if (cdr(body) == NULL) body = car(body);
 switch (loops) {
 case "":   REPLACE(ERASE(trace),body,trace) 
 case If#TRUE: REPLACE(ERASE(trace),body,trace)

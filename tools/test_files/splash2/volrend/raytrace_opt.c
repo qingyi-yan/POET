@@ -29,41 +29,41 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
    BYTE* pyr_address2;
    ray_color = (float)MIN_PIXEL;
    ray_opacity = MIN_OPACITY;
-   /*@;BEGIN(_decl1=DeclStmt)@*/float _ray_0_0;
-   _ray_0_0 = invjacobian[Y][0]*fouty+(out_invvertex[0][0][0][0]+invjacobian[X][0]*foutx);
-   ray[1][0] = _ray_0_0+invjacobian[Z][0]*image_zlen;
-   ray[0][0] = _ray_0_0;
-   _ray_0_0 = invjacobian[Y][1]*fouty+(out_invvertex[0][0][0][1]+invjacobian[X][1]*foutx);
-   ray[1][1] = _ray_0_0+invjacobian[Z][1]*image_zlen;
-   ray[0][1] = _ray_0_0;
-   _ray_0_0 = invjacobian[Y][2]*fouty+(out_invvertex[0][0][0][2]+invjacobian[X][2]*foutx);
-   ray[1][2] = _ray_0_0+invjacobian[Z][2]*image_zlen;
-   ray[0][2] = _ray_0_0;
+   /*@;BEGIN(_decl1=DeclStmt)@*/float _ray_cp_0;
+   _ray_cp_0 = invjacobian[Y][0]*fouty+(out_invvertex[0][0][0][0]+invjacobian[X][0]*foutx);
+   ray[1][0] = _ray_cp_0+invjacobian[Z][0]*image_zlen;
+   ray[0][0] = _ray_cp_0;
+   _ray_cp_0 = invjacobian[Y][1]*fouty+(out_invvertex[0][0][0][1]+invjacobian[X][1]*foutx);
+   ray[1][1] = _ray_cp_0+invjacobian[Z][1]*image_zlen;
+   ray[0][1] = _ray_cp_0;
+   _ray_cp_0 = invjacobian[Y][2]*fouty+(out_invvertex[0][0][0][2]+invjacobian[X][2]*foutx);
+   ray[1][2] = _ray_cp_0+invjacobian[Z][2]*image_zlen;
+   ray[0][2] = _ray_cp_0;
    ray_min = 0.0;
    ray_max = 1.0;
    float _float_constant_0=(float)(0.0);
-   for (i=0; i<NM; i+=1) 
+   for (i=0; i<NM; i+=1)
      {
         float _subexpression_var_0=/*@;BEGIN(Nest2_StrengthReduction_subexpression_th4=FunctionCall)@*/float(opc_len[i]-1);
-        if (ABS(ray[1][i]-ray[0][i])<SMALL)  
+        if (ABS(ray[1][i]-ray[0][i])<SMALL) 
           {
-             if ((ray[0][i]<_float_constant_0&&ray[1][i]<_float_constant_0)||(ray[0][i]>(float)(opc_len[i]-1)&&ray[1][i]>(float)(opc_len[i]-1)))  
+             if ((ray[0][i]<_float_constant_0&&ray[1][i]<_float_constant_0)||(ray[0][i]>(float)(opc_len[i]-1)&&ray[1][i]>(float)(opc_len[i]-1))) 
                {
                   return ;
                }
-             else  
+             else 
                {
                   continue;
                }
           }
         rmin = (_float_constant_0-ray[0][i])/(ray[1][i]-ray[0][i]);
         rmax = ((float)(opc_len[i]-1)-ray[0][i])/(ray[1][i]-ray[0][i]);
-        if (rmin<rmax)  
+        if (rmin<rmax) 
           {
              ray_min = rmin>ray_min?rmin:ray_min;
              ray_max = rmax<ray_max?rmax:ray_max;
           }
-        else  
+        else 
           {
              ray_min = rmax>ray_min?rmax:ray_min;
              ray_max = rmin<ray_max?rmin:ray_max;
@@ -72,7 +72,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
      }
    segment_zmin = ROUNDUP(image_zlen*ray_min);
    segment_zmax = ROUNDDOWN(image_zlen*ray_max);
-   if (segment_zmax<segment_zmin)  
+   if (segment_zmax<segment_zmin) 
      {
         return ;
      }
@@ -85,55 +85,55 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
    ivoxel[Z] = VXEL(voxel[Z],invjacobian[Z][Z]);
    starting_level = MIN(pyr_highest_level,pyr_levels-1);
    level = starting_level;
-   while (1)  
+   while (1)
      {
         pyr_offset1 = ((ivoxel[Z]>>level)*pyr_len[level][Y]+(ivoxel[Y]>>level))*pyr_len[level][X]+(ivoxel[X]>>level);
         pyr_offset2 = pyr_offset1&7;
         pyr_address2 = pyr_address[level]+(pyr_offset1>>3);
         /*@;BEGIN(Stmt3=ExpStmt)@*/bit = *pyr_address2&_shift_array_0[pyr_offset2];
-        if (bit&&level>pyr_lowest_level)  
+        if (bit&&level>pyr_lowest_level) 
           {
              level--;
              continue;
           }
         min_jump = BIG;
-        if (invjacobian[Z][X]>SMALL)  
+        if (invjacobian[Z][X]>SMALL) 
           {
              jump[X] = invinvjacobian[Z][X]*(((ROUNDDOWN(voxel[X])>>level)+1)*pyr_voxlen[level][X]-voxel[X]);
              min_jump = MIN(min_jump,jump[X]);
           }
-        else if (invjacobian[Z][X]<-SMALL)  
+        else if (invjacobian[Z][X]<-SMALL) 
           {
              jump[X] = invinvjacobian[Z][X]*((STEPDOWN(voxel[X])>>level)*pyr_voxlen[level][X]-voxel[X]);
              min_jump = MIN(min_jump,jump[X]);
           }
-        if (invjacobian[Z][Y]>SMALL)  
+        if (invjacobian[Z][Y]>SMALL) 
           {
              jump[Y] = invinvjacobian[Z][Y]*(((ROUNDDOWN(voxel[Y])>>level)+1)*pyr_voxlen[level][Y]-voxel[Y]);
              min_jump = MIN(min_jump,jump[Y]);
           }
-        else if (invjacobian[Z][Y]<-SMALL)  
+        else if (invjacobian[Z][Y]<-SMALL) 
           {
              jump[Y] = invinvjacobian[Z][Y]*((STEPDOWN(voxel[Y])>>level)*pyr_voxlen[level][Y]-voxel[Y]);
              min_jump = MIN(min_jump,jump[Y]);
           }
-        if (invjacobian[Z][Z]>SMALL)  
+        if (invjacobian[Z][Z]>SMALL) 
           {
              jump[Z] = invinvjacobian[Z][Z]*(((ROUNDDOWN(voxel[Z])>>level)+1)*pyr_voxlen[level][Z]-voxel[Z]);
              min_jump = MIN(min_jump,jump[Z]);
           }
-        else if (invjacobian[Z][Z]<-SMALL)  
+        else if (invjacobian[Z][Z]<-SMALL) 
           {
              jump[Z] = invinvjacobian[Z][Z]*((STEPDOWN(voxel[Z])>>level)*pyr_voxlen[level][Z]-voxel[Z]);
              min_jump = MIN(min_jump,jump[Z]);
           }
         box_zmax = box_zmin+min_jump;
-        if (bit)  
+        if (bit) 
           {
              break;
           }
         (next_box):
-        if (box_zmax>=(float)segment_zmax)  
+        if (box_zmax>=(float)segment_zmax) 
           {
              goto end_of_segment;
           }
@@ -144,13 +144,13 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
         next_ivoxel[X] = VXEL(next_voxel[X],invjacobian[Z][X]);
         next_ivoxel[Y] = VXEL(next_voxel[Y],invjacobian[Z][Y]);
         next_ivoxel[Z] = VXEL(next_voxel[Z],invjacobian[Z][Z]);
-        while (level<starting_level)  
+        while (level<starting_level)
           {
-             if (next_ivoxel[X]>>level+1!=ivoxel[X]>>level+1||next_ivoxel[Y]>>level+1!=ivoxel[Y]>>level+1||next_ivoxel[Z]>>level+1!=ivoxel[Z]>>level+1)  
+             if (next_ivoxel[X]>>level+1!=ivoxel[X]>>level+1||next_ivoxel[Y]>>level+1!=ivoxel[Y]>>level+1||next_ivoxel[Z]>>level+1!=ivoxel[Z]>>level+1) 
                {
                   level++;
                }
-             else  
+             else 
                {
                   break;
                }
@@ -164,7 +164,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
      }
    span_zmin = ROUNDUP(box_zmin);
    span_zmax = MIN((long)box_zmax,segment_zmax);
-   if (span_zmax<span_zmin)  
+   if (span_zmax<span_zmin) 
      {
         goto next_box;
      }
@@ -172,7 +172,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
    sample[Y] = ray[0][Y]+invjacobian[Z][Y]*span_zmin;
    sample[Z] = ray[0][Z]+invjacobian[Z][Z]*span_zmin;
    float _float_constant_1=(float)(1.0);
-   for (outz=span_zmin; outz<1+span_zmax; outz+=1) 
+   for (outz=span_zmin; outz<1+span_zmax; outz+=1)
      {
         samplex = (long)(sample[X]);
         sampley = (long)(sample[Y]);
@@ -181,7 +181,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
         pyr_offset2 = pyr_offset1&7;
         pyr_address2 = pyr_address[0]+(pyr_offset1>>3);
         /*@;BEGIN(Stmt4=ExpStmt)@*/bit = *pyr_address2&_shift_array_0[pyr_offset2];
-        if (!bit)  
+        if (!bit) 
           {
              goto end_of_sample;
           }
@@ -251,7 +251,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
         additional_opacity = opacity*(_float_constant_1-ray_opacity);
         ray_color = ray_color+color*(_float_constant_1-ray_opacity);
         ray_opacity = ray_opacity+additional_opacity;
-        if (ray_opacity>opacity_cutoff)  
+        if (ray_opacity>opacity_cutoff) 
           {
              goto end_of_ray;
           }
@@ -264,7 +264,7 @@ void Trace_Ray(float foutx,float fouty,PIXEL* pixel_address) {
    goto next_box;
    (end_of_segment):
    ;
-   if (ray_opacity<=opacity_epsilon)  
+   if (ray_opacity<=opacity_epsilon) 
      {
         return ;
      }

@@ -409,7 +409,7 @@ typedef float vector[VECLEN];
 #define vec_add_rr_1(reg1,reg2) gen_vec_rr(addsd,reg1,reg2)
 
 #define vec_mul_mr_1(mem,reg)   gen_vec_mr(mulsd,mem,reg)
-#define vec_mul_rr_1(reg1,reg2) gen_vec_rr(mulsd,reg1,reg2)
+#define vec_mul_rr_1(reg1reg2) gen_vec_rr(mulsd,reg1,reg2)
 
 /****************************************************************/
 #ifndef vec_sub_rr

@@ -26,8 +26,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 */
 
 #include <poet_ASTeval.h>
+#include <string>
+#include <list>
 
 extern bool debug_time;
+std::list<std::string> extra_input;
 
 int main(int argc, char** argv)
 {
@@ -36,7 +39,11 @@ int main(int argc, char** argv)
   try {
   for ( ; index < argc; ++index) {
      const char* fname = argv[index];
+     if (*fname == '-')  break; //* stop processing POET files
      EvaluatePOET::eval_program(process_file(fname));
+  }
+  for ( ; index < argc; ++index) {
+      extra_input.push_back(argv[index]);
   }
   }
   catch (Error err) { return 1;}

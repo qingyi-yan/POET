@@ -4,7 +4,7 @@ include opt.pi
 <parameter ur parse=INT default=2 message="Loop unrolling factor for target"/>
 
 <trace inputCode,target/>
-<input from="mgrid.f" syntax="Ffront.code" to=inputCode/>
+<input from="mgrid.f" syntax="F77front.code" to=inputCode/>
 
 <eval UnrollLoops[factor=ur;trace=inputCode](target[Nest.body],target); />
 

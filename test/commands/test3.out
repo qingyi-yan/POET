@@ -53,21 +53,21 @@ END DEBUGGING at level 1
 
 DEBUGGING at level 1
 input=Nest#(Loop#("i",0,100,1),Nest#(Loop#("j",1,10,1),Stmt#1))
-===>Nest#(Loop#("i",0,100,1)#"",Nest#(Loop#("j",1,10,1)#"",Stmt#1)#("",""))#("","")
+===>Nest#(Loop#("i",0,100,1)#("","<","","","","","","<"),Nest#(Loop#("j",1,10,1)#("","<","","","","","","<"),Stmt#1)#("","",""))#("","","")
 Entering FOREACH(input)
-FOREACH found : Loop#("i",0,100,1)#""
+FOREACH found : Loop#("i",0,100,1)#("","<","","","","","","<")
 if curLoop[Loop.i]=="j"===>0
-FOREACH found : Loop#("j",1,10,1)#""
+FOREACH found : Loop#("j",1,10,1)#("","<","","","","","","<")
 if curLoop[Loop.i]=="j"===>1
 CONTINUE;
 Exiting FOREACH(input)
 loopNests=""
 ===>""
 Entering FOREACH(input)
-FOREACH found : Nest#(Loop#("i",0,100,1)#"",Nest#(Loop#("j",1,10,1)#"",Stmt#1)#("",""))#("","")
+FOREACH found : Nest#(Loop#("i",0,100,1)#("","<","","","","","","<"),Nest#(Loop#("j",1,10,1)#("","<","","","","","","<"),Stmt#1)#("","",""))#("","","")
 if curNest[Nest.ctrl][Loop.i]=="i"===>1
 BREAK;
 Exiting FOREACH(input)
-CASE cond: input===>CodeVar:Nest#(Loop#("i",0,100,1)#"",Nest#(Loop#("j",1,10,1)#"",Stmt#1)#("",""))#("","")
-CASE Nest#(Loop#("i",0,100,1)#"",Nest#(Loop#("j",1,10,1)#"",Stmt#1)#("",""))#("","") matched label: _===>Nest#(Loop#("i",0,100,1)#"",Nest#(Loop#("j",1,10,1)#"",Stmt#1)#("",""))#("","")
+CASE cond: input===>CodeVar:Nest#(Loop#("i",0,100,1)#("","<","","","","","","<"),Nest#(Loop#("j",1,10,1)#("","<","","","","","","<"),Stmt#1)#("","",""))#("","","")
+CASE Nest#(Loop#("i",0,100,1)#("","<","","","","","","<"),Nest#(Loop#("j",1,10,1)#("","<","","","","","","<"),Stmt#1)#("","",""))#("","","") matched label: _===>Nest#(Loop#("i",0,100,1)#("","<","","","","","","<"),Nest#(Loop#("j",1,10,1)#("","<","","","","","","<"),Stmt#1)#("","",""))#("","","")
 END DEBUGGING at level 1

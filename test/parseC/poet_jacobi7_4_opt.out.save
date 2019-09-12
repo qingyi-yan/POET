@@ -16,11 +16,17 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                 "ready",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "mutex"->"pthread_mutex_t"
 "cond"->"pthread_cond_t"
 "ready"->IntType#"int"
-}),
+},
+            MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+})),
       "t_workgroup",
       "")
      NULL
@@ -32,6 +38,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
       ""),
     PtrType#VoidType,
     EmptyStmt)#(
+    "",
     "",
     "")
    NULL)
@@ -136,10 +143,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
       ExpStmt#Assign#(
           "t_workgroup",
           CastExp#(
-            StructType#(
-              "t_WorkGroup_Type",
-              ""),
-            "*",
+            PtrType#StructType#(
+                "t_WorkGroup_Type",
+                ""),
             FunctionCall#(
               "malloc",
               Bop#(
@@ -153,11 +159,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                     "-",
                     "nz",
                     1),
-                  SizeOf#(
-                    StructType#(
-                      "t_WorkGroup_Type",
-                      ""),
-                    ""))))))
+                  SizeOf#SizeOfArg#(
+                      StructType#(
+                        "t_WorkGroup_Type",
+                        ""),
+                      ""))))))
       Nest#(
         Loop#(
           "___i",
@@ -171,7 +177,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
               "-",
               "nz",
               1)),
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         (DeclStmt#TypeInfo#(
               PtrType#StructType#(
                   "t_WorkGroup_Type",
@@ -207,70 +221,72 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                 1))
            NULL))#(
         "",
+        "",
         "")
-      DeclStmt#TypeDecl#StructType#(
-            "t_Params_Type",
-            DeclarationBlock#DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "temp_ptr",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  FloatType#"double",
-                  "fac",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ldc",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "Anext",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ldb",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#ConstType#FloatType#"double",
-                  "B",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "timesteps",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "A0",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  FloatType#"double",
-                  "alpha",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "nz",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ny",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "nx",
-                  "")
-                 NULL
-              EmptyStmt NULL#MAP:{
+      DeclStmt#StructType#(
+          "t_Params_Type",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "temp_ptr",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                FloatType#"double",
+                "fac",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ldc",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "Anext",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ldb",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#ConstType#FloatType#"double",
+                "B",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "timesteps",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "A0",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                FloatType#"double",
+                "alpha",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "nz",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ny",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "nx",
+                "")
+               NULL
+            EmptyStmt NULL#(
+            MAP:{
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
@@ -283,36 +299,55 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "ldc"->IntType#"int"
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-})
+},
+            MAP:{
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+}))
          NULL
-      DeclStmt#TypeDecl#StructType#(
-            "t_WorkBlock_Type",
-            DeclarationBlock#DeclStmt#TypeInfo#(
-                  PtrType#StructType#(
-                      "t_Params_Type",
-                      ""),
-                  "params",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "begin",
-                  "")
-                TypeInfo#(
-                  IntType#"int",
-                  "end",
-                  "")
-                 NULL
-               NULL#MAP:{
-"params"->PtrType#StructType#(
+      DeclStmt#StructType#(
+          "t_WorkBlock_Type",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#StructType#(
                     "t_Params_Type",
-                    "")
-"begin"->IntType#"int"
-"end"->IntType#"int"
-"t_Params_Type"->StructType#(
+                    ""),
+                "params",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "begin",
+                "")
+              TypeInfo#(
+                IntType#"int",
+                "end",
+                "")
+               NULL
+             NULL#(
+            MAP:{
+"params"->PtrType#StructType#(
                   "t_Params_Type",
                   "")
-})
+"begin"->IntType#"int"
+"end"->IntType#"int"
+},
+            MAP:{
+"params"->PtrType#StructType#(
+                  "t_Params_Type",
+                  "")
+"begin"->IntType#"int"
+"end"->IntType#"int"
+}))
          NULL
       DeclStmt#TypeInfo#(
           StructType#(
@@ -326,8 +361,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "t_params",
             "temp_ptr"),
           CastExp#(
-            FloatType#"double",
-            "*",
+            PtrType#FloatType#"double",
             "temp_ptr"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -335,7 +369,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "fac"),
           CastExp#(
             FloatType#"double",
-            "",
             "fac"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -343,15 +376,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "ldc"),
           CastExp#(
             IntType#"int",
-            "",
             "ldc"))
       ExpStmt#Assign#(
           ObjAccess#(
             "t_params",
             "Anext"),
           CastExp#(
-            FloatType#"double",
-            "*",
+            PtrType#FloatType#"double",
             "Anext"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -359,15 +390,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "ldb"),
           CastExp#(
             IntType#"int",
-            "",
             "ldb"))
       ExpStmt#Assign#(
           ObjAccess#(
             "t_params",
             "B"),
           CastExp#(
-            ConstType#FloatType#"double",
-            "*",
+            PtrType#ConstType#FloatType#"double",
             "B"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -375,15 +404,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "timesteps"),
           CastExp#(
             IntType#"int",
-            "",
             "timesteps"))
       ExpStmt#Assign#(
           ObjAccess#(
             "t_params",
             "A0"),
           CastExp#(
-            FloatType#"double",
-            "*",
+            PtrType#FloatType#"double",
             "A0"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -391,7 +418,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "alpha"),
           CastExp#(
             FloatType#"double",
-            "",
             "alpha"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -399,7 +425,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "nz"),
           CastExp#(
             IntType#"int",
-            "",
             "nz"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -407,7 +432,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "ny"),
           CastExp#(
             IntType#"int",
-            "",
             "ny"))
       ExpStmt#Assign#(
           ObjAccess#(
@@ -415,21 +439,19 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "nx"),
           CastExp#(
             IntType#"int",
-            "",
             "nx"))
       DeclStmt#TypeInfo#(
           PtrType#"pthread_t",
           "thread_id",
           VarInit#CastExp#(
-              "pthread_t",
-              "*",
+              PtrType#"pthread_t",
               FunctionCall#(
                 "malloc",
                 Bop#(
                   "*",
-                  SizeOf#(
-                    "pthread_t",
-                    ""),
+                  SizeOf#SizeOfArg#(
+                      "pthread_t",
+                      ""),
                   2))))
          NULL
       DeclStmt#TypeInfo#(
@@ -456,24 +478,31 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "___i",
           0,
           2,
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         (DeclStmt#TypeInfo#(
               PtrType#StructType#(
                   "t_WorkBlock_Type",
                   ""),
               "cur",
               VarInit#CastExp#(
-                  StructType#(
-                    "t_WorkBlock_Type",
-                    ""),
-                  "*",
+                  PtrType#StructType#(
+                      "t_WorkBlock_Type",
+                      ""),
                   FunctionCall#(
                     "malloc",
-                    SizeOf#(
-                      StructType#(
-                        "t_WorkBlock_Type",
-                        ""),
-                      ""))))
+                    SizeOf#SizeOfArg#(
+                        StructType#(
+                          "t_WorkBlock_Type",
+                          ""),
+                        ""))))
              NULL
           ExpStmt#Assign#(
               PtrAccess#(
@@ -508,11 +537,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                     "thread_id",
                     "___i"))
                 "NULL""t_pipeline"CastExp#(
-                  VoidType,
-                  "*",
+                  PtrType#VoidType,
                   "cur")
                  NULL))
            NULL))#(
+        "",
         "",
         "")
       Nest#(
@@ -520,13 +549,22 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "___i",
           0,
           2,
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         ExpStmt#FunctionCall#(
             "pthread_join",
             (ArrayAccess#(
                 "thread_id",
                 "___i")
               "NULL" NULL)))#(
+        "",
         "",
         "")
       Nest#(
@@ -542,7 +580,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
               "-",
               "nz",
               1)),
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         (DeclStmt#TypeInfo#(
               PtrType#StructType#(
                   "t_WorkGroup_Type",
@@ -569,6 +615,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                   "cond")))
            NULL))#(
         "",
+        "",
         "")
        NULL#(
       MAP:{
@@ -580,12 +627,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "___i"->IntType#"int"
 "thread_id"->PtrType#"pthread_t"
 "worksize"->IntType1#"unsigned"
+"j"->IntType#"int"
 "t_WorkGroup_Type"->StructType#(
           "t_WorkGroup_Type",
           "")
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-"j"->IntType#"int"
 "k"->IntType#"int"
 "l0"->PtrType#FloatType#"double"
 "lnext"->PtrType#FloatType#"double"
@@ -596,6 +643,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "t_Params_Type",
           "")
 },
+      "",
       MAP:{
 "cur"->PtrType#StructType#(
             "t_WorkGroup_Type",
@@ -605,12 +653,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "___i"->IntType#"int"
 "thread_id"->PtrType#"pthread_t"
 "worksize"->IntType1#"unsigned"
+"j"->IntType#"int"
 "t_WorkGroup_Type"->StructType#(
           "t_WorkGroup_Type",
           "")
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-"j"->IntType#"int"
 "k"->IntType#"int"
 "l0"->PtrType#FloatType#"double"
 "lnext"->PtrType#FloatType#"double"
@@ -622,6 +670,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "")
 }))#(
     "",
+    "",
     "")
    NULL)
   (FunctionDecl#(
@@ -631,69 +680,70 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
       "input",
       ""),
     PtrType#VoidType,
-    StmtBlock#DeclStmt#TypeDecl#StructType#(
-            "t_Params_Type",
-            DeclarationBlock#DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "temp_ptr",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  FloatType#"double",
-                  "fac",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ldc",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "Anext",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ldb",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#ConstType#FloatType#"double",
-                  "B",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "timesteps",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  PtrType#FloatType#"double",
-                  "A0",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  FloatType#"double",
-                  "alpha",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "nz",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "ny",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "nx",
-                  "")
-                 NULL
-              EmptyStmt NULL#MAP:{
+    StmtBlock#DeclStmt#StructType#(
+          "t_Params_Type",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "temp_ptr",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                FloatType#"double",
+                "fac",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ldc",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "Anext",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ldb",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#ConstType#FloatType#"double",
+                "B",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "timesteps",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                PtrType#FloatType#"double",
+                "A0",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                FloatType#"double",
+                "alpha",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "nz",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "ny",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "nx",
+                "")
+               NULL
+            EmptyStmt NULL#(
+            MAP:{
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
@@ -706,36 +756,55 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "ldc"->IntType#"int"
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-})
+},
+            MAP:{
+"nx"->IntType#"int"
+"ny"->IntType#"int"
+"nz"->IntType#"int"
+"alpha"->FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->IntType#"int"
+"fac"->FloatType#"double"
+"temp_ptr"->PtrType#FloatType#"double"
+}))
          NULL
-      DeclStmt#TypeDecl#StructType#(
-            "t_WorkBlock_Type",
-            DeclarationBlock#DeclStmt#TypeInfo#(
-                  PtrType#StructType#(
-                      "t_Params_Type",
-                      ""),
-                  "params",
-                  "")
-                 NULL
-              DeclStmt#TypeInfo#(
-                  IntType#"int",
-                  "begin",
-                  "")
-                TypeInfo#(
-                  IntType#"int",
-                  "end",
-                  "")
-                 NULL
-               NULL#MAP:{
-"params"->PtrType#StructType#(
+      DeclStmt#StructType#(
+          "t_WorkBlock_Type",
+          DeclarationBlock#DeclStmt#TypeInfo#(
+                PtrType#StructType#(
                     "t_Params_Type",
-                    "")
-"begin"->IntType#"int"
-"end"->IntType#"int"
-"t_Params_Type"->StructType#(
+                    ""),
+                "params",
+                "")
+               NULL
+            DeclStmt#TypeInfo#(
+                IntType#"int",
+                "begin",
+                "")
+              TypeInfo#(
+                IntType#"int",
+                "end",
+                "")
+               NULL
+             NULL#(
+            MAP:{
+"params"->PtrType#StructType#(
                   "t_Params_Type",
                   "")
-})
+"begin"->IntType#"int"
+"end"->IntType#"int"
+},
+            MAP:{
+"params"->PtrType#StructType#(
+                  "t_Params_Type",
+                  "")
+"begin"->IntType#"int"
+"end"->IntType#"int"
+}))
          NULL
       DeclStmt#TypeInfo#(
           PtrType#StructType#(
@@ -743,10 +812,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
               ""),
           "cur",
           VarInit#CastExp#(
-              StructType#(
-                "t_WorkBlock_Type",
-                ""),
-              "*",
+              PtrType#StructType#(
+                  "t_WorkBlock_Type",
+                  ""),
               "input"))
          NULL
       DeclStmt#TypeInfo#(
@@ -886,12 +954,20 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "i",
           "")
          NULL
-      Nest#(
+      Nest1={Nest#(
         Loop#(
           "t",
           0,
           "timesteps",
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         Nest#(
           Loop#(
             "k",
@@ -910,7 +986,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                   "nz",
                   1)
                  NULL)),
-            1)#"",
+            1)#(
+            "",
+            "<",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "<"),
           (Nest#(
               If#Bop#(
                   "<",
@@ -923,7 +1007,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                     Bop#(
                       "-",
                       "nz",
-                      1))),
+                      1)))#"",
               StmtBlock#DeclStmt#TypeInfo#(
                     PtrType#StructType#(
                         "t_WorkGroup_Type",
@@ -970,6 +1054,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                             "mutex"))
                          NULL)))#(
                   "",
+                  "",
                   "")
                 ExpStmt#FunctionCall#(
                     "pthread_mutex_unlock",
@@ -984,18 +1069,20 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                       "t_WorkGroup_Type",
                       "")
 },
+                "",
                 MAP:{
 "cur"->PtrType#StructType#(
                       "t_WorkGroup_Type",
                       "")
 }))#(
               "",
+              "",
               "")
             Nest#(
               If#Bop#(
                   ">=",
                   "k",
-                  2),
+                  2)#"",
               StmtBlock#DeclStmt#TypeInfo#(
                     PtrType#StructType#(
                         "t_WorkGroup_Type",
@@ -1044,6 +1131,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                             "mutex"))
                          NULL)))#(
                   "",
+                  "",
                   "")
                 ExpStmt#FunctionCall#(
                     "pthread_mutex_unlock",
@@ -1058,14 +1146,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                       "t_WorkGroup_Type",
                       "")
 },
+                "",
                 MAP:{
 "cur"->PtrType#StructType#(
                       "t_WorkGroup_Type",
                       "")
 }))#(
               "",
+              "",
               "")
-            Nest#(
+            Nest3={Nest#(
               Loop#(
                 "j",
                 1,
@@ -1073,8 +1163,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                   "-",
                   "ny",
                   1),
-                1)#"",
-              Nest#(
+                1)#(
+                "",
+                "<",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "<"),
+              Nest4={Nest#(
                 Loop#(
                   "i",
                   1,
@@ -1082,7 +1180,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                     "-",
                     "nx",
                     1),
-                  1)#"",
+                  1)#(
+                  "",
+                  "<",
+                  "",
+                  "",
+                  "",
+                  "",
+                  "",
+                  "<"),
                 (Nest#(
                     If#Bop#(
                         "==",
@@ -1090,7 +1196,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                           "%",
                           "t",
                           2),
-                        0),
+                        0)#"",
                     (ExpStmt#Assign#(
                           "l0",
                           "A0")
@@ -1098,6 +1204,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                           "lnext",
                           "Anext")
                        NULL))#(
+                    "",
                     "",
                     "")
                   Nest#(
@@ -1111,6 +1218,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                           "l0",
                           "Anext")
                        NULL))#(
+                    "",
                     "",
                     "")
                   ExpStmt#Assign#(
@@ -1195,9 +1303,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                           "fac")))
                    NULL))#(
                 "",
-                ""))#(
+                "",
+                "")})#(
               "",
-              "")
+              "",
+              "")}
             StmtBlock#DeclStmt#TypeInfo#(
                   PtrType#StructType#(
                       "t_WorkGroup_Type",
@@ -1240,6 +1350,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                     "t_WorkGroup_Type",
                     "")
 },
+              "",
               MAP:{
 "cur"->PtrType#StructType#(
                     "t_WorkGroup_Type",
@@ -1247,9 +1358,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 })
              NULL))#(
           "",
+          "",
           ""))#(
         "",
-        "")
+        "",
+        "")}
        NULL#(
       MAP:{
 "cur"->PtrType#StructType#(
@@ -1262,6 +1375,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "cur_params"->PtrType#StructType#(
             "t_Params_Type",
             "")
+"j"->IntType#"int"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
@@ -1274,7 +1388,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "ldc"->IntType#"int"
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-"j"->IntType#"int"
 "k"->IntType#"int"
 "l0"->PtrType#FloatType#"double"
 "lnext"->PtrType#FloatType#"double"
@@ -1282,6 +1395,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "t_WorkBlock_Type",
           "")
 },
+      "",
       MAP:{
 "cur"->PtrType#StructType#(
             "t_WorkBlock_Type",
@@ -1293,6 +1407,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "cur_params"->PtrType#StructType#(
             "t_Params_Type",
             "")
+"j"->IntType#"int"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
@@ -1305,7 +1420,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "ldc"->IntType#"int"
 "fac"->FloatType#"double"
 "temp_ptr"->PtrType#FloatType#"double"
-"j"->IntType#"int"
 "k"->IntType#"int"
 "l0"->PtrType#FloatType#"double"
 "lnext"->PtrType#FloatType#"double"
@@ -1314,32 +1428,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "")
 }))#(
     "",
+    "",
     "")
    NULL)
-   NULL#MAP:{
+   NULL#(
+  MAP:{
 "input"->PtrType#VoidType
-"t_WorkGroup_Type"->StructType#(
-      "t_WorkGroup_Type",
-      DeclarationBlock#DeclStmt#TypeInfo#(
-            "pthread_mutex_t",
-            "mutex",
-            "")
-           NULL
-        DeclStmt#TypeInfo#(
-            "pthread_cond_t",
-            "cond",
-            "")
-           NULL
-        DeclStmt#TypeInfo#(
-            IntType#"int",
-            "ready",
-            "")
-           NULL
-         NULL#MAP:{
-"mutex"->"pthread_mutex_t"
-"cond"->"pthread_cond_t"
-"ready"->IntType#"int"
-})
 "t_workgroup"->PtrType#StructType#(
         "t_WorkGroup_Type",
         DeclarationBlock#DeclStmt#TypeInfo#(
@@ -1357,11 +1451,17 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
               "ready",
               "")
              NULL
-           NULL#MAP:{
+           NULL#(
+          MAP:{
 "mutex"->"pthread_mutex_t"
 "cond"->"pthread_cond_t"
 "ready"->IntType#"int"
-})
+},
+          MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+}))
 "t_pipeline"->FunctionType#(
       TypeInfo#(
         PtrType#VoidType,
@@ -1421,4 +1521,94 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "ldb"->ConstType#IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->ConstType#IntType#"int"
-}
+},
+  MAP:{
+"input"->PtrType#VoidType
+"t_workgroup"->PtrType#StructType#(
+        "t_WorkGroup_Type",
+        DeclarationBlock#DeclStmt#TypeInfo#(
+              "pthread_mutex_t",
+              "mutex",
+              "")
+             NULL
+          DeclStmt#TypeInfo#(
+              "pthread_cond_t",
+              "cond",
+              "")
+             NULL
+          DeclStmt#TypeInfo#(
+              IntType#"int",
+              "ready",
+              "")
+             NULL
+           NULL#(
+          MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+},
+          MAP:{
+"mutex"->"pthread_mutex_t"
+"cond"->"pthread_cond_t"
+"ready"->IntType#"int"
+}))
+"t_pipeline"->FunctionType#(
+      TypeInfo#(
+        PtrType#VoidType,
+        "input",
+        ""),
+      PtrType#VoidType)
+"jacobi7_4"->FunctionType#(
+      (TypeInfo#(
+          ConstType#IntType#"int",
+          "nx",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ny",
+          "")
+        TypeInfo#(
+          IntType#"int",
+          "nz",
+          "")
+        TypeInfo#(
+          ConstType#FloatType#"double",
+          "alpha",
+          "")
+        TypeInfo#(
+          PtrType#FloatType#"double",
+          "A0",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "timesteps",
+          "")
+        TypeInfo#(
+          PtrType#ConstType#FloatType#"double",
+          "B",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ldb",
+          "")
+        TypeInfo#(
+          PtrType#FloatType#"double",
+          "Anext",
+          "")
+        TypeInfo#(
+          ConstType#IntType#"int",
+          "ldc",
+          "")
+         NULL),
+      VoidType)
+"nx"->ConstType#IntType#"int"
+"ny"->ConstType#IntType#"int"
+"nz"->IntType#"int"
+"alpha"->ConstType#FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->ConstType#IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
+"ldb"->ConstType#IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->ConstType#IntType#"int"
+})

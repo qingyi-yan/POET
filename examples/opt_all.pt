@@ -23,7 +23,6 @@ include opt.pi
 
 <input from="dgemm_test.C" syntax="Cfront.code" to=inputCode/>
 <eval 
-print inputCode;
       BlockLoops[factor=par_bk](nest1[Nest.body], nest1);
       ParallelizeLoop[threads=par;private=nest1_private](nest1);
       TraceNestedLoops(nest1, nest1[Nest.body]);

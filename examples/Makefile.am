@@ -6,6 +6,7 @@ in=
 out=
 arrref=
 comp=diff
+f95=0
 
 
 files = IdentityTranslator.pt StringTranslator.pt C2C.pt C2F.pt F2C.pt Parse.pt Parse_2.pt CFG.pt BNFexp.code opt_all.pt opt_copy.pt opt_block.pt opt_fusion.pt opt_unroll.pt opt_uj.pt opt_permute.pt Transformation.pt Transformation_syntax.code compiler_1.pt compiler_input_1.code compiler_2.pt compiler_input_2.code compiler_input_3.code compiler_input_4.code compiler_3.pt compiler_4.pt compiler_5.pt compiler_6.pt
@@ -97,7 +98,7 @@ C2F:
 	$(pcg) $(debug) -pinfile=$(in) -poutfile=$(out) $(srcdir)/C2F.pt
 
 F2C:
-	$(pcg) $(debug) -pinfile=$(in) -poutfile=$(out) -parrref=$(arrref) $(srcdir)/F2C.pt
+	$(pcg) $(debug) -pf95=$(f95) -pinfile=$(in) -poutfile=$(out) -parrref=$(arrref) $(srcdir)/F2C.pt
 
 analysis:
 	$(pcg) $(debug) -pinfile="$(srcdir)/dgemm_orig.c" -pinputLang="Cfront.code" -poutfile=$(out) $(srcdir)/CFG.pt

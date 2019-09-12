@@ -17,18 +17,18 @@ void dgemm_1_ref(const int M,const int n,const int K,const double alpha,const do
    int i;
    int j;
    int k;
-   for (j=0; j<n; j+=1) 
+   for (j=0; j<n; j+=1)
      {
-        for (i=0; i<n; i+=1) 
+        for (i=0; i<n; i+=1)
           {
              c[j*n+i] = beta*c[j*n+i];
           }
      }
-   for (k=0; k<n; k+=1) 
+   for (k=0; k<n; k+=1)
      {
-        for (j=0; j<n; j+=1) 
+        for (j=0; j<n; j+=1)
           {
-             for (i=0; i<n; i+=1) 
+             for (i=0; i<n; i+=1)
                {
                   c[j*n+i] = c[j*n+i]+a[k*n+i]*b[j*n+k];
                }

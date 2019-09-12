@@ -34,7 +34,7 @@ void* @name@_pipeline(void *input);
 <xform gen_WorkBlockParamInit pars=(name,params,obj)>
 res = NULL;
 foreach_r (params : CODE.TypeInfo#(CLEAR t,CLEAR n,_) : TRUE) {
-    res = CODE.ExpStmt#(CODE.Assign#(CODE.ObjAccess#(obj,n),CODE.CastExp#(t,"",n))) :: res;
+    res = CODE.ExpStmt#(CODE.Assign#(CODE.ObjAccess#(obj,n),CODE.CastExp#(t,n))) :: res;
 }
 res
 </xform>

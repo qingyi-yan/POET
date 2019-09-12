@@ -340,7 +340,7 @@ parseElem : singletype { $$=$1; }
       | TILT typeSpec { $$.ptr = make_typeNot($2); }
       | parseType1 { $$ = $1; }
       | ID ASSIGN {$$.config=$0.config; } parseElem
-         { $$.ptr=make_sourceAssign(make_varRef($1.ptr,ASSIGN_VAR), $4.ptr); }
+         { $$.ptr=make_sourceAssign(make_varRef($1.ptr,$0.config), $4.ptr); }
       | parseElem TOR {$$.config=$0.config;} parseElem
             { $$.ptr = make_typeTor($1.ptr,$4.ptr); }
       | LP {$$.config=$0.config;} parseElemMulti RP { $$.ptr = $3.ptr; }
@@ -537,10 +537,10 @@ debugConfig : {$$.ptr = make_Iconst1(1); }
 
 inputBase:  { $$.ptr = 0; }
      | inputBase INPUT_ENDL { $$.ptr=make_inputlist($1.ptr,$2.ptr); } 
-     | inputBase ARROW {$$.config=CODE_OR_XFORM_VAR;} parseElem { $$.ptr = make_annot_single($1.ptr,$4.ptr); }
-     | inputBase LBEGIN LP {$$.config=CODE_OR_XFORM_VAR; } parseElem RP
+     | inputBase ARROW {$$.config=TRACE_VAR;} parseElem { $$.ptr = make_annot_single($1.ptr,$4.ptr); }
+     | inputBase LBEGIN LP {$$.config=TRACE_VAR; } parseElem RP
         { $$.ptr = make_annot_lbegin($1.ptr,$5.ptr); }
-     | inputBase RBEGIN LP {$$.config=CODE_OR_XFORM_VAR; } parseElem RP
+     | inputBase RBEGIN LP {$$.config=TRACE_VAR; } parseElem RP
        { $$.ptr = make_inputlist($1.ptr,make_sourceUop(POET_OP_ANNOT,$5.ptr)); }
      | inputBase ICONST { $$.ptr = make_inputlist($1.ptr, $2.ptr); }
      | inputBase FCONST { $$.ptr = make_inputlist($1.ptr, $2.ptr); }

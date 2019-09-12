@@ -39,11 +39,11 @@ succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
   cur_offset=car offset;
   cur_left=0;
   for (rest_dim=dim_copy; succ && (rest_dim != NULL); rest_dim=cdr rest_dim) {
-    CopyDim#(i,start,count,dist) = car rest_dim;
+    CopyDim#(i=_,start=_,count=_,dist=_) = car rest_dim;
     for ( j=0; j < i; (j=j+1;dist=cdr(dist))) {}
     dist = car(dist);
 
-    if (dist != 0) (r, cur_offset)=IntDiv(cur_offset, dist);
+    if (dist != 0) (r=_, cur_offset=_)=IntDiv(cur_offset, dist);
     else continue;
 
     if (!(r : INT)) isconst=0;
@@ -219,12 +219,12 @@ succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
 
    if (permute == "") permute = SortCopyDims(dim);
    if (permute != "") permuteDim=PERMUTE(permute,dim); else permuteDim=dim;
-   repl=MAP(_,_);
+   repl=NULL;
    pattern = (exp == sub)?  DELAY{cur_sub=Bop}
            : REPLACE( (ERASE(sub), DELAY{CLEAR cur_sub}), ERASE(exp)); 
-   foreach_r ( input : (d = pattern) : FALSE) { 
-      d = ERASE(d);
-      if (repl[d] != "") CONTINUE; 
+   foreach_r ( input : (d1 = pattern) : TRUE) { 
+      d = ERASE(d1);
+      if (Lookup((d,_), repl)) CONTINUE; 
       offset=NULL;
       for ( (p_cur = cur_sub; p_start=cpstart);
             (p_start != NULL && p_cur != NULL); 
@@ -253,12 +253,12 @@ succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
       if (skip == "" || !Lookup(skip,left_offset)) {
         if (!scalar) {
             buf_offset = ReplExp_buf_offset[block=block; linearized=(cdr(cpstart)==NULL)](buf_offset, ivardims);
-            repl[d]=ArrayAccess#(buf, buf_offset + left_offset);
+            repl= (d, ArrayAccess#(buf, buf_offset + left_offset)) :: repl;
             if (p_cur != NULL) <<* array has additional dimensions
-               repl[d] = ArrayAccess#(repl[d], p_cur);
+               repl = (d,ArrayAccess#(repl[d], p_cur))::repl;
          }
          else if (is_positive && (!(exp : ArrayAccess|CODE.FunctionCall) || left_offset==0)) {
-            repl[d] = BuildName(buf buf_offset) + left_offset;
+            repl = (d, Name#(BuildName(buf buf_offset)) + left_offset)::repl;
          }
          else if (GLOBAL.DEBUG_REPL) {
             PRINT("Cannot resolve " cur_sub "-" cpstart ": permuteDim=" permuteDim "; left_offset = " left_offset);
@@ -272,10 +272,9 @@ succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
    }
 
    res = input;
-   did_repl=NULL;
-   foreach (repl : (CLEAR from, CLEAR to) : TRUE) {
+   for ( p =repl; p != NULL; p = cdr(p)) {
+      (from, to) = car(p);
       res = REPLACE(from,to, res);
-      did_repl = to :: did_repl;
    }
    if (res != input) {
       if (trace != "") {
@@ -283,9 +282,9 @@ succ=1; isconst=1; ispositive=1; buf=NULL; left=0;
              REPLACE(ERASE(input),res, trace);
           else REPLACE(MergeList(ERASE(input),res), trace);
       }
-      (res, did_repl)
+      (res, repl)
   }
-  else { (input, did_repl) }
+  else { (input, repl) }
 </xform>
 
 <***********************************************>
@@ -307,7 +306,7 @@ case ExpDim#(nest,count,dist):
        step=CODE.UnrolledLoopStep#(iv,step);
      }
      for ((ivar=NULL;  init=""; j = 0); j < count; j=j+1) {
-        v = (prefix : Name#(CLEAR n))? BuildName(n  j) : BuildName(prefix j);
+        v = (prefix : Name#(CLEAR n))? Name#(BuildName(n  j)) : Name#(BuildName(prefix j));
         ivar = v :: ivar;
         switch (prefetch_arr) {
         case (1, CLEAR pref_dist): 
@@ -375,7 +374,7 @@ res
          
          repl_exp=repl_exp + iv * curdist;
 
-         if (!scalar) buf = BuildName(buf 0); 
+         if (!scalar) buf = Name#(BuildName(buf 0)); 
        
          ExpDim#(Nest#(_, body),_,_) = car(p_dim);
          next_nest = ((cdr p_dim) == NULL)? "" : (car (cdr p_dim));
@@ -399,7 +398,7 @@ res
         trace_decl=GLOBAL.TRACE_DECL trace_newVars="" 
         trace_mod=GLOBAL.TRACE_EXP trace=GLOBAL.TRACE_TARGET
         trace_incl=GLOBAL.TRACE_INCL>
-  if (prefix == "") prefix = Name#("_FD_"  (car base));
+  if (prefix == "") prefix = BuildName("_FD_"  (car base));
   if (prefetch_arr[0]> 0) Append_Include[trace=trace_incl](InclPrefetch);
   if (trace == "") trace=input;
 
@@ -433,7 +432,7 @@ res
            AppendDecl[trace=trace_decl](exp_type, ivar2);
        if (trace_newVars : VAR) 
           REPLACE(ERASE(trace_newVars), BuildList(ivar2,ERASE(trace_newVars)), trace_newVars);
-       prefix = BuildName(prefix  "_n");
+       prefix = Name#(BuildName(prefix  "_n"));
   }
   if (input == res) { res }
   else if (trace != "") {

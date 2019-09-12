@@ -1,9 +1,31 @@
 include Ffront.code
 
 <define PREP ParseLine[comment_col=1;continue_endofline="&";text_len=-1] />
+<define DECLARATION CODE.F95Comment|CODE.Macro|CODE.ExternalDecl|CODE.ModuleDecl|CODE.SubroutineDecl|CODE.UseModule|CODE.ImplicitDecl|CODE.VarDeclStmt|"CONTAINS" />
 
-<code F95Comment pars=(content:CODE.UnknownUntilEOL)>
+<define PARSE CODE.Program/>
+
+<code Program parse=LIST(DECLARATION, "\n")/>
+
+<code F95Comment pars=(content:(~"\n")...) >
 !@content@
 </code>
+<<*<define TOKEN (F95_Skip_Linebreak F95Comment)/>
 
-<code Stmt parse=CODE.F95Comment | F77STMT />
+<code Stmt parse=DECLARATION|FSTMT />
+<code Precision pars=(i:EXP)> (@CODE.KIND@=@i@) </code>
+
+<code KIND parse=("KIND"|"kind") output="kind"/>
+
+<code ModuleDecl pars=(name : ID, content:LIST(GLOBAL.DECLARATION,"\n"))>
+MODULE @name@
+@content@
+END MODULE  @name@
+</code>
+
+<code UseModule pars=(modname : ID)> USE @modname@ </code>
+<code ImplicitDecl pars=(opt : "NONE"|"none")> IMPLICIT @opt@ </code>
+
+
+
+<code ExternalDecl pars=(names : LIST(ID,","))> EXTERNAL @names@ </code>

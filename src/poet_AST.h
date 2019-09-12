@@ -78,7 +78,7 @@ class POETCodeVisitor {
   virtual void visitOperator(POETOperator*) ;
   virtual void visitTupleAccess(TupleAccess*) ;
   virtual void visitUnknown(POETCode_ext* ) { assert(0); }
-  void visit(POETCode* c);
+  virtual POETCode* apply(POETCode* c);
 };
 
 class EvaluatePOET;
@@ -88,6 +88,7 @@ static int maxID;  /* QY: used to track the id created so far */
   int id; /*QY: an unique number that identifies the AST node */
  public:
   POETCode() { id = maxID++; }
+  virtual ~POETCode() {}
   bool LessThan (const POETCode* other) const { return id < other->id; }
   virtual std:: string toString(ASTOutputEnum config=DEBUG_OUTPUT_SHORT) 
        { return "_"; }
@@ -96,8 +97,6 @@ static int maxID;  /* QY: used to track the id created so far */
   virtual void visit(POETCodeVisitor* op)  { op->defaultVisit(this); }
   virtual const FileInfo* get_fileinfo() const { return 0; }
 };
-
-inline void POETCodeVisitor::visit(POETCode* c) { c->visit(this); }
 
 class POETIconst : public POETCode {
   int val;
@@ -212,6 +211,7 @@ class CodeVar : public POETCode {
 };
 
 class POETTuple : public POETCode {
+ protected:
   std::vector <POETCode*> impl;
   POETTuple(unsigned _size=0) : impl(_size) 
    { for (unsigned i = 0; i < _size; ++i) impl[i]=0; }
@@ -684,15 +684,13 @@ class POETCode_ext : public POETCode
 {
   protected:
     void* content;
-    POETCode* children;
   public:
-    POETCode_ext(void* _content, POETCode* c) : content(_content),children(c) {assert(content!=0);};
+    POETCode_ext(void* _content) : content(_content) {assert(content!=0);};
     virtual POETEnum get_enum() const { return SRC_UNKNOWN; }
     virtual std:: string get_className() const { return "POETCode_ext"; }
     virtual void visit(POETCodeVisitor* op)  { op->visitUnknown(this); }
     virtual std:: string toString(ASTOutputEnum config=DEBUG_OUTPUT_SHORT) ;
     void* get_content() { return content; }
-    POETCode* get_children() { return children; }
   friend class POETAstInterface;
 };
 

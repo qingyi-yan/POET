@@ -1,9 +1,5 @@
 include utils.incl
 
-<code CppComment pars=(content:UnknownUntilEOL) rebuild="" > //@content@ </code>
-
-<define TOKEN (CODE.Char (":"":") ("*" "/") CODE.CppComment)/>
-<code C_Comment pars=(content:(~("*/")...)) rebuild="" > /*@content@*/ </code>
 <define KEYWORDS ("for" "__attribute__" "__asm" "return")/>
 <define BACKTRACK FALSE />
 <define IGNORE_DECL TRUE/>

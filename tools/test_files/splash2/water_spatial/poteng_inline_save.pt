@@ -25,8 +25,8 @@ include opt.pi
 
 
 <eval ;
-	InlineFunction[parameters_to_replace=("XL")](Func1,Stmt1);
-	InlineFunction[parameters_to_replace=("XL")](Func1,Stmt2);
-	InlineFunction[parameters_to_replace=("XL")](Func1,Stmt3); />
+	InlineFunction(Func1,Stmt1);
+	InlineFunction(Func1,Stmt2);
+	InlineFunction(Func1,Stmt3); />
 
 <output to=outputFile syntax="Cfront.code" from=inputCode /> 

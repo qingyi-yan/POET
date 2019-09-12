@@ -34,27 +34,36 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
  syntax descriptions for the Fortran language
 ******************************************************>
 
-<define KEYWORDS ("continue" "CONTINUE" "return" "RETURN" "while" "WHILE" "end" "END" "enddo" "ENDDO" "endif" "ENDIF" "do" "DO" "if" "IF" "else" "ELSE" "dimension" "DIMENSION" "implicit" "IMPLICIT" "double" "DOUBLE" "precision" "PRECISION" "real" "REAL" "integer" "INTEGER" "call" "CALL")/>
-<define BACKTRACK FALSE/>
-<define PARSE NoParse/>
-<define UNPARSE UnparseLine[start_col=7;label_col=2; cont_col=6;text_len=66;is_omp=1]/>
-<define PREP ParseLine[comment_col=1;continue_col=6;text_len=66] />
-<define F77STMT CODE.Label|CODE.NestDO|CODE.NestIf|CODE.CallStmt|CODE.ReturnStmt|CODE.ParamDeclStmt|CODE.ImplicitDeclStmt|CODE.ExpStmt|CODE.VarDeclStmt />
+<define KEYWORDS ("SUBROUTINE" "CHARACTER" "continue" "CONTINUE" "return" "RETURN" "while" "WHILE" "end" "END" "enddo" "ENDDO" "endif" "ENDIF" "do" "DO" "if" "IF" "else" "ELSE" "dimension" "DIMENSION" "implicit" "IMPLICIT" "double" "DOUBLE" "precision" "PRECISION" "call" "CALL")/>
 
-<code Stmt parse=F77STMT />
+<define DECLARATION CODE.SubroutineDecl />
+
+<define FSTMT CODE.Label|CODE.NestDO|CODE.NestIf|CODE.CallStmt|CODE.Return|CODE.ParamDeclStmt|CODE.ImplicitDeclStmt|CODE.WriteStmt|CODE.ExpStmt|CODE.VarDeclStmt|";" />
+
+<code Stmt parse=FSTMT />
 
 <code D0FLOAT pars=(val:FLOAT,pre:"D0"|"d0"|"")
         rebuild=((pre=="")?val:D0FLOAT#(val,pre))> @val pre@ </code>
 
-<define TOKEN (("." "true" ".") ("." "false" ".") ("." "not" ".") ("." "and" ".") ("." "or" ".") ("." "eq" ".") ("." "ne" ".") ("." "gt" ".") ("." "lt" ".") ("." "le" ".") ("." "ge" ".") CODE.EndIf CODE.EndDo)/>
+<code F95_Skip_Linebreak parse="&" rebuild=""/> 
+<code F95Comment pars=(content:(~"\n")...) rebuild="" >
+!@content@
+</code>
+
+<define TOKEN ((":"":") ("=""=") ("=" ">") ("." "true" ".") ("." "TRUE" ".") ("." "false" ".") ("." "FALSE" ".") ("*" "*") ("." "not" ".") ("/" "=") ("." "NOT" ".") ("." "and" ".") ("." "AND" ".") ("." "or" ".") ("." "OR" ".") ("." "eq" ".") ("." "EQ" ".") ("." "ne" ".") ("." "NE" ".") ("." "gt" ".") ("." "GT" ".") ("." "lt" ".") ("." "LT" ".") ("." "le" ".") ("." "LE" ".") ("." "ge" ".") ("." "GE" ".") CODE.EndIf CODE.EndDo CODE.F95_Skip_Linebreak CODE.DOUBLE CODE.Char CODE.F95Comment)/>
 
 <code EndIf parse=("end" " " "if")|("END" " " "IF")|"endif"  rebuild="endif"/> 
 <code EndDo parse=("end" " " "do")|("END" " " "DO")  rebuild="enddo" />
 
-<define EXP_BASE INT|D0FLOAT|Name|".true."|".false." />
-<define EXP_BOP ("=" (".and." ".or.") (".eq." ".ne." ".gt." ".lt." ".le." ".ge.") ("+" "-") ("*" "/") ) />
-<define EXP_UOP (".not." "+" "-") />
+<define EXP_BASE INT|D0FLOAT|CODE.VarRef|CODE.Char|".true."|".false."|".TRUE."|".FALSE."|CODE.DOUBLE|("(" EXP ")") />
+<define EXP_BOP (("=" "=>") "%" (".and." ".AND." ".or." ".OR.") (".eq." "==" ".ne." ".gt." ".GT." ".lt." ".LT" ".le." ".ge." "<" ">" "/=" ) ("+" "-") ("*" "/") ("**") ) />
+<define EXP_UOP (".not." ".NOT." "+" "-") />
 <define PARSE_CALL XFORM.BuildCall/>
+
+<code VarRef pars=(name : ID, dim : CODE.ArrayDim|"") rebuild=(XFORM.BuildCall(name,dim))> 
+@name dim@ </code>
+
+<code Dimension pars=(dims : "*"|LIST(EXP|":",",")) > (@dims@) </code>
 
 <xform F_buildBop pars=(op, lhs, rhs)>
 switch (op) {
@@ -65,12 +74,13 @@ default: Bop#(op,lhs,rhs)
 <define BUILD_BOP F_buildBop/>
 
 <xform BuildCall pars=(name,args) tab=GLOBAL.SymTable>
-if (tab == NULL) { GLOBAL.SymTable = tab = MAP{}; }
-switch (t=tab[name]) 
+if (args == "") return name;
+switch (t=get_type(name)) 
 {
   case "": ArrayAccess#(name,args)
   case TAG#(_,CODE.ArrayType)|CODE.ArrayType: ArrayAccess#(name,args)
-  default : tab[name] = TAG#("FUN",t); FunctionCall#(name,args) 
+  case TAG#("FUN",_): FunctionCall#(name,args)
+  default : insert_typeInfo(TAG#("FUN",t),name); FunctionCall#(name,args) 
 }
 </xform>
 
@@ -125,13 +135,13 @@ enddo
 @i@=@start@, @stop@@step@
 </code>
 
-<code While pars=(condition:EXP)>
+<code While pars=(condition:EXP) parse=(("while"|"WHILE") "(" condition ")") >
 while (@condition@)
 </code>
 
 <code DO match="DO"|"do" parse="DO"|"do"> do </code> 
 
-<code If pars=(condition:EXP)>
+<code If pars=(condition:EXP) parse=(("if"|"IF") "(" condition ")" ("then"|"THEN"|""))>
 if (@condition@) then
 </code>
 
@@ -142,7 +152,7 @@ if (@condition@) then
 <code LoopStep pars=(val: EXP) rebuild=val > , @val@ </code>
 
 <xform ParseLoopBody pars=(input) output=(_res,_left) label="">
-stop = (label=="")? "enddo" : label;
+stop = (label=="")? ("enddo"|"ENDDO") : label;
 (res,left) = ParseList[code=CODE.Stmt;stop=stop](input);
 stopToken = FirstToken(left);
 if (!(stopToken : stop)) {
@@ -163,7 +173,7 @@ if (stop == label && !(FirstToken(left2) : "CONTINUE"|"continue"))
       rebuild=(CODE.Nest#(loop, body)) >
 @CODE.DO@ @label@ @loop@
   @(body=XFORM.ParseLoopBody[label=label])@
-@("enddo"|"")@
+@("enddo"|"ENDDO"|"")@
 </code>
 
 <code EndElse pars=(body : LIST(Stmt,"\n"))>
@@ -172,11 +182,10 @@ if (stop == label && !(FirstToken(left2) : "CONTINUE"|"continue"))
 endif
 </code>
 
-<code WithElse pars=(rest : CODE.NestIf | EndElse)>
-else @rest@
-</code>
+<code WithElse pars=(rest : CODE.NestIf | EndElse) parse=( ("ELSE"|"else") rest) 
+               output=("ELSE" rest)  />
 
-<code NestIf pars=(ctrl:CODE.If, body:LIST(Stmt,"\n"), rest:"endif"|WithElse)>
+<code NestIf pars=(ctrl:CODE.If, body:LIST(Stmt,"\n"), rest:"endif"|"ENDIF"|WithElse|"")>
 @ctrl@
 @body@
 @rest@
@@ -200,11 +209,11 @@ else @rest@
 
 <code Call parse="call"|"CALL" output="call"/>
 
-<code ReturnStmt pars=(val : EXP | "") >
-@CODE.Return@ @val@
+<code Return pars=(val : EXP | "") >
+@CODE.ReturnK@ @val@
 </code>
 
-<code Return parse="return"|"RETURN" output="return"/>
+<code ReturnK parse="return"|"RETURN" output="return"/>
 
 <code Label pars=(val:INT) parse=(val ("continue"|"CONTINUE"))> 
 @val@ continue
@@ -213,17 +222,18 @@ else @rest@
 
 <*********************************** Types ************************************>
 
-<code Type pars=(content: CODE.IntegerType | CODE.DoubleType | CODE.RealType
-                        | CODE.Name)>
-@content@
-</code>
+<code Type parse=CODE.IntegerType | CODE.DoubleType | CODE.RealType | CODE.ComplexType| CODE.CharacterType | "LOGICAL" | CODE.ExternalType| CODE.ProcedureType/>
 
 <code IntegerType pars=(val : "integer"|"INTEGER") > @val@ </code>
 <code DoubleType pars=(val : ("double" "precision") | ("DOUBLE" "PRECISION"))> @val@ </code>
 <code RealType pars=(name : "real"|"REAL", prec : CODE.Precision|"") >
 @name prec@
 </code>
-<code Precision pars=(i:INT)> *@i@ </code>
+<code ComplexType pars=(name : "complex"|"COMPLEX", prec : CODE.Precision|"") >
+@name prec@
+</code>
+<code CharacterType pars=(len : CODE.LenSpec|"")> CHARACTER @len@ </code>
+<code LenSpec pars=(len : EXP)> (LEN=@len@) </code>
 
 
 
@@ -232,16 +242,18 @@ else @rest@
 
 <******************************* Identifiers **********************************>
 
-<code ArrayDim pars=(dim:LIST(CODE.Range,",")) rebuild=dim> (@dim@) </code>
-<code Range pars=(begin : ID|INT, end : CODE.EndRange|"") 
+<code ArrayDim pars=(dim:"*"|LIST(CODE.Range,",")) rebuild=dim> (@dim@) </code>
+<code Range pars=(begin :EXP|"", end : CODE.EndRange|"") 
            rebuild=((end == "")? begin : Range#(begin,end)) > @begin end@ </code>
-<code EndRange pars=(val : ID|INT) > : @val@ </code>
+<code EndRange pars=(val : EXP|"") > : @val@ </code>
 
-<code Variable pars=(name:Name, arrDim : CODE.ArrayDim | "")>
-@name@@arrDim@
+<code Variable pars=(name:CODE.Name, init : CODE.ArrayDim | CODE.VarInit | "")>
+@name@@init@
 </code>
 
 <code VariableList parse=LIST(Variable,",") />
+
+<code VarInit pars=(val : EXP)> = @val@ </code>
 
 <xform InsertParam pars=(var) tab=GLOBAL.SymTable>
 if (tab == NULL) { GLOBAL.SymTable = tab = MAP{}; }
@@ -253,6 +265,13 @@ tab[var]=TAG#("PARAM",tab[var]);
 @content@
 
 </code>
+
+<code WriteStmt pars=(format: LIST(CODE.Char|"*"|ID,","), what : LIST(EXP,","))>
+WRITE (@format@) @what@
+</code>
+
+<code Format parse=LIST(INT|ID|FLOAT, "")/>
+
 
 <******************************* Declarations *********************************>
 
@@ -271,20 +290,34 @@ tab[var]=TAG#("PARAM",tab[var]);
 
 </code>
 
-<code VarDeclStmt pars=(type:Type, var:VariableListStmt) 
-                  rebuild=(VarDeclStmt#(insert_typeInfo(type,var))) >
-@type@ @var@
+<code ExternalType pars=(name: ID)> TYPE(@name@) </code>
+<code ProcedureType pars=(name: ID)> PROCEDURE(@name@) </code>
+
+<code TypeDecl pars=(t : CODE.Type, annot : CODE.Annotations|"")> @t annot@ </code>
+<code Annotations pars=(annot : LIST("POINTER"|"PRIVATE"|"OPTIONAL"|"ALLOCATABLE"|"TARGET"|CODE.DimensionDecl,","))> ,@annot@ </code>
+<code DimensionDecl pars=(d:LIST(EXP,","))> DIMENSION(@d@) </code>
+<code VarDeclStmt pars=(type:CODE.TypeDecl, var:VariableListStmt) 
+       parse=(type ("::"|"") var) rebuild=(VarDeclStmt#(insert_typeInfo(type,var))) >
+@type@ :: @var@
 </code>
 
 <code ParamName pars=(id:ID) rebuild=(insert_typeInfo("",ParamName#(id)))> 
 @id@ </code>
 
-<code Subroutine parse="subroutine"|"SUBROUTINE" output="subroutine" />
+<code Subroutine parse="subroutine"|"SUBROUTINE"|"FUNCTION"|"function" output="subroutine" />
 
-<code SubroutineDecl pars=(name:ID, params:LIST(ParamName,","), body:LIST(F77STMT,"\n"))>
-@CODE.Subroutine@ @name@(@params@)
-@body@
-@CODE.End@
+<code StmtBlock pars=(stmts:LIST(CODE.Stmt,"\n")) symtab=""
+  match=CODE.SingleStmt
+  parse=(eval(XFORM.enter_block("NEW")) stmts 
+         eval(return(StmtBlock[symtab=XFORM.exit_block(stmts)]#stmts)))
+  > @stmts@ </code>
+
+<code SubroutineDecl pars=(name:ID, params:LIST(ParamName,","), body:CODE.StmtBlock) match=(CODE.FunctionDecl#(name,params,"void",body)) 
+   parse=(CODE.Subroutine name "(" params ")" body CODE.End (CODE.Subroutine|"") (name|"")) >
+subroutine @name@(@params@)
+  @body@
+end subroutine @name@
+
 </code>
 
 <code End parse="end"|"END" output="end" />

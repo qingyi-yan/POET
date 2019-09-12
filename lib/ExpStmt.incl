@@ -30,9 +30,15 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 parsing of floating point numbers
 ********>
 
-<code EXPO pars=(base: FLOAT|INT, expo: INT) 
+<code Int pars=(sign : "+"|"-"|"", val : INT) 
+           rebuild=((sign == "")? val : Int#(sign,val))> 
+@sign val@ </code>
+
+<code EXPO pars=(base: FLOAT|INT, expo: CODE.Int|INT)  
              parse=FALSE> @base@e@expo@ </code>
 
+<code DOUBLE pars=(base: FLOAT|INT, expo: CODE.Int|STRING) 
+             parse=FALSE> @base@d@expo@ </code>
 <*******
 Type Processing
 ********>
@@ -53,6 +59,8 @@ Type Processing
 <code TypeInfo pars=(type,name,init) />
 <code DeclStmt pars=(decl) /> 
 <code StmtBlock pars=(stmts) symtab="" /> 
+<code DeclarationBlock pars=(stmts) symtab="" /> 
+<code FunctionDecl pars=(name,params,ret,body) symtab="" /> 
 <code StructBody pars=(stmts) symtab="" />
 
 <***** Variables and declarations ***>
@@ -60,12 +68,20 @@ Type Processing
 <define TRACE_VARS ""/> <<* trace new local variables being created
 
 <xform BuildName pars=(indexList)>
-result = "";
-foreach_r (indexList : (cur=(INT | STRING | CODE.UnrollIvarName)) : TRUE) {
-  if (cur != "_" && cur != "")
-     result = BuildList("_", BuildList(cur, result));
+if (indexList : NULL) return NULL;
+cur = car(indexList);
+result = BuildName(cdr(indexList));
+switch (cur) {
+ case (first rest) | CODE.ArrayAccess#(first, rest):
+   result = AppendList(BuildName(first), AppendList(BuildName(rest), result));
+ case Name#n: result = AppendList(n, result);
+ case "_"|""|NULL:  ""
+ case INT|ID|CODE.UnrollIvarName|CODE.CopyBufName: result = "_" :: (cur :: result);
+ default:
+   print ("unrecognized structure:" cur); assert(0);
+   result = "_":: (cur :: result);
 }
-Name#(result)
+result
 </xform>
 
 <xform AppendVar trace=GLOBAL.TRACE_VARS pars=(var)>
@@ -91,7 +107,7 @@ Name#(result)
 </xform>
 
 <xform Append_Include trace=GLOBAL.TRACE_TARGET pars=(incl)>
-    if (trace == "" || !(LookupList(incl, trace)))
+    if (trace == "" || !Lookup(incl, trace))
        { REPLACE(ERASE(trace), incl::ERASE(trace), trace) }
     else {trace}
 </xform>
@@ -109,7 +125,7 @@ Redefine for different languages
 
 <define EXP_BOP (("+" "-") ("*" "/"))/>
 <define EXP_UOP ("-")/>
-<define EXP_BASE INT|FLOAT|CODE.Name />
+<define EXP_BASE INT|FLOAT|ID />
 <define EXP_PREC  MAP{}/>  <<* precedence not defined
 
 <********
@@ -136,13 +152,13 @@ rebuild/Parse/Unparse functions for Expressions
 <code MAX pars=(first,second)/> 
 <define NEED_MIN_MAX MIN|MAX />
 
-<code Uop pars=(op, opd) rebuild=(XFORM.RebuildUop(op,opd)) >
+<code Uop pars=(op, opd) rebuild=(XFORM.RebuildUop(op,opd)) parse=0>
 @((opd : CODE.Bop)? ( op "(" opd ")") : (op opd))@
 </code>
 
-<code Bop pars=(op, opd1, opd2) rebuild=(XFORM.RebuildBop(op,opd1,opd2)) > 
+<code Bop pars=(op, opd1, opd2) rebuild=(XFORM.RebuildBop(op,opd1,opd2)) parse=0 > 
 @
-if (op=="+" && opd2 : Uop#("-",_)) { op="-"; Uop#(_,opd2)=opd2; }
+if (op=="+" && opd2 : Uop#("-",_)) { op="-"; Uop#(_,opd2=_)=opd2; }
 p1=(opd1:INT|ID|(_)...)?100:0; 
 p2=(opd2:INT|ID|(_)...)?100:0;
 p=GLOBAL.EXP_PREC[op];
@@ -198,7 +214,7 @@ by applying $op$ to all elements in the list
     Routine implementations 
 *******************************************>
 
-<code Tuple pars=(elems : CODE.ExpList) > _(@elems@) </code>
+<code Tuple pars=(elems : CODE.ExpList) output=("("elems")")> _(@elems@) </code>
 
 <xform EvalCall pars=(op,opd)>
  len = LEN(opd);
@@ -221,8 +237,8 @@ else {
   switch (div) {
   case 1:  (exp,0) 
   case Bop#("*",d1,d2):
-      (q1,r1) = IntDiv(exp, d1);
-      (q2,r2) = IntDiv(q1, d2);
+      (q1=_,r1=_) = IntDiv(exp, d1);
+      (q2=_,r2=_) = IntDiv(q1, d2);
       (q2, Bop#("+", r1, RebuildBop("*",r2,d1)))
   case ID|CODE.Name|INT: 
      switch (exp) {
@@ -232,9 +248,9 @@ else {
            res2 = IntDiv(opd2, div);
            (res1[0] + res2[0], res1[1] + res2[1])
        case (Bop#("*", opd1, opd2) ):
-           (q1,r1) = IntDiv(opd1, div); 
+           (q1=_,r1=_) = IntDiv(opd1, div); 
            if (q1 != 0) return (q1*opd2,r1 * opd2);
-           (q2,r2) = IntDiv(opd2, div);
+           (q2=_,r2=_) = IntDiv(opd2, div);
            if (q2 != 0) { (opd1*q2, opd1*r2) }
            else  { (0, exp) }
        case div : (1,0)
@@ -440,24 +456,28 @@ default: Bop#(and,first,second)
 : (lhs : MAX#(d1,d2))? MAX#(RebuildPlus(d1,rhs),RebuildPlus(d2,rhs))
 : (rhs : MIN#(d1,d2))? MIN#(RebuildPlus(lhs,d1),RebuildPlus(lhs,d2))
 : (rhs : MAX#(d1,d2))? MAX#(RebuildPlus(lhs,d1),RebuildPlus(lhs,d2))
-: (rhs : INT)? (
-     (rhs == 0)? lhs 
+: (rhs : v2=INT)? (
+     (v2 == 0)? lhs 
    : (lhs : Bop#("+", opd1, opd2))?
          ( (opd1 : INT)? RebuildPlus((opd1+rhs), opd2) : Bop#("+",rhs, lhs) )
+   : (lhs : Bop#("-", opd1, opd2))?
+         ( (opd1 : (v=INT))? Bop#("-",v+v2, opd2)
+          : (opd2 : (v=INT))? RebuildPlus(opd1, -v+v2)  
+          : Bop#("+",rhs, lhs) )
    : Bop#("+",rhs, lhs)
  )
 : (lhs : INT)? RebuildPlus(rhs, lhs) 
 : (lhs : Bop#("+",lopd1, lopd2))? (
    (rhs : Bop#("+",ropd1,ropd2))?  (
        for ( (cur=ropd1; r = lhs); cur;
-           (ropd2: Bop#("+",(CLEAR ncur), (CLEAR nopd2)))? 
+           (ropd2: Bop#("+",(ncur=_), (nopd2=_)))? 
                  (cur=ncur;ropd2=nopd2):(cur=ropd2;ropd2=""))  
           { r = RebuildPlus(r,cur); }
        r
     )
    : (   
       for ( (cur=lopd1; r = ""; found=0; nrhs = RebuildUminus rhs); cur;
-           (lopd2 : Bop#("+",(CLEAR ncur), (CLEAR nopd2)))? (cur=ncur;lopd2=nopd2):(cur=lopd2;lopd2="") ) {
+           (lopd2 : Bop#("+",ncur=_, nopd2=_))? (cur=ncur;lopd2=nopd2):(cur=lopd2;lopd2="") ) {
           if (cur == nrhs) found=1;
           else r= BuildList(cur,r);
       }
@@ -480,7 +500,7 @@ default: Bop#(and,first,second)
    case "+": { RebuildPlus(lhs,rhs) }
    case "-": { RebuildPlus(lhs,RebuildUminus rhs) }
    case "*":
-            ((lhs : INT) && (rhs : INT))? lhs * rhs 
+            ((lhs : INT) && (rhs : INT))? (lhs=>INT) * (rhs=>INT) 
           : (lhs == 0 || rhs == 0)? 0
           : (lhs==1)?  rhs 
           : (rhs==1)?  lhs

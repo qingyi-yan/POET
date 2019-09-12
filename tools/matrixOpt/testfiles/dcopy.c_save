@@ -7,61 +7,63 @@ void dcopy(const int N, const int M, const double alpha, const double *X, const 
 {
 	int i;
 
-int i_bk_1;
-double _X_0;
-double* __FD__X_0;
-double* __FD__Y_0;
-omp_set_num_threads(2);
-#pragma omp  parallel  
- {
- #pragma omp  for private(__FD__Y_0,__FD__X_0,_X_0,i,i_bk_1)
- for (i_bk_1=0; i_bk_1<N; i_bk_1+=64) 
-   {
-      __FD__X_0 = X+i_bk_1;
-      __FD__Y_0 = Y+i_bk_1;
-      for (i=0; i<-7+min(64,N-i_bk_1); i+=8) 
-        {
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-        }
-      for (i=i; i<min(64,N-i_bk_1); i+=1) 
-        {
-           _X_0 = __FD__X_0[0];
-           __FD__Y_0[0] = _X_0;
-           __FD__X_0 = 1+__FD__X_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-        }
-   }
- }
-}
+{
+   int i_bk_1;
+   double _X_0;
+   double* __FD__X_0;
+   double* __FD__Y_0;
+   omp_set_num_threads(2);
+   #pragma omp  parallel  
+    {
+    #pragma omp  for private(__FD__Y_0,__FD__X_0,_X_0,i,i_bk_1)
+    for (i_bk_1=0; i_bk_1<N; i_bk_1+=64)
+      {
+         __FD__X_0 = X+i_bk_1;
+         __FD__Y_0 = Y+i_bk_1;
+         for (i=0; i<-7+min(64,N-i_bk_1); i+=8)
+           {
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+           }
+         for (i=i; i<min(64,N-i_bk_1); i+=1)
+           {
+              _X_0 = __FD__X_0[0];
+              __FD__Y_0[0] = _X_0;
+              __FD__X_0 = 1+__FD__X_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+           }
+      }
+    }
+   
+}}
 

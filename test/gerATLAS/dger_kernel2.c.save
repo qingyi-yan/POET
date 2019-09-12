@@ -29,7 +29,7 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
    _pY_0 = Y;
    _pY_1 = _pY_0+incY;
    _prefA_0 = A+2*lda;
-   for (j=0; j<-1+N; j+=2) 
+   for (j=0; j<-1+N; j+=2)
      {
         vec_splat(&_y_buf_1,reg7);
         vec_splat(&_y_buf_0,reg6);
@@ -44,7 +44,7 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
         vec_splat(Z+j*incZ,reg2);
         vec_splat(Z+(incZ+j*incZ),reg3);
         alignA = (8 - (((size_t)(_pA_0)) & 0xF) / 8) ;
-        for (i=0; i<alignA; i+=1) 
+        for (i=0; i<alignA; i+=1)
           {
              vec_mov_mr_1(_pA_0+i,reg4);
              vec_mov_mr_1(_pA_1+i,reg5);
@@ -69,7 +69,7 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
         _pA_1_0 = _pA_1+alignA;
         _pX_0 = X+alignA;
         _prefA_0_0 = _prefA_0;
-        for (i=alignA; i<-11+M; i+=12) 
+        for (i=alignA; i<-11+M; i+=12)
           {
              ATL_pfl1R(_prefA_0_0);
              _prefA_0_0 = 12+_prefA_0_0;
@@ -185,7 +185,7 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
              _pA_1_0 = _pA_1_0+12;
              _pX_0 = _pX_0+12;
           }
-        for (i=i; i<-1+M; i+=2) 
+        for (i=i; i<-1+M; i+=2)
           {
              vec_mov_mr_a(A+(i+j*lda),reg4);
              vec_mov_mr(A+(i+(j*lda+lda)),reg5);
@@ -206,7 +206,7 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
              vec_mov_rm_a(reg4,A+(i+j*lda));
              vec_mov_rm(reg5,A+(i+(j*lda+lda)));
           }
-        for (i=i; i<M; i+=1) 
+        for (i=i; i<M; i+=1)
           {
              vec_mov_mr_1(_pA_0+i,reg4);
              vec_mov_mr_1(_pA_1+i,reg5);
@@ -235,9 +235,9 @@ void ATL_dger2_a1_x1_yX(const int M,const int N,const double alpha,const double*
         _pY_1 = _pY_0+incY;
         _prefA_0 = _prefA_0+2*lda;
      }
-   for (j=j; j<N; j+=1) 
+   for (j=j; j<N; j+=1)
      {
-        for (i=0; i<M; i+=1) 
+        for (i=0; i<M; i+=1)
           {
              A[j*lda+i] = A[j*lda+i]+X[i]*Y[j*incY]+W[i]*Z[j*incZ];
           }

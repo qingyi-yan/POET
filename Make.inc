@@ -18,12 +18,12 @@ trans:
 dir=to
 op=diff
 
-LOCAL_DIFFROSE= if test -n "$(rosedir)"; then \
+LOCAL_DIFFROSE= if test -n "$(rose_srcdir)"; then \
             for f in $(DIST_SOURCES) $(EXTRA_DIST); do \
                  ff=$${f/__ROSE/}; \
                  if [[ $$ff == "*__*" ]]; then continue; else \
                      if [[ $(dir) == to ]]; then  \
-                       command="$(op) $(srcdir)/$$f $(rosedir)/$$ff"; \
+                       command="$(op) $(src_srcdir)/$$f $(rosedir)/$$ff"; \
                      else \
                        command="$(op) $(rosedir)/$$ff $(srcdir)/$$f"; \
                      fi; \

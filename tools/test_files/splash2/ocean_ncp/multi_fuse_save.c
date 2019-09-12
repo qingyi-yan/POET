@@ -34,19 +34,19 @@ void relax(long k,double* err,long color,long my_num) {
    jend = gp[my_num].rel_start_x[k]+gp[my_num].rel_num_x[k];
    factor = 4.0-eig2*h*h;
    maxerr = 0.0;
-   if (color==RED_ITER)  
+   if (color==RED_ITER) 
      {
         
-        /*@;BEGIN(Nest1=Nest)@*/for (i=oddistart; i<iend; i+=1) 
+        /*@;BEGIN(Nest1=Nest)@*/for (i=oddistart; i<iend; i+=1)
           {
-             for (j=(i+1)%2+1; j<jend; j+=2) 
+             for (j=(i+1)%2+1; j<jend; j+=2)
                {
                   a = multi->q_multi[k][i][j+1]+multi->q_multi[k][i][j-1]+multi->q_multi[k][i-1][j]+multi->q_multi[k][i+1][j]-multi->rhs_multi[k][i][j];
                   oldval = multi->q_multi[k][i][j];
                   newval = a/factor;
                   newerr = oldval-newval;
                   multi->q_multi[k][i][j] = newval;
-                  if (fabs(newerr)>maxerr)  
+                  if (fabs(newerr)>maxerr) 
                     {
                        maxerr = fabs(newerr);
                     }
@@ -54,18 +54,18 @@ void relax(long k,double* err,long color,long my_num) {
           }
         
      }
-   else if (color==BLACK_ITER)  
+   else if (color==BLACK_ITER) 
      {
-        /*@;BEGIN(Nest5=Nest)@*/for (i=oddistart; i<iend; i+=1) 
+        /*@;BEGIN(Nest5=Nest)@*/for (i=oddistart; i<iend; i+=1)
           {
-             for (j=i%2+1; j<jend; j+=2) 
+             for (j=i%2+1; j<jend; j+=2)
                {
                   a = multi->q_multi[k][i][j+1]+multi->q_multi[k][i][j-1]+multi->q_multi[k][i-1][j]+multi->q_multi[k][i+1][j]-multi->rhs_multi[k][i][j];
                   oldval = multi->q_multi[k][i][j];
                   newval = a/factor;
                   newerr = oldval-newval;
                   multi->q_multi[k][i][j] = newval;
-                  if (fabs(newerr)>maxerr)  
+                  if (fabs(newerr)>maxerr) 
                     {
                        maxerr = fabs(newerr);
                     }

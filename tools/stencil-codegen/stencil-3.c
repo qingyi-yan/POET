@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
       if (t%2 == 0) 
            { A_tmp = A; B_tmp = B; }
       else { A_tmp = B; B_tmp = A; }
-      for (i0=1; i0<-1+N0; i0+=1) 
+      for (i0=1; i0<-1+N0; i0+=1)
         {
            B_tmp[i0] = A_tmp[-1+i0]+(A_tmp[i0]+A_tmp[1+i0])/3;
         }

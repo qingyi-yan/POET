@@ -29,11 +29,11 @@ void ATL_USERMM(const int M,const int N,const int K,const double alpha,const dou
    _pB_0 = B;
    _pC_0 = C;
    _prefA_0 = 5184+A;
-   for (j=0; j<72; j+=1) 
+   for (j=0; j<72; j+=1)
      {
         _pA_0 = A;
         _pC_0_0 = _pC_0;
-        for (i=0; i<72; i+=12) 
+        for (i=0; i<72; i+=12)
           {
              ATL_pfl1R(_prefA_0);
              _prefA_0 = 12+_prefA_0;

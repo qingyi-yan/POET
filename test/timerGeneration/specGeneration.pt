@@ -93,6 +93,7 @@ res = NULL;
 foreach (input : (cur=CODE.ArrayAccess#(CLEAR arr,CLEAR sub)): FALSE) {
   <*if (sub : INT) CONTINUE;*>
   <*Support for matrix access like A[i][j], now only support arrays with 2 dimensions*>
+DEBUG{
   if (arr : CODE.ArrayAccess#(CLEAR arr1, CLEAR sub1)) {
     arr = arr1;
     sub = sub1 :: sub;
@@ -133,6 +134,7 @@ foreach (input : (cur=CODE.ArrayAccess#(CLEAR arr,CLEAR sub)): FALSE) {
        }
     }
   }
+ };
 }
 res
 </xform>
@@ -194,7 +196,8 @@ switch (input)
    if (routine == "") ERROR("Cannot find a subroutine to specify in " target);
    if (! (routine : FunctionDecl#(name,params,retType, body)))
      { SubroutineDecl#(name,params,body) = routine; retType=""; } 
-   routine = RoutineSpec#routine;
+   routine = RoutineSpec#(COPY(routine));
+   body  = COPY(body);
 
    body1=body;
    foreach (body1 : (cur=CODE.FunctionCall#(CLEAR f,CLEAR args)) : TRUE) { 

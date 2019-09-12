@@ -1,11 +1,11 @@
 NoParse#"PROGRAM"" ""SHALOW"" ""
-""
+""""
 "" ""IMPLICIT"" ""INTEGER""	""(""I""-""N"")""
 ""
 "" ""IMPLICIT"" ""REAL""	""(""A""-""H"","" ""O""-""Z"")""
-""
+""""
 "" ""PARAMETER"" ""(""N1""=""1025"","" ""N2""=""1025"")""
-""
+""""
 "" ""COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -15,25 +15,25 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 ""
 "" ""COMMON"" ""/""CONS""/"" ""DT"",""TDT"",""DX"",""DY"",""A"",""ALPHA"",""ITMAX"",""MPRINT"",""M"",""N"",""MP1"",""
 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""NP1"",""EL"",""PI"",""TPI"",""DI"",""DJ"",""PCF""
-""
-"" ""WRITE""(""6"",""*"")"" ""'""SPEC"" ""benchmark"" ""102.""swim""'""
-""
-"" ""WRITE""(""6"",""*"")"" ""'"" ""'""
-""
+""""""
+"" ""WRITE""(""6"",""*"")"" "Char#"SPEC"" ""benchmark"" ""102.""swim" NULL"
+""""
+"" ""WRITE""(""6"",""*"")"" "Char#" ""
+""""
 "" ""CALL"" ""INITAL""
 ""
 "" ""WRITE""(""6"",""390"")"" ""N"",""M"",""DX"",""DY"",""DT"",""ALPHA"",""ITMAX""
 ""
-""390""FORMAT""(""'"" ""NUMBER"" ""OF"" ""POINTS"" ""IN"" ""THE"" ""X"" ""DIRECTION""'"","" ""I8""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""NUMBER"" ""OF"" ""POINTS"" ""IN"" ""THE"" ""Y"" ""DIRECTION""'"","" ""I8""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""GRID"" ""SPACING"" ""IN"" ""THE"" ""X"" ""DIRECTION"" "" "" "" ""'"","" ""F8"".0""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""GRID"" ""SPACING"" ""IN"" ""THE"" ""Y"" ""DIRECTION"" "" "" "" ""'"","" ""F8"".0""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""TIME"" ""STEP"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""'"","" ""F8"".0""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""TIME"" ""FILTER"" ""PARAMETER"" "" "" "" "" "" "" "" "" "" "" "" "" "" ""'"","" ""F8"".3""/""
-"" "" "" "" "" "" "" "" "" ""'"" ""NUMBER"" ""OF"" ""ITERATIONS"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""'"","" ""I8"")""
+""390""FORMAT""("Char#" ""NUMBER"" ""OF"" ""POINTS"" ""IN"" ""THE"" ""X"" ""DIRECTION" NULL","" ""I8""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""NUMBER"" ""OF"" ""POINTS"" ""IN"" ""THE"" ""Y"" ""DIRECTION" NULL","" ""I8""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""GRID"" ""SPACING"" ""IN"" ""THE"" ""X"" ""DIRECTION"" "" "" "" " NULL","" ""F8"".0""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""GRID"" ""SPACING"" ""IN"" ""THE"" ""Y"" ""DIRECTION"" "" "" "" " NULL","" ""F8"".0""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""TIME"" ""STEP"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" " NULL","" ""F8"".0""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""TIME"" ""FILTER"" ""PARAMETER"" "" "" "" "" "" "" "" "" "" "" "" "" "" " NULL","" ""F8"".3""/""
+"" "" "" "" "" "" "" "" "" "Char#" ""NUMBER"" ""OF"" ""ITERATIONS"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" " NULL","" ""I8"")""
 ""
 "" ""MNMIN"" ""="" ""MIN0""(""M"",""N"")""
-""
+""""""
 "" ""TIME"" ""="" ""0""
 ""
 "" ""NCYCLE"" ""="" ""0""
@@ -46,13 +46,13 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 ""
 "" ""TIME"" ""="" ""TIME"" ""+"" ""DT""
 ""
-"" ""IF""(""MOD""(""NCYCLE"",""MPRINT"")"" "".""NE""."" ""0"")"" ""GO"" ""TO"" ""370""
+"" ""IF""(""MOD""(""NCYCLE"",""MPRINT"")"" "".NE."" ""0"")"" ""GO"" ""TO"" ""370""
 ""
 "" ""PTIME"" ""="" ""TIME""/""3600.""
 ""
 "" ""WRITE""(""6"",""350"")"" ""NCYCLE"",""PTIME""
 ""
-""350""FORMAT""(""/""'"" ""CYCLE"" ""NUMBER""'"",""I5"",""'"" ""MODEL"" ""TIME"" ""IN"" "" ""HOURS""'"","" ""F6"".2"")""
+""350""FORMAT""(""/"Char#" ""CYCLE"" ""NUMBER" NULL",""I5"","Char#" ""MODEL"" ""TIME"" ""IN"" "" ""HOURS" NULL","" ""F6"".2"")""
 ""
 "" "" "" ""PCHECK"" ""="" ""0.0""
 ""
@@ -77,19 +77,19 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" "" "" ""WRITE""(""6"",""366"")"" ""PCHECK"","" ""UCHECK"","" ""VCHECK""
 ""
 ""366""FORMAT""(""/"",""
-"" "" "" "" "" "" "" "" "" "" "" ""'"" ""Pcheck"" ""="" ""'"",""E12"".4"",""/"",""
-"" "" "" "" "" "" "" "" "" "" "" ""'"" ""Ucheck"" ""="" ""'"",""E12"".4"",""/"",""
-"" "" "" "" "" "" "" "" "" "" "" ""'"" ""Vcheck"" ""="" ""'"",""E12"".4"",""/"")""
-""
+"" "" "" "" "" "" "" "" "" "" "" "Char#" ""Pcheck"" ""="" " NULL",""E12"".4"",""/"",""
+"" "" "" "" "" "" "" "" "" "" "" "Char#" ""Ucheck"" ""="" " NULL",""E12"".4"",""/"",""
+"" "" "" "" "" "" "" "" "" "" "" "Char#" ""Vcheck"" ""="" " NULL",""E12"".4"",""/"")""
+""""
 ""370""CONTINUE""
 ""
-"" ""IF""(""NCYCLE"" "".""GE""."" ""ITMAX"")"" ""THEN""
+"" ""IF""(""NCYCLE"" "".GE."" ""ITMAX"")"" ""THEN""
 ""
 "" ""STOP""
 ""
 "" ""ENDIF""
-""
-"" ""IF""(""NCYCLE"" "".""LE""."" ""1"")"" ""THEN""
+""""
+"" ""IF""(""NCYCLE"" "".LE."" ""1"")"" ""THEN""
 ""
 "" "" "" "" ""CALL"" ""CALC3Z""
 ""
@@ -100,11 +100,11 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""ENDIF""
 ""
 "" ""GO"" ""TO"" ""90""
-""
+""""
 "" ""END""
 ""
 "" ""SUBROUTINE"" ""INITAL""
-"ParamDeclStmt#(
+"decl1={ParamDeclStmt#(
     "PARAMETER",
     (ParamDecl#(
         "N1",
@@ -112,7 +112,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
       ParamDecl#(
         "N2",
         1025)
-       NULL))
+       NULL))}
   "COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -158,12 +158,14 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""DJ"" ""="" ""TPI""/""FLOAT""(""N"")""
 ""
 "" ""PCF"" ""="" ""PI""*""PI""*""A""*""A""/""(""EL""*""EL"")""
-"LoopNestList#Nest#(
+"looplist1={LoopNestList#Nest#(
       Loop#(
         "J",
         1,
         "NP1",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -174,6 +176,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
           1,
           "MP1",
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -191,23 +195,25 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                     "SIN",
                     Bop#(
                       "*",
-                      Bop#(
-                        "-",
-                        ArrayAccess#(
-                          "FLOAT",
-                          "I"),
-                        "0.5"),
+                      ("("Bop#(
+                          "-",
+                          ArrayAccess#(
+                            "FLOAT",
+                            "I"),
+                          "0.5")
+                         NULL),
                       "DI"))),
                 ArrayAccess#(
                   "SIN",
                   Bop#(
                     "*",
-                    Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "FLOAT",
-                        "J"),
-                      "0.5"),
+                    ("("Bop#(
+                        "-",
+                        ArrayAccess#(
+                          "FLOAT",
+                          "J"),
+                        "0.5")
+                       NULL),
                     "DJ"))))
           ExpStmt#Assign#(
               ArrayAccess#(
@@ -218,36 +224,37 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "PCF",
-                  Bop#(
-                    "+",
-                    ArrayAccess#(
-                      "COS",
-                      Bop#(
-                        "*",
+                  ("("Bop#(
+                      "+",
+                      ArrayAccess#(
+                        "COS",
                         Bop#(
                           "*",
-                          "2.",
-                          ArrayAccess#(
-                            "FLOAT",
-                            Bop#(
-                              "-",
-                              "I",
-                              1))),
-                        "DI")),
-                    ArrayAccess#(
-                      "COS",
-                      Bop#(
-                        "*",
+                          Bop#(
+                            "*",
+                            "2.",
+                            ArrayAccess#(
+                              "FLOAT",
+                              Bop#(
+                                "-",
+                                "I",
+                                1))),
+                          "DI")),
+                      ArrayAccess#(
+                        "COS",
                         Bop#(
                           "*",
-                          "2.",
-                          ArrayAccess#(
-                            "FLOAT",
-                            Bop#(
-                              "-",
-                              "J",
-                              1))),
-                        "DJ")))),
+                          Bop#(
+                            "*",
+                            "2.",
+                            ArrayAccess#(
+                              "FLOAT",
+                              Bop#(
+                                "-",
+                                "J",
+                                1))),
+                          "DJ")))
+                     NULL)),
                 "50000."))
            NULL))#"")#""
     Label#50Nest#(
@@ -256,6 +263,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -266,6 +275,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
           1,
           "M",
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -282,7 +293,39 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 "/",
                 Uop#(
                   "-",
-                  Bop#(
+                  ("("Bop#(
+                      "-",
+                      ArrayAccess#(
+                        "PSI",
+                        (Bop#(
+                            "+",
+                            "I",
+                            1)
+                          Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL)),
+                      ArrayAccess#(
+                        "PSI",
+                        (Bop#(
+                            "+",
+                            "I",
+                            1)
+                          "J" NULL)))
+                     NULL)),
+                "DY"))
+          ExpStmt#Assign#(
+              ArrayAccess#(
+                "V",
+                ("I"Bop#(
+                    "+",
+                    "J",
+                    1)
+                   NULL)),
+              Bop#(
+                "/",
+                ("("Bop#(
                     "-",
                     ArrayAccess#(
                       "PSI",
@@ -297,42 +340,12 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                          NULL)),
                     ArrayAccess#(
                       "PSI",
-                      (Bop#(
+                      ("I"Bop#(
                           "+",
-                          "I",
+                          "J",
                           1)
-                        "J" NULL)))),
-                "DY"))
-          ExpStmt#Assign#(
-              ArrayAccess#(
-                "V",
-                ("I"Bop#(
-                    "+",
-                    "J",
-                    1)
-                   NULL)),
-              Bop#(
-                "/",
-                Bop#(
-                  "-",
-                  ArrayAccess#(
-                    "PSI",
-                    (Bop#(
-                        "+",
-                        "I",
-                        1)
-                      Bop#(
-                        "+",
-                        "J",
-                        1)
-                       NULL)),
-                  ArrayAccess#(
-                    "PSI",
-                    ("I"Bop#(
-                        "+",
-                        "J",
-                        1)
-                       NULL))),
+                         NULL)))
+                   NULL),
                 "DX"))
            NULL))#"")#""
     Label#60Nest#(
@@ -341,6 +354,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -383,6 +398,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         "M",
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -417,7 +434,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                   1)
                  NULL)))
          NULL))#""
-    Label#75 NULL
+    Label#75 NULL}
   "U""(""1"",""N""+""1"")"" ""="" ""U""(""M""+""1"",""1"")""
 ""
 "" ""V""(""M""+""1"",""1"")"" ""="" ""V""(""1"",""N""+""1"")""
@@ -439,7 +456,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""END""
 ""
 "" ""SUBROUTINE"" ""CALC1""
-"ParamDeclStmt#(
+"decl2={ParamDeclStmt#(
     "PARAMETER",
     (ParamDecl#(
         "N1",
@@ -447,7 +464,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
       ParamDecl#(
         "N2",
         1025)
-       NULL))
+       NULL))}
   "COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -461,12 +478,14 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""FSDX"" ""="" ""4.""/""DX""
 ""
 "" ""FSDY"" ""="" ""4.""/""DY""
-"LoopNestList#Nest#(
+"""looplist2={LoopNestList#Nest#(
       Loop#(
         "J",
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -477,6 +496,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
           1,
           "M",
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -494,18 +515,19 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "0.5",
-                  Bop#(
-                    "+",
-                    ArrayAccess#(
-                      "P",
-                      (Bop#(
-                          "+",
-                          "I",
-                          1)
-                        "J" NULL)),
-                    ArrayAccess#(
-                      "P",
-                      ("I""J" NULL)))),
+                  ("("Bop#(
+                      "+",
+                      ArrayAccess#(
+                        "P",
+                        (Bop#(
+                            "+",
+                            "I",
+                            1)
+                          "J" NULL)),
+                      ArrayAccess#(
+                        "P",
+                        ("I""J" NULL)))
+                     NULL)),
                 ArrayAccess#(
                   "U",
                   (Bop#(
@@ -526,18 +548,19 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "0.5",
-                  Bop#(
-                    "+",
-                    ArrayAccess#(
-                      "P",
-                      ("I"Bop#(
-                          "+",
-                          "J",
-                          1)
-                         NULL)),
-                    ArrayAccess#(
-                      "P",
-                      ("I""J" NULL)))),
+                  ("("Bop#(
+                      "+",
+                      ArrayAccess#(
+                        "P",
+                        ("I"Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL)),
+                      ArrayAccess#(
+                        "P",
+                        ("I""J" NULL)))
+                     NULL)),
                 ArrayAccess#(
                   "V",
                   ("I"Bop#(
@@ -559,88 +582,92 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                    NULL)),
               Bop#(
                 "/",
-                Bop#(
-                  "-",
-                  Bop#(
-                    "*",
-                    "FSDX",
+                ("("Bop#(
+                    "-",
                     Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "V",
-                        (Bop#(
-                            "+",
-                            "I",
-                            1)
-                          Bop#(
-                            "+",
-                            "J",
-                            1)
-                           NULL)),
-                      ArrayAccess#(
-                        "V",
-                        ("I"Bop#(
-                            "+",
-                            "J",
-                            1)
-                           NULL)))),
-                  Bop#(
-                    "*",
-                    "FSDY",
+                      "*",
+                      "FSDX",
+                      ("("Bop#(
+                          "-",
+                          ArrayAccess#(
+                            "V",
+                            (Bop#(
+                                "+",
+                                "I",
+                                1)
+                              Bop#(
+                                "+",
+                                "J",
+                                1)
+                               NULL)),
+                          ArrayAccess#(
+                            "V",
+                            ("I"Bop#(
+                                "+",
+                                "J",
+                                1)
+                               NULL)))
+                         NULL)),
                     Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "U",
-                        (Bop#(
-                            "+",
-                            "I",
-                            1)
-                          Bop#(
-                            "+",
-                            "J",
-                            1)
-                           NULL)),
-                      ArrayAccess#(
-                        "U",
-                        (Bop#(
-                            "+",
-                            "I",
-                            1)
-                          "J" NULL))))),
-                Bop#(
-                  "+",
-                  Bop#(
+                      "*",
+                      "FSDY",
+                      ("("Bop#(
+                          "-",
+                          ArrayAccess#(
+                            "U",
+                            (Bop#(
+                                "+",
+                                "I",
+                                1)
+                              Bop#(
+                                "+",
+                                "J",
+                                1)
+                               NULL)),
+                          ArrayAccess#(
+                            "U",
+                            (Bop#(
+                                "+",
+                                "I",
+                                1)
+                              "J" NULL)))
+                         NULL)))
+                   NULL),
+                ("("Bop#(
                     "+",
                     Bop#(
                       "+",
-                      ArrayAccess#(
-                        "P",
-                        ("I""J" NULL)),
+                      Bop#(
+                        "+",
+                        ArrayAccess#(
+                          "P",
+                          ("I""J" NULL)),
+                        ArrayAccess#(
+                          "P",
+                          (Bop#(
+                              "+",
+                              "I",
+                              1)
+                            "J" NULL))),
                       ArrayAccess#(
                         "P",
                         (Bop#(
                             "+",
                             "I",
                             1)
-                          "J" NULL))),
+                          Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL))),
                     ArrayAccess#(
                       "P",
-                      (Bop#(
-                          "+",
-                          "I",
-                          1)
-                        Bop#(
+                      ("I"Bop#(
                           "+",
                           "J",
                           1)
-                         NULL))),
-                  ArrayAccess#(
-                    "P",
-                    ("I"Bop#(
-                        "+",
-                        "J",
-                        1)
-                       NULL)))))
+                         NULL)))
+                   NULL)))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "H",
@@ -653,60 +680,61 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   ".25",
-                  Bop#(
-                    "+",
-                    Bop#(
+                  ("("Bop#(
                       "+",
                       Bop#(
                         "+",
                         Bop#(
-                          "*",
-                          ArrayAccess#(
-                            "U",
-                            (Bop#(
-                                "+",
-                                "I",
-                                1)
-                              "J" NULL)),
-                          ArrayAccess#(
-                            "U",
-                            (Bop#(
-                                "+",
-                                "I",
-                                1)
-                              "J" NULL))),
+                          "+",
+                          Bop#(
+                            "*",
+                            ArrayAccess#(
+                              "U",
+                              (Bop#(
+                                  "+",
+                                  "I",
+                                  1)
+                                "J" NULL)),
+                            ArrayAccess#(
+                              "U",
+                              (Bop#(
+                                  "+",
+                                  "I",
+                                  1)
+                                "J" NULL))),
+                          Bop#(
+                            "*",
+                            ArrayAccess#(
+                              "U",
+                              ("I""J" NULL)),
+                            ArrayAccess#(
+                              "U",
+                              ("I""J" NULL)))),
                         Bop#(
                           "*",
                           ArrayAccess#(
-                            "U",
-                            ("I""J" NULL)),
+                            "V",
+                            ("I"Bop#(
+                                "+",
+                                "J",
+                                1)
+                               NULL)),
                           ArrayAccess#(
-                            "U",
-                            ("I""J" NULL)))),
+                            "V",
+                            ("I"Bop#(
+                                "+",
+                                "J",
+                                1)
+                               NULL)))),
                       Bop#(
                         "*",
                         ArrayAccess#(
                           "V",
-                          ("I"Bop#(
-                              "+",
-                              "J",
-                              1)
-                             NULL)),
+                          ("I""J" NULL)),
                         ArrayAccess#(
                           "V",
-                          ("I"Bop#(
-                              "+",
-                              "J",
-                              1)
-                             NULL)))),
-                    Bop#(
-                      "*",
-                      ArrayAccess#(
-                        "V",
-                        ("I""J" NULL)),
-                      ArrayAccess#(
-                        "V",
-                        ("I""J" NULL)))))))
+                          ("I""J" NULL))))
+                     NULL))))
            NULL))#"")#""
     Label#100Nest#(
       Loop#(
@@ -714,6 +742,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -786,6 +816,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         "M",
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -850,7 +882,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
               "H",
               ("I"1 NULL)))
          NULL))#""
-    Label#115 NULL
+    Label#115 NULL}
   "CU""(""1"",""N""+""1"")"" ""="" ""CU""(""M""+""1"",""1"")""
 ""
 "" ""CV""(""M""+""1"",""1"")"" ""="" ""CV""(""1"",""N""+""1"")""
@@ -864,7 +896,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""END""
 ""
 "" ""SUBROUTINE"" ""CALC2""
-"ParamDeclStmt#(
+"decl3={ParamDeclStmt#(
     "PARAMETER",
     (ParamDecl#(
         "N1",
@@ -872,7 +904,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
       ParamDecl#(
         "N2",
         1025)
-       NULL))
+       NULL))}
   "COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -888,12 +920,14 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""TDTSDX"" ""="" ""TDT""/""DX""
 ""
 "" ""TDTSDY"" ""="" ""TDT""/""DY""
-"LoopNestList#Nest#(
+"""looplist3={LoopNestList#Nest#(
       Loop#(
         "J",
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -904,6 +938,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
           1,
           "M",
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -932,34 +968,10 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                     Bop#(
                       "*",
                       "TDTS8",
-                      Bop#(
-                        "+",
-                        ArrayAccess#(
-                          "Z",
-                          (Bop#(
-                              "+",
-                              "I",
-                              1)
-                            Bop#(
-                              "+",
-                              "J",
-                              1)
-                             NULL)),
-                        ArrayAccess#(
-                          "Z",
-                          (Bop#(
-                              "+",
-                              "I",
-                              1)
-                            "J" NULL)))),
-                    Bop#(
-                      "+",
-                      Bop#(
-                        "+",
-                        Bop#(
+                      ("("Bop#(
                           "+",
                           ArrayAccess#(
-                            "CV",
+                            "Z",
                             (Bop#(
                                 "+",
                                 "I",
@@ -970,37 +982,64 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                                 1)
                                NULL)),
                           ArrayAccess#(
-                            "CV",
-                            ("I"Bop#(
+                            "Z",
+                            (Bop#(
                                 "+",
-                                "J",
+                                "I",
                                 1)
-                               NULL))),
+                              "J" NULL)))
+                         NULL)),
+                    ("("Bop#(
+                        "+",
+                        Bop#(
+                          "+",
+                          Bop#(
+                            "+",
+                            ArrayAccess#(
+                              "CV",
+                              (Bop#(
+                                  "+",
+                                  "I",
+                                  1)
+                                Bop#(
+                                  "+",
+                                  "J",
+                                  1)
+                                 NULL)),
+                            ArrayAccess#(
+                              "CV",
+                              ("I"Bop#(
+                                  "+",
+                                  "J",
+                                  1)
+                                 NULL))),
+                          ArrayAccess#(
+                            "CV",
+                            ("I""J" NULL))),
                         ArrayAccess#(
                           "CV",
-                          ("I""J" NULL))),
+                          (Bop#(
+                              "+",
+                              "I",
+                              1)
+                            "J" NULL)))
+                       NULL))),
+                Bop#(
+                  "*",
+                  "TDTSDX",
+                  ("("Bop#(
+                      "-",
                       ArrayAccess#(
-                        "CV",
+                        "H",
                         (Bop#(
                             "+",
                             "I",
                             1)
-                          "J" NULL))))),
-                Bop#(
-                  "*",
-                  "TDTSDX",
-                  Bop#(
-                    "-",
-                    ArrayAccess#(
-                      "H",
-                      (Bop#(
-                          "+",
-                          "I",
-                          1)
-                        "J" NULL)),
-                    ArrayAccess#(
-                      "H",
-                      ("I""J" NULL))))))
+                          "J" NULL)),
+                      ArrayAccess#(
+                        "H",
+                        ("I""J" NULL)))
+                     NULL))))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "VNEW",
@@ -1025,34 +1064,10 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                     Bop#(
                       "*",
                       "TDTS8",
-                      Bop#(
-                        "+",
-                        ArrayAccess#(
-                          "Z",
-                          (Bop#(
-                              "+",
-                              "I",
-                              1)
-                            Bop#(
-                              "+",
-                              "J",
-                              1)
-                             NULL)),
-                        ArrayAccess#(
-                          "Z",
-                          ("I"Bop#(
-                              "+",
-                              "J",
-                              1)
-                             NULL)))),
-                    Bop#(
-                      "+",
-                      Bop#(
-                        "+",
-                        Bop#(
+                      ("("Bop#(
                           "+",
                           ArrayAccess#(
-                            "CU",
+                            "Z",
                             (Bop#(
                                 "+",
                                 "I",
@@ -1063,37 +1078,64 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                                 1)
                                NULL)),
                           ArrayAccess#(
-                            "CU",
+                            "Z",
                             ("I"Bop#(
                                 "+",
                                 "J",
                                 1)
-                               NULL))),
+                               NULL)))
+                         NULL)),
+                    ("("Bop#(
+                        "+",
+                        Bop#(
+                          "+",
+                          Bop#(
+                            "+",
+                            ArrayAccess#(
+                              "CU",
+                              (Bop#(
+                                  "+",
+                                  "I",
+                                  1)
+                                Bop#(
+                                  "+",
+                                  "J",
+                                  1)
+                                 NULL)),
+                            ArrayAccess#(
+                              "CU",
+                              ("I"Bop#(
+                                  "+",
+                                  "J",
+                                  1)
+                                 NULL))),
+                          ArrayAccess#(
+                            "CU",
+                            ("I""J" NULL))),
                         ArrayAccess#(
                           "CU",
-                          ("I""J" NULL))),
-                      ArrayAccess#(
-                        "CU",
-                        (Bop#(
-                            "+",
-                            "I",
-                            1)
-                          "J" NULL))))),
+                          (Bop#(
+                              "+",
+                              "I",
+                              1)
+                            "J" NULL)))
+                       NULL))),
                 Bop#(
                   "*",
                   "TDTSDY",
-                  Bop#(
-                    "-",
-                    ArrayAccess#(
-                      "H",
-                      ("I"Bop#(
-                          "+",
-                          "J",
-                          1)
-                         NULL)),
-                    ArrayAccess#(
-                      "H",
-                      ("I""J" NULL))))))
+                  ("("Bop#(
+                      "-",
+                      ArrayAccess#(
+                        "H",
+                        ("I"Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL)),
+                      ArrayAccess#(
+                        "H",
+                        ("I""J" NULL)))
+                     NULL))))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "PNEW",
@@ -1108,33 +1150,35 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                   Bop#(
                     "*",
                     "TDTSDX",
-                    Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "CU",
-                        (Bop#(
-                            "+",
-                            "I",
-                            1)
-                          "J" NULL)),
-                      ArrayAccess#(
-                        "CU",
-                        ("I""J" NULL))))),
+                    ("("Bop#(
+                        "-",
+                        ArrayAccess#(
+                          "CU",
+                          (Bop#(
+                              "+",
+                              "I",
+                              1)
+                            "J" NULL)),
+                        ArrayAccess#(
+                          "CU",
+                          ("I""J" NULL)))
+                       NULL))),
                 Bop#(
                   "*",
                   "TDTSDY",
-                  Bop#(
-                    "-",
-                    ArrayAccess#(
-                      "CV",
-                      ("I"Bop#(
-                          "+",
-                          "J",
-                          1)
-                         NULL)),
-                    ArrayAccess#(
-                      "CV",
-                      ("I""J" NULL))))))
+                  ("("Bop#(
+                      "-",
+                      ArrayAccess#(
+                        "CV",
+                        ("I"Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL)),
+                      ArrayAccess#(
+                        "CV",
+                        ("I""J" NULL)))
+                     NULL))))
            NULL))#"")#""
     Label#200Nest#(
       Loop#(
@@ -1142,6 +1186,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -1195,6 +1241,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         "M",
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -1240,7 +1288,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
               "PNEW",
               ("I"1 NULL)))
          NULL))#""
-    Label#215 NULL
+    Label#215 NULL}
   "UNEW""(""1"",""N""+""1"")"" ""="" ""UNEW""(""M""+""1"",""1"")""
 ""
 "" ""VNEW""(""M""+""1"",""1"")"" ""="" ""VNEW""(""1"",""N""+""1"")""
@@ -1254,7 +1302,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""SUBROUTINE"" ""CALC3Z""
 ""
 "" ""PARAMETER"" ""(""N1""=""1025"","" ""N2""=""1025"")""
-""
+""""
 "" ""COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -1290,7 +1338,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 "" ""END""
 ""
 "" ""SUBROUTINE"" ""CALC3""
-"ParamDeclStmt#(
+"decl4={ParamDeclStmt#(
     "PARAMETER",
     (ParamDecl#(
         "N1",
@@ -1298,7 +1346,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
       ParamDecl#(
         "N2",
         1025)
-       NULL))
+       NULL))}
   "COMMON"" "" ""U""(""N1"",""N2"")"","" ""V""(""N1"",""N2"")"","" ""P""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""UNEW""(""N1"",""N2"")"","" ""VNEW""(""N1"",""N2"")"",""
 "" "" "" "" "" "" "" "" "" "" ""PNEW""(""N1"",""N2"")"","" ""UOLD""(""N1"",""N2"")"",""
@@ -1308,12 +1356,14 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
 ""
 "" ""COMMON"" ""/""CONS""/"" ""DT"",""TDT"",""DX"",""DY"",""A"",""ALPHA"",""ITMAX"",""MPRINT"",""M"",""N"",""MP1"",""
 "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""NP1"",""EL"",""PI"",""TPI"",""DI"",""DJ"",""PCF""
-"LoopNestList#Nest#(
+"""looplist4={LoopNestList#Nest#(
       Loop#(
         "J",
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -1324,6 +1374,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
           1,
           "M",
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -1340,22 +1392,23 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "ALPHA",
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "UNEW",
-                        ("I""J" NULL)),
+                  ("("Bop#(
+                      "+",
                       Bop#(
-                        "*",
-                        "2.",
+                        "-",
                         ArrayAccess#(
-                          "U",
-                          ("I""J" NULL)))),
-                    ArrayAccess#(
-                      "UOLD",
-                      ("I""J" NULL))))))
+                          "UNEW",
+                          ("I""J" NULL)),
+                        Bop#(
+                          "*",
+                          "2.",
+                          ArrayAccess#(
+                            "U",
+                            ("I""J" NULL)))),
+                      ArrayAccess#(
+                        "UOLD",
+                        ("I""J" NULL)))
+                     NULL))))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "VOLD",
@@ -1368,22 +1421,23 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "ALPHA",
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "VNEW",
-                        ("I""J" NULL)),
+                  ("("Bop#(
+                      "+",
                       Bop#(
-                        "*",
-                        "2.",
+                        "-",
                         ArrayAccess#(
-                          "V",
-                          ("I""J" NULL)))),
-                    ArrayAccess#(
-                      "VOLD",
-                      ("I""J" NULL))))))
+                          "VNEW",
+                          ("I""J" NULL)),
+                        Bop#(
+                          "*",
+                          "2.",
+                          ArrayAccess#(
+                            "V",
+                            ("I""J" NULL)))),
+                      ArrayAccess#(
+                        "VOLD",
+                        ("I""J" NULL)))
+                     NULL))))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "POLD",
@@ -1396,22 +1450,23 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
                 Bop#(
                   "*",
                   "ALPHA",
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "-",
-                      ArrayAccess#(
-                        "PNEW",
-                        ("I""J" NULL)),
+                  ("("Bop#(
+                      "+",
                       Bop#(
-                        "*",
-                        "2.",
+                        "-",
                         ArrayAccess#(
-                          "P",
-                          ("I""J" NULL)))),
-                    ArrayAccess#(
-                      "POLD",
-                      ("I""J" NULL))))))
+                          "PNEW",
+                          ("I""J" NULL)),
+                        Bop#(
+                          "*",
+                          "2.",
+                          ArrayAccess#(
+                            "P",
+                            ("I""J" NULL)))),
+                      ArrayAccess#(
+                        "POLD",
+                        ("I""J" NULL)))
+                     NULL))))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "U",
@@ -1440,6 +1495,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         1,
         "N",
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -1518,6 +1575,8 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
         "M",
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -1588,7 +1647,7 @@ NoParse#"PROGRAM"" ""SHALOW"" ""
               "P",
               ("I"1 NULL)))
          NULL))#""
-    Label#325 NULL
+    Label#325 NULL}
   "UOLD""(""M""+""1"",""N""+""1"")"" ""="" ""UOLD""(""1"",""1"")""
 ""
 "" ""VOLD""(""M""+""1"",""N""+""1"")"" ""="" ""VOLD""(""1"",""1"")""

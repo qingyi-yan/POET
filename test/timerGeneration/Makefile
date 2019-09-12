@@ -112,7 +112,7 @@ AM_DEFAULT_VERBOSITY = 1
 AUTOCONF = autoconf
 AUTOHEADER = autoheader
 AUTOMAKE = automake-1.14
-AWK = mawk
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
@@ -121,7 +121,7 @@ CXX = g++
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.05.04\" -DPACKAGE_STRING=\"POET\ 1.05.04\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.05.04\"
+DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.07.03\" -DPACKAGE_STRING=\"POET\ 1.07.03\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.07.03\"
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -145,16 +145,16 @@ OBJEXT = o
 PACKAGE = poet
 PACKAGE_BUGREPORT = qyi@uccs.edu
 PACKAGE_NAME = POET
-PACKAGE_STRING = POET 1.05.04
+PACKAGE_STRING = POET 1.07.03
 PACKAGE_TARNAME = poet
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.05.04
+PACKAGE_VERSION = 1.07.03
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/bash
 STRIP = 
-VERSION = 1.05.04
+VERSION = 1.07.03
 YACC = bison -y
 YFLAGS = 
 abs_builddir = /home/qyi/POET/trunk/test/timerGeneration
@@ -195,13 +195,14 @@ pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
+rose_srcdir = /home/shared/rose-internal-repo
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
 sysconfdir = ${prefix}/etc
 target_alias = 
-testdirs = commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune
-tooldirs = highlevel_interface test_files auto_tuning matrixOpt stencil-codegen
+testdirs = commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC parsePy tune
+tooldirs = 
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
@@ -224,12 +225,12 @@ to =
 file = 
 dir = to
 op = diff
-LOCAL_DIFFROSE = if test -n "$(rosedir)"; then \
+LOCAL_DIFFROSE = if test -n "$(rose_srcdir)"; then \
             for f in $(DIST_SOURCES) $(EXTRA_DIST); do \
                  ff=$${f/__ROSE/}; \
                  if [[ $$ff == "*__*" ]]; then continue; else \
                      if [[ $(dir) == to ]]; then  \
-                       command="$(op) $(srcdir)/$$f $(rosedir)/$$ff"; \
+                       command="$(op) $(src_srcdir)/$$f $(rosedir)/$$ff"; \
                      else \
                        command="$(op) $(rosedir)/$$ff $(srcdir)/$$f"; \
                      fi; \

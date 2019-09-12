@@ -111,7 +111,7 @@ AM_DEFAULT_VERBOSITY = 1
 AUTOCONF = autoconf
 AUTOHEADER = autoheader
 AUTOMAKE = automake-1.14
-AWK = mawk
+AWK = gawk
 CC = gcc -fopenmp -O2
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
@@ -120,7 +120,7 @@ CXX = g++
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
 CYGPATH_W = echo
-DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.05.04\" -DPACKAGE_STRING=\"POET\ 1.05.04\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.05.04\"
+DEFS = -DPACKAGE_NAME=\"POET\" -DPACKAGE_TARNAME=\"poet\" -DPACKAGE_VERSION=\"1.07.02\" -DPACKAGE_STRING=\"POET\ 1.07.02\" -DPACKAGE_BUGREPORT=\"qyi@uccs.edu\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DPACKAGE=\"poet\" -DVERSION=\"1.07.02\"
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
@@ -144,16 +144,16 @@ OBJEXT = o
 PACKAGE = poet
 PACKAGE_BUGREPORT = qyi@uccs.edu
 PACKAGE_NAME = POET
-PACKAGE_STRING = POET 1.05.04
+PACKAGE_STRING = POET 1.07.02
 PACKAGE_TARNAME = poet
 PACKAGE_URL = 
-PACKAGE_VERSION = 1.05.04
+PACKAGE_VERSION = 1.07.02
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/bash
 STRIP = 
-VERSION = 1.05.04
+VERSION = 1.07.02
 YACC = bison -y
 YFLAGS = 
 abs_builddir = /home/qyi/POET/trunk/tools/matrixOpt
@@ -194,13 +194,14 @@ pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
+rose_srcdir = /home/shared/rose-internal-repo
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
 sysconfdir = ${prefix}/etc
 target_alias = 
 testdirs = commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune
-tooldirs = highlevel_interface test_files auto_tuning matrixOpt stencil-codegen
+tooldirs = 
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
@@ -455,13 +456,13 @@ all_test:
 # Thread blocking factor 512, this size and blocking size should be adjust on the given machine
 
 check: 
+	make now target=dgemm bk1=64 cpth=0 uj="2 2" ur=2 cp=1
 	make now target=dtrsm_ll
 	make now target=dtrsm_ru
 	make now target=dtrmm_rl bk1=128 uj="4 2" ur=4 dist=0
 	make now target=dtrmm_ru bk1=128 uj="4 2" ur=4 dist=0 cpth=0
 	make now target=dsyrk bk1=64 tbk=128 cp=1 
 	make now target=dsyr2k bk1=64 uj="2 2" tbk=128 cp=1 ur=2
-	make now target=dgemm bk1=64 cpth=0 uj="2 2" ur=2 cp=1
 	make now target=dgemvT bk1=64 cpth=0 uj="4 2" ur=2 cp=0
 	make now target=dgemvN bk1=64 cpth=0 uj="4 2" cpth=0 ur=2 cp=0 sse=0 dist=24
 	make now target=dger uj="4 2" bk1=128 dist=24 ur=4 cp=0

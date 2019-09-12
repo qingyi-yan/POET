@@ -11,9 +11,9 @@ void tomcatv(int n,double* x,double* y,double* aa,double* dd,double* d,double* r
    double pxx;double qxx;double pyy;double qyy;double pxy;double qxy;
    double rel=2.0/0.98;
    {
-      for (j=1; j<n-1; j+=1) 
+      for (j=1; j<n-1; j+=1)
         {
-           for (i=1; i<n-1; i+=1) 
+           for (i=1; i<n-1; i+=1)
              {
                 xx = arr_ref(x,i+1,j)-arr_ref(x,i-1,j);
                 yx = arr_ref(y,i+1,j)-arr_ref(y,i-1,j);
@@ -38,13 +38,13 @@ void tomcatv(int n,double* x,double* y,double* aa,double* dd,double* d,double* r
            
         }
       
-      for (i=1; i<n-1; i+=1) 
+      for (i=1; i<n-1; i+=1)
         {
            arr_ref(d,i,1) = 1.0/arr_ref(dd,i,1);
         }
-      for (j=2; j<n-1; j+=1) 
+      for (j=2; j<n-1; j+=1)
         {
-           for (i=1; i<n-1; i+=1) 
+           for (i=1; i<n-1; i+=1)
              {
                 r = arr_ref(aa,i,j)*arr_ref(d,i,j-1);
                 arr_ref(d,i,j) = 1.0/(arr_ref(dd,i,j)-arr_ref(aa,i,j-1)*r);
@@ -52,22 +52,22 @@ void tomcatv(int n,double* x,double* y,double* aa,double* dd,double* d,double* r
                 arr_ref(ry,i,j) = arr_ref(ry,i,j)-arr_ref(ry,i,j-1)*r;
              }
         }
-      for (i=1; i<n-1; i+=1) 
+      for (i=1; i<n-1; i+=1)
         {
            arr_ref(rx,i,n-1) = arr_ref(rx,i,n-1)*arr_ref(d,i,n-1);
            arr_ref(ry,i,n-1) = arr_ref(ry,i,n-1)*arr_ref(d,i,n-1);
         }
-      for (j=n-3; j>0; j-=1) 
+      for (j=n-3; j>0; j-=1)
         {
-           for (i=1; i<n-1; i+=1) 
+           for (i=1; i<n-1; i+=1)
              {
                 arr_ref(rx,i,j) = (arr_ref(rx,i,j)-arr_ref(aa,i,j)*arr_ref(rx,i,j+1))*arr_ref(d,i,j);
                 arr_ref(ry,i,j) = (arr_ref(ry,i,j)-arr_ref(aa,i,j)*arr_ref(ry,i,j+1))*arr_ref(d,i,j);
              }
         }
-      for (j=1; j<n-1; j+=1) 
+      for (j=1; j<n-1; j+=1)
         {
-           for (i=1; i<n-1; i+=1) 
+           for (i=1; i<n-1; i+=1)
              {
                 arr_ref(x,i,j) = arr_ref(x,i,j)+arr_ref(rx,i,j);
                 arr_ref(y,i,j) = arr_ref(y,i,j)+arr_ref(ry,i,j);

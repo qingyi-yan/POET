@@ -57,7 +57,7 @@ typedef enum {LEX_DEFAULT, LEX_INPUT=1, LEX_NOANNOT=2, LEX_INPUT_NOANNOT=3, LEX_
         LexState; 
 typedef enum {YACC_DEFAULT, YACC_CODE} YaccState;
 
-typedef enum {ASSIGN_VAR, CODE_VAR, XFORM_VAR, GLOBAL_VAR, CODE_OR_XFORM_VAR, ID_DEFAULT, GLOBAL_SCOPE} ParseID;
+typedef enum {ASSIGN_VAR, TRACE_VAR, CODE_VAR, XFORM_VAR, GLOBAL_VAR, CODE_OR_XFORM_VAR, ID_DEFAULT, GLOBAL_SCOPE} ParseID;
 
 typedef struct ParseConfig {void* ptr; ParseID config;} ParseConfig;
 #define YYSTYPE ParseConfig

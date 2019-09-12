@@ -1,4 +1,5 @@
 <define SymTable NULL />
+<define ARRAY_TYPES NULL/>
 
 
 <code BookKeeping pars=(content)> @content@ </code>
@@ -17,12 +18,29 @@
 <xform collect_ptr_mod pars=(ptr,block) />
 
 <xform collect_variable_uses pars=(var, stmt, input) />
+<xform collect_variable_defs pars=(var, stmt, input) />
+<xform  symbolic_evaluation pars=(exp, loc, input)/>
 
-<xform is_known_operator pars=(name) mod="" read="" />
+<xform is_array_access pars=(fun)/>
+<xform is_known_operator pars=(fun) />
 <xform find_function_definition pars=(name, whole_program)/>
 <xform find_type_definition pars=(name, whole_program)/>
 <xform find_access_control pars=(op, scope)/>
 
+<************** Optimization Analysis ****************>
+<code Pattern pars=(name : ID, attr : _, content:CODE.Nest) 
+              type="" parse = XFORM.RecognizePatterns
+              rebuild=((content[Nest.ctrl]:Loop|Loop_r|For)? XFORM.RecognizePatterns(content):
+                      (if((content[Nest.body]):Nest) XFORM.RecognizePatterns(content[Nest.body]);)) 
+              /> 
+
+<*QY: find all loop index and loop variant variables*>
+<xform CategorizeVariables pars=(input) 
+            index=NULL variant=NULL  arrrefs=NULL unknown=NULL  
+            output=(_index,_variant,_arrrefs,_unknown) />
+
+<* recognize and classify coding patterns *>
+<xform RecognizePatterns pars=(input)/>
 
 <***************************************************************>
 <code Graph pars=(nodes, edges)/>
@@ -44,3 +62,4 @@
 
 <* return whether exp is linked by an unknown node in edges *>
 <xform is_linked_by_unknown pars=(exp, graphs) /> 
+

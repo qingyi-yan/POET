@@ -8,7 +8,7 @@ VOID IntersectHuniformPrimlist(intersectPrim,hit,v,r,pid) INT* intersectPrim;IRE
    t_out = r->ri->t_out;
    hit[0].t = HUGE_REAL;
    pptr = (ELEMENT**)(v->cell);
-   for (i=0; i<v->numelements; i+=1) 
+   for (i=0; i<v->numelements; i+=1)
      {
         pe = pptr[i];
         peParent = pe->parent;
@@ -17,19 +17,19 @@ VOID IntersectHuniformPrimlist(intersectPrim,hit,v,r,pid) INT* intersectPrim;IRE
         __builtin_prefetch((const char*)(r->D), 0, 1);
         __builtin_prefetch((const char*)(pe->data), 0, 1);
         hitcode = (*peParent->procs->pe_intersect)(r,pe,newhit);
-        if (hitcode)  
+        if (hitcode) 
           {
-             if (newhit[0].t<hit[0].t&&newhit[0].t<t_out)  
+             if (newhit[0].t<hit[0].t&&newhit[0].t<t_out) 
                {
                   hit[0] = newhit[0];
                }
           }
      }
-   if (hit[0].t<HUGE_REAL)  
+   if (hit[0].t<HUGE_REAL) 
      {
         *intersectPrim = TRUE;
      }
-   else  
+   else 
      {
         *intersectPrim = FALSE;
      }

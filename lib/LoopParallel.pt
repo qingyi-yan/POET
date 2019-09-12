@@ -1,9 +1,11 @@
+include analysis.pi
+
 <parameter PAPI_OMP_INSTRUMENT type=(0|1) default=0 message="whether instrument OMP Parallel Sections" />
 <parameter PAPI_COUNTERS parse=LIST(INT|STRING,",") 
                          default=("PAPI_L1_DCM" "PAPI_FP_OPS" "PAPI_BR_TKN" "PAPI_RES_STL") 
                          message="Name of the performance counters" />
 
-<code VEC pars=(var,dist,sum,gnum, index)>
+<code VEC pars=(var,dist,sum,gnum, index) match=Name#var >
 VEC#(@var@,@dist@,@sum@,@gnum@,@index@)
 </code>
 
@@ -74,9 +76,9 @@ VEC#(@var@,@dist@,@sum@,@gnum@,@index@)
 <***********************************************>
 <************* Loop SIMD Vectorization *********************>
 <***********************************************>
-<xform BuildVecRepl pars=(vars, index, gnum, dist, share, regAssign) >
+<xform BuildVecRepl pars=(vars, index, gnum, dist, share, regAssign)>
 switch (vars) {
-case (first rest):  { 
+case (first rest):  {
      index1 = BuildVecRepl(first, index, gnum, dist, "", regAssign);
      if (rest==NULL) return index1; 
      if (share == "s")
@@ -88,15 +90,36 @@ case (var, attr) :
           res = BuildVecRepl(var, index, LEN(var), attr, share, regAssign);
       else res =  BuildVecRepl(var, index, LEN(var), dist, attr, regAssign);
 case "" : res = index;
-case var : res = ( regAssign[var] = VEC#(var,dist,"", gnum, index); index+1)
+case var :
+      res = ( regAssign[var] = VEC#(var,dist,"", gnum, index); index+1);
 default: ERROR("invalid register specification:" vars)
 }
 res
 </xform>
 
-<xform AssignVECReg pars=(vars, regno, input) reduce_vars="" aligned_arrays="" output=(_res,_wkreg)>
+<*Assigns variables as vector register and wraps them in VEC# so they can be processed later*>
+<xform AssignVECReg pars=(vars, regno, input) nvreg=0 reduce_vars="" reduce_ops="" aligned_arrays="" init_vars="" output=(_res,_wkreg)>
    regAssign = MAP(_,_);
-   num = BuildVecRepl(vars,0,0,0,"",regAssign); 
+   reserved = NULL;
+   unreserved = NULL;
+   <*Separate vars based on whether they are constant if speculation will be used*>
+   if(Lookup(If#(_), input)){
+     foreach var = (CLEAR name,_) \in vars do
+       if(Lookup(name, init_vars))
+         reserved = var::reserved;
+       else
+         unreserved = var::unreserved;
+     enddo
+   }
+   else
+     unreserved=vars;
+   num = BuildVecRepl(unreserved,0,0,0,"",regAssign);
+   <*Assigns registers for variables. If the variable is constant and speculation occurs it must use a higher register so it is preserved through calls*>
+   if(num >= nvreg && reserved!=NULL)
+     num = BuildVecRepl(reserved,num,0,0,"",regAssign);
+   else if(reserved!=NULL)
+     num = BuildVecRepl(reserved,nvreg,0,0,"",regAssign);
+
    if (!LEN(regAssign) || num > regno) {
        PRINT ("Unable to perform vectorization -- too many variables: " num "!" );
        (input, "", "")
@@ -105,30 +128,40 @@ res
      wkreg = num;
      foreach this_var=Name|ArrayAccess \in reduce_vars do
         switch(this_var) {
-           case ArrayAccess#(CLEAR arr, CLEAR sub): cur = BuildName(arr "_split");
+           case ArrayAccess#(CLEAR arr, CLEAR sub): cur = Name#(BuildName(arr "_split"));
            case (Name#_ | STRING): cur = this_var;
         }
         if (cur != "") {
            VEC#(var,dist,sum,gnum,index) = regAssign[cur];
            if (sum != "") ERROR("reduction operator has already been defined to be " sum ": " (input,"",wkreg));
-             regAssign[cur] = VEC#(var,dist,"+",gnum,index);
+           op = "+";
+           for((rv=reduce_vars, ro=reduce_ops); (rv!=NULL && ro != "" && ro!=NULL); (rv=cdr(rv), ro=cdr(ro))) {
+             if ((car rv) == var) op = car(ro);
+           }
+           regAssign[cur] = VEC#(var,dist,op,gnum,index);
         }
      enddo
-     foreach cur=Name|ArrayAccess \in aligned_arrays do 
+     foreach cur=Name|ArrayAccess \in aligned_arrays do
           VEC#(var,dist,sum,gnum,index) = regAssign[cur];
           if (sum == "") <<* skip if sum is not undefined (i.e., this is a reduction variable)
              regAssign[cur] = VEC#(var,dist,"a",gnum,index);
      enddo
-     if (LEN(regAssign) > 0) input = REPLACE(regAssign, input);
+     if (LEN(regAssign) > 0) {
+           input = REPLACE(regAssign, input);
+     }
      else ERROR("Incorrect VectorlizeLoop configuration.", input);
-     (input, regAssign, wkreg)
-  }
+     (input, regAssign, wkreg) }
 </xform>
 
+<*Changes code templates given to vectors to be more specific so they can be translated*>
 <xform VectorizeExp pars=(wkreg,input) outreg="" threeop = 0 scalar="">
     switch (input) {
-    case CODE.INT_0x : 
+    case CODE.INT_0x :
       RETURN (input,input);
+    case ID: 
+      return (ExpStmt#(Arr2VecRegU#(Uop#("&", input), outreg)), outreg);
+    case impl_variant#(_,_,t=_):
+      return VectorizeExp(wkreg, t);
     case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) : 
       if (opd1 : CODE.CastExp#(_,_,t=_)) opd1 = t;
       if (opd2 : CODE.CastExp#(_,_,t=_)) opd2 = t;
@@ -155,43 +188,43 @@ res
       switch (op) {
          case "+" : 
            if (!(threeop))
-              (BuildList(res,ExpStmt#(VecRegAdd#(reg2, reg1))), reg1);
+              return (BuildList(res,ExpStmt#(VecRegAdd#(reg2, reg1))), reg1);
             else
-              (ExpStmt#(VecRegAdd3#(reg1,reg2,outreg)),outreg);
+              return (ExpStmt#(VecRegAdd3#(reg1,reg2,outreg)),outreg);
          case "*" : 
            if (!(threeop))
-              (BuildList(res,ExpStmt#(VecRegMul#(reg2, reg1))), reg1);
+              return (BuildList(res,ExpStmt#(VecRegMul#(reg2, reg1))), reg1);
            else
-              (ExpStmt#(VecRegMul3#(reg1,reg2,outreg)),outreg);
+              return (ExpStmt#(VecRegMul3#(reg1,reg2,outreg)),outreg);
          case "/" : 
            if (!(threeop))
-             (BuildList(res,ExpStmt#(VecRegDiv#(reg2, reg1))), reg1);
+             return (BuildList(res,ExpStmt#(VecRegDiv#(reg2, reg1))), reg1);
            else
-             (ExpStmt#(VecRegDiv3#(reg1,reg2,outreg)),outreg);
+             return (ExpStmt#(VecRegDiv3#(reg1,reg2,outreg)),outreg);
          case "-" : 
            if (!(threeop))
-              (BuildList(res,ExpStmt#(VecRegMinus#(reg2, reg1))), reg1);
+              return (BuildList(res,ExpStmt#(VecRegMinus#(reg2, reg1))), reg1);
            else
-              (ExpStmt#(VecRegMinus3#(reg1,reg2,outreg)),outreg);
+              return (ExpStmt#(VecRegMinus3#(reg1,reg2,outreg)),outreg);
          case "&" :  
-           (BuildList(res,ExpStmt#(CODE.VecRegBitAnd#(reg2, reg1))), reg1)
+           return (BuildList(res,ExpStmt#(CODE.VecRegBitAnd#(reg2, reg1))), reg1)
 
-         <* Generate the opposite, negative version of the operator so the body of the statement
-            will be marked with the "if(flag)" block, where the flag is the scalar in argument 4 *>
+         <******************************** CONDITIONAL OPERATORS ********************************** 
+            Generate the opposite, negative version of the operator so the body of the statement
+            will be marked with the "if(flag)" block, where the flag is the scalar in parameter 4 
+          *****************************************************************************************>
          case "<=" :
-           print("Op: " op " (generate gen_cmp_ngt(,,,))");
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpNGT#(reg2,reg1,wkreg,Uop#("&",scalar))));
          case ">" :
-           print("Op: " op " (generate gen_cmp_nle(,,,))");          
-           (BuildList(res,ExpStmt#(CODE.VecRegCmpNLE#(reg2,reg1,outreg,Uop#("&",scalar)))), outreg);
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpNLE#(reg2,reg1,wkreg,Uop#("&",scalar))));
          case "<" :
-           print("Op: " op " (generate gen_cmp_nge(,,,))");
-           (BuildList(res,ExpStmt#(CODE.VecRegCmpNGE#(reg2,reg1,outreg,Uop#("&",scalar)))), outreg);
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpNGE#(reg2,reg1,wkreg,Uop#("&",scalar))));
          case ">=" :
-           print("Op: " op " (generate gen_cmp_nlt(,,,))");
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpNLT#(reg2,reg1,wkreg,Uop#("&",scalar))));
          case "==" :
-           print("Op: " op " (generate gen_cmp_neq(,,,))");
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpNEQ#(reg2,reg1,wkreg,Uop#("&",scalar))));
          case "!=" : 
-           print("Op: " op " (generate gen_cmp_eq(,,,))");
+           return BuildList(res,ExpStmt#(CODE.VecRegCmpEQ#(reg2,reg1,wkreg,Uop#("&",scalar))));
          default: 
            PRINT("Warning[VectorizeExp]: cannot parallelize operation:" op);
            (input, "")
@@ -207,58 +240,297 @@ res
   }
 </xform>
 
-<xform MakeUnrolledBody pars=(input) >
-  print("Input: " input);
-  switch(input) {
-    case Nest#(If#(CLEAR con), CLEAR body) :
+<* This function takes an 'body' that has been chosen from an 'input' and unrolls the 
+   'body' so that it is no longer used fro vectorization. Then it removes the original 
+   'body' from the 'input'. *>
+<xform MakeUnrolledBody pars=(body,amount) index="" array="" scalar_replacement="" variable_swap="" >
+  if(index == "" || array == "" || scalar_replacement == "" || amount == "") {
+    print("Warning[MakeUnrolledBody]: cannot extend expression: " body);
+    return "";
+  }
+
+  if(variable_swap != NULL || variable_swap != "") {
+    (old_var, new_var) = variable_swap;
+    body = REPLACE(old_var, new_var, body);
+  }
+  switch(body) {
+    case Nest#(If#(CLEAR con), CLEAR ifbody) :
       Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) = con;
-      VEC#(CLEAR var_con1, CLEAR dist_con1, CLEAR sum_con1,_, CLEAR reg_con1) = opd1;
-      VEC#(CLEAR var_con2, CLEAR dist_con2, CLEAR sum_con2,_, CLEAR reg_con2) = opd2;
+      VEC#(CLEAR var_con1, CLEAR dist_con1, CLEAR sum_con1, _, CLEAR reg_con1) = opd1;
+      VEC#(CLEAR var_con2, CLEAR dist_con2, CLEAR sum_con2, _, CLEAR reg_con2) = opd2;
       <<*print("CON: \n  op: " op); 
       <<*print("OPD1: \n  var: " var_con1 "\n  dist: " dist_con1 "\n  sum: " sum_con1 "\n  reg: " reg_con1);
       <<*print("OPD2: \n  var: " var_con2 "\n  dist: " dist_con2 "\n  sum: " sum_con2 "\n  reg: " reg_con2);
 
-      ExpStmt#(Assign#(CLEAR left, CLEAR right)) = body;
-      VEC#(CLEAR var1, CLEAR dist1, CLEAR sum1,_, CLEAR reg1) = left;
-      VEC#(CLEAR var2, CLEAR dist2, CLEAR sum2,_, CLEAR reg2) = right;
-      <<*print("LEFT: \n  var: " var1 "\n  dist: " dist1 "\n  sum: " sum1 "\n  reg: " reg1);
-      <<*print("RIGHT: \n  var: " var2 "\n  dist: " dist2 "\n  sum: " sum2 "\n  reg: " reg2);
+      ExpStmt#(Assign#(left, right)) = ifbody;
+      VEC#(var1, dist1, sum1, x, reg1) = left;
+      VEC#(var2, dist2, sum2,_, reg2) = right;
 
-      <* Building nested statements and return *>
-      StmtList#(
-        Nest#(If#(Bop#(op,Uop#("*",var_con1),var_con2)),Assign#(var1,var_con1)),
-        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"1")),var_con2)),Assign#(var1,Bop#("+",var_con1,"1"))),
-        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"2")),var_con2)),Assign#(var1,Bop#("+",var_con1,"2"))),
-        Nest#(If#(Bop#(op,Uop#("*",Bop#("+",var_con1,"3")),var_con2)),Assign#(var1,Bop#("+",var_con1,"3"))))
-    default:
-      print("Warning[MakeUnrolledBody]: cannot extend expression: " input);
+      <* find variable reduction variable that needs to be splat back into register *>
+      (old_var, new_var) = variable_swap;
+      vec_reg = VEC#(old_var,dist1,sum1,x,reg1);
+
+      newstmts = ExpStmt#(Assign#(var1,ArrayAccess#(array,index)));
+      splat = ExpStmt#(Assign#(vec_reg,Uop#("*",Uop#("&",new_var))));
+      if(amount == 1) {
+        return StmtList#(newstmts::splat);
+      }
+      else {
+        for(i = 1; i < amount; i+=1) {
+          cur_access = ArrayAccess#(array,Bop#("+",index,i));
+          newstmts = newstmts::Nest#(If#(Bop#(op,cur_access,var_con2)),ExpStmt#(Assign#(var1,cur_access)));
+        }
+        return StmtList#(newstmts::splat);
+      }
+    default :
+      print("Warning[MakeUnrolledBody]: cannot extend expression: " body);
   }
 </xform>
 
-<xform VectorizeStmts pars=(reglen,wkreg,input) threeop = 0 >
-  if_repl = "";
-  foreach (input : Nest#(If#(CLEAR cur),CLEAR body) : TRUE) {
-    switch(cur) {
-      case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) :
-        flag = "___flag___";
-        new_stmts = StmtList#(ExpStmt#(VectorizeExp[scalar=flag](wkreg,cur)),Nest#(If#(flag),MakeUnrolledBody(Nest#(If#(cur),body))));
-        input = new_stmts;
-        print("Updated Input: " input);
-      default :
-        print("Warning[VectorizeStmts]: cannot vectorize expression:" cur);
-    }  
+<xform create_scalar_unrolled_body pars=(body, increment) replacement="" >
+  if(increment < 1) { 
+    print("Warning[create_scalar_unrolled_body]: increment variable should not be less than 1. (Value=" increment ")");
+  }
+  <* body does not need to have any handles, and if there are they would not be updated because of this function *>
+  body = COPY(body);
+  reduction_reg = "";
+  reduction_var = "";
+  vec_splat = NULL;
+  do_replace = (replacement != "" && replacement != NULL);
+
+  for (p = replacement; p != NULL; p = cdr(p)){
+    q=car(p);
+    if(do_replace) {
+      reduction_reg = q[0];
+      reduction_var = q[1];
+      body = REPLACE(reduction_reg,reduction_var,  body);
+    }
+ 
+  <* grab contents of reduction variable in order to perform splat after block *>
+    foreach reduction_vec=VEC#(CLEAR name, _, _, _, _) \in body do
+      if(name == reduction_var) { 
+        vec_splat = ExpStmt#(Assign#(reduction_vec, Uop#("*", Uop#("&", reduction_var))))::vec_splat;
+        break; 
+      }
+    enddo
   }
 
+  <* remove all VEC objects and grab only their name to rid of vector variables *>
+  foreach v=VEC#(CLEAR name, _, _, _, _) \in body do
+    body = REPLACE(v, name, body);
+  enddo
+
+  <*NOTE*>
+  <* restore all array accesses that were replaced*>
+
+  <* Since this is for finding max or min, if the vector compare statement returns any value other than 0
+     we know what at least one value from the vector register is going to overwrite the reduction vaiarble, 
+     thus, we ignore the first if statement in order to speed up the code *>
+  fbody = ""; <* final body *>
+  foreach ifhead=Nest#(If, CLEAR body_exps) \in body do
+    fbody = REPLACE(ifhead, body_exps, body);
+  enddo
+
+  <* Need to get rid of all DeclStmts so that they are only assigns, the variables will be overwritten rather 
+     than redefined after the first iteration of the body (contained in fbody) *>
+  <* !!! We are also assuming that DeclStmts only contain one variable declaration rather than a list *>
+  foreach d=DeclStmt#(CLEAR typeinfos) \in body do
+
+    TypeInfo#(CLEAR type, CLEAR var, VarInit#(CLEAR exp)) = car(typeinfos);
+    fbody = REPLACE(d, ExpStmt#(Assign#(var, exp)), fbody);
+    body = REPLACE(d, ExpStmt#(Assign#(var, exp)), body);
+    <*If the variable is not declared then add declaration to outside of loop*>
+    if(!Lookup(var, TRACE_DECL)){
+      AppendDecl[trace=TRACE_DECL](type, var);
+    }
+  enddo
+
+  <* unrolling *>
+  if(increment > 1) {
+    for(i = 1; i < increment; i = i+1) {
+      nbody = ""; <* Next body *>
+      foreach a=ArrayAccess#(CLEAR avar, CLEAR inc) \in body do
+        nbody = REPLACE(a, ArrayAccess#(avar, Bop#("+", inc, i)), body);
+      enddo
+      fbody = AppendList(fbody, nbody); 
+    }
+  }
+  return AppendList(fbody, vec_splat);
+
+</xform>
+
+<xform VectorizeStmts pars=(reglen,wkreg,input) threeop=0 ret_new_vars="" >
+  index = ""; 
+  array = "";
+  scal_rep = "";
+  <* find array name and index in order to do the scalar replacement - should be the first statement because of the scalar 
+     replacement optimization applied earlier puts it first *>
+  foreach (input : ExpStmt#(Assign#(VEC#(Name#(CLEAR scal_rep),_,_,_,_), ArrayAccess#(CLEAR array,CLEAR index))) : FALSE) {
+    break;
+  }
+
+  do_replace = FALSE;
+  replace_list = NULL;
+  inc=0;
+  foreach fNest=Nest#(Loop#(_, _, _, CLEAR increment), CLEAR LoopBody) \in input do
+    inc=increment;
+    <*foreach variant=impl_variant#(CLEAR id, CLEAR name, CLEAR impl) \in LoopBody do *>
+    foreach if_state=Nest#(If#(CLEAR conditional), CLEAR ifbody) \in LoopBody do
+      <* See if the variables being used are updated before the if-check because 
+         they would need to be added within the if-statement before each individual
+         check 
+         --------------------------------------------------------------------------
+         function should return list of variables being used and a list of those 
+         expressions *>
+      exp_map = MAP{};
+      var_list = NULL;
+      Nest#(_, body) = fNest;
+      foreach line=(impl_variant | ExpStmt | DeclStmt | Nest) \in body do
+        if(line : Nest) { break; }
+
+        if(line : impl_variant#(_, _, CLEAR exp)) {
+          <* Do Nothing : already assigned exp *>
+        } 
+        else {
+          exp = line;
+        }
+        
+        if(exp : DeclStmt#(CLEAR inside)) { 
+          <* HACK : assuming all typeinfos only contain one assign *>
+          TypeInfo#(_, CLEAR lhs, CLEAR rhs) = car(inside);
+        } 
+        else if(exp : ExpStmt#(CLEAR inside)) {
+          Assign#(CLEAR lhs, CLEAR rhs) = inside;
+        }
+
+        if(lhs != NULL) {
+          if (lhs : VEC#(CLEAR var_name,_,_,_,_)) {
+             <*Do not add declarations for copies of index variables*>
+             if(var_name : Name#(var=_ "_index_cp") && Lookup(var, rhs)){<*Do nothing*>}
+             else{
+               var_list = AppendList(var_name, var_list);
+               exp_map[var_name] = line;
+             }
+          }
+          else {
+             print("Warning[VectorizeStmts]: variable being declared is not vectorized");
+          }
+        } 
+        else {
+          print("Warning[VectorizeStmts]: lhs variable was never defined");
+        }
+      enddo
+      <* check to see if there is even any code to be added for each unrolled section *>
+      extra_exps = "";
+      if(var_list != NULL) {
+        (_, read_var_list) = GLOBAL.global_modread(line);
+        <* Find if any of the variables written from var_list are also read within the Nest *>
+        <* NOTE: if a variable is found as a match, it is added to the extra_exps list but also has to 
+           be checked for the variables it uses so that they are added to the list to be checked if they 
+           are update too *>
+
+        <* ALGORITHM for finding which lines need to be added to every unrolled scalar implementation
+           1. search for match of element in var_list to be in read_var_list
+           2. if there is a match, then add variables corresponding code to extra_exps
+           3. remove element from var_list
+          4. search for the read vars in the new added code (step 2) and its read vars to read_var_list
+           5. repeat until var_list is empty *>
+        var_list_full = var_list;
+        for(; var_list != NULL;) {
+          new_extra_exps = "";
+          foreach var=ID|Name|ArrayAccess \in var_list do
+            if(Lookup(var,read_var_list)) {
+              new_extra_exps = exp_map[var] :: new_extra_exps;
+             (_, new_read) = GLOBAL.global_modread(exp_map[var]);
+              <* Check to make sure new_read variables are not already in the list *>
+              foreach v=ID|Name|ArrayAccess \in new_read do
+                if(!Lookup(v, read_var_list)) {
+                 read_var_list = read_var_list :: v;
+                }
+              enddo
+            }
+            var_list = RemoveFromList(var, var_list);
+          enddo
+
+          extra_exps = AppendList(new_extra_exps,extra_exps);
+        }
+
+      }
+      <* extra_exps contains the list of expressions that need to be done before the scalar unrolling - 
+         now we need to check for any impl_variants to see if they have a scalar version we can replace 
+         the existing code with *>
+      scalar = "scalar";
+      foreach old=impl_variant#(CLEAR id, CLEAR name, _) \in extra_exps do
+        if(name == scalar) { break; } <* we are replacing all variant with scalar variants - no need if already scalar *>
+        foreach new=impl_variant#(CLEAR new_id, CLEAR new_name, _) \in GLOBAL._variant_map[id] do
+          if(new_name == scalar) {
+            extra_exps = REPLACE(old, new, extra_exps);
+            break;
+          }
+        enddo
+      enddo
+
+      <* Most sse optimizations change the reduction variable to have "_reg" at the end, this looks for that exchange so it 
+         knows to remove the "_reg" from the reduction variable later *>
+      swap = NULL;
+      foreach i=ExpStmt#(Assign#(VEC#(CLEAR register_var,_,_,_,_),Uop#(_,Uop#(_,CLEAR var)))) \in input do
+        if(Name#(AppendList(var, "_reg")) == register_var) {
+          swap = (register_var, var)::swap;
+        }
+      enddo
+      <*Removes DeclStmts and VEC# from inside if-statements*>
+      new_body = create_scalar_unrolled_body[replacement=swap](AppendList(extra_exps, if_state), increment);
+      <*Change copies of index variables back to original since they arent vectorized inside flag*>
+      foreach name=Name#(_) \in new_body do
+          if(name : Name#(var=_ "_index_cp")){
+            new_body=REPLACE(name, var, new_body);
+          }
+      enddo
+
+      <* create flag variable and save it to ret_new_vars list *>
+      flag = "___flag___";
+      AppendDecl[trace=TRACE_DECL](CODE.IntegerType, flag);
+      if(!Lookup(flag, ret_new_vars)) {
+        REPLACE(ERASE(ret_new_vars), flag::ERASE(ret_new_vars), ret_new_vars);
+      }
+      newstmts = StmtList#(VectorizeExp[scalar=flag](wkreg, conditional) Nest#(If#(flag), new_body));
+      replace_list = AppendList(replace_list, (if_state, newstmts)); 
+      do_replace = TRUE;
+    enddo
+
+    <*NOTE: Not sure what this was supposed to do or why it is commented out*>
+    <*foreach (LoopBody : ifstat=Nest#(If#(CLEAR cur),CLEAR ifbody) : TRUE) {
+      switch(cur) {
+        case Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) :
+          unrolled_body = MakeUnrolledBody[index=index;array=array;scalar_replacement=scal_rep;variable_swap=swap](ifstat,increment);
+
+          flag = "___flag___";
+          AppendDecl[trace=TRACE_DECL](CODE.IntegerType,flag);
+          if(!Lookup(flag, ret_new_vars))
+            REPLACE(ERASE(ret_new_vars), flag::ERASE(ret_new_vars), ret_new_vars);
+
+          newstmts = StmtList#(VectorizeExp[scalar=flag](wkreg,cur)Nest#(If#(flag),unrolled_body));
+
+          replace_list = AppendList(replace_list,(ifstat,newstmts)); 
+          do_replace = TRUE;
+
+        default :
+         print("Warning[VectorizeStmts]: cannot vectorize expression:" cur);
+      }  
+    }*>
+  enddo
+  if(do_replace) input = REPLACE(replace_list,input);
    repl="";
+   <*Replaces Exp and Decl Stmts with more specific code templates*>
    foreach_r ( input : (stmt=DeclStmt#(CLEAR cur)|ExpStmt#(CLEAR cur)) : TRUE) {
       offset=0; <*used in matching array access *>
-      switch (cur) { 
-      case Assign#(VEC#(CLEAR var,CLEAR dist,CLEAR sum,_,CLEAR reg),0): 
+      switch (car cur) { 
+      case Assign#(VEC#(CLEAR var,CLEAR dist,CLEAR sum,_,CLEAR reg),0):
          repl=BuildList( (cur, VecZero#(reg)), repl);
       case Assign#(VEC#(CLEAR var,CLEAR dist,CLEAR sum,_,CLEAR reg),Uop#("*",CLEAR addr)|ArrayAccess#(CLEAR addr,CLEAR offset)):{
            addr = addr + offset;
            if (dist == 0) {
-             if (sum == "" || sum == "a")  
+             if (sum=="" || sum == "a" || sum == "max" || sum == "min" || sum=="*") 
                 repl = BuildList( (cur, Var2VecReg#(addr,reg)), repl);
              else
                 repl = BuildList( (cur, Var2VecRegL#(addr,reg)), repl);
@@ -271,7 +543,10 @@ res
            }
            else ERROR(input "not handled yet") ;
        }
-      case Assign#(Uop#("*",CLEAR addr)|ArrayAccess#(CLEAR addr,CLEAR offset),VEC#(CLEAR var,CLEAR dist,CLEAR sum,CLEAR gnum,CLEAR reg)) : {
+      case Assign#(Uop#("*",CLEAR addr)|ArrayAccess#(CLEAR addr,CLEAR offset),rhs=VEC#(CLEAR var,CLEAR dist,CLEAR sum,CLEAR gnum,CLEAR reg)|CastExp#(_,VEC#(CLEAR var,CLEAR dist,CLEAR sum,CLEAR gnum,CLEAR reg))) : {
+           if(addr: VEC#(Name#(var2 "_reg"),_,_,_,CLEAR addr2)){
+             addr = var2;
+           }
            addr = addr + offset;
            if (dist == 0) {
               if (sum == "r" && wkreg && (gnum % reglen)== 0) { 
@@ -297,9 +572,12 @@ res
                 : (repl :  ( match2))? (repl = APPLY {curRepl})
                 :  (repl=BuildList( (stmt,ExpStmt#(VecRegRed2Var#(reg,addr,wkreg))), repl))
               }
-              else if (sum=="r" || sum ==  "+") 
+              else if (sum=="r" || sum ==  "+"){ 
                   repl = BuildList( (stmt, ExpStmt#(VecRegRed2Var#(reg,addr,wkreg))), repl);
-              else repl = BuildList( (cur, VecReg2Var#(reg,addr)), repl);
+              }
+             <*Hack to ensure that rm is used instead of rm_1 if the loop is not nested. May need to be reworked*>
+             else if (Lookup(ArrayAccess#(_,_), car cur) && sum!="u") repl = BuildList( (cur, VecReg2ArrU#(reg,addr)), repl);
+             else {repl = BuildList( (cur, VecReg2Var#(reg,addr)), repl)}
            }
            else if (dist == 1)  {
               if (sum == "a") 
@@ -309,22 +587,29 @@ res
            }
            else ERROR( ("not handled yet:" cur), input) ;
        }
-      case Assign#((lhs=VEC#(CLEAR var3,_,_,_,CLEAR reg3)), CLEAR rhs):
+      <*Also replaces right-hand-side of statement*>
+      case Assign#((lhs=VEC#(CLEAR var3,_,_,_,CLEAR reg3)), CLEAR rhs)
+          | TypeInfo#(_,lhs=VEC#(CLEAR var3,_,_,_,CLEAR reg3),VarInit#(CLEAR rhs)) :
          (res,reg) = VectorizeExp[outreg=reg3; threeop=threeop](wkreg, rhs);
          if (reg != "") { 
               if (reg != reg3) ERROR("Something is wrong. reg = " reg);
               repl = BuildList( (stmt, res), repl); }
+      <*Allows for array accesses to be assigned with Bops*>
+      case Assign#((lhs=ArrayAccess#(CLEAR addr,CLEAR offset)), rhs=Bop#(_,_,_)) :
+         sum = "";
+         foreach VEC#(_,_,CLEAR a,_,_) \in rhs do
+           if(a=="u") sum = "u";
+         enddo
+         (res,reg) = VectorizeExp(wkreg, rhs);
+         if (reg != "") {
+              if(sum!="u") res = BuildList(res, VecReg2ArrU#(reg,addr+offset));
+              else res = BuildList(res, VecReg2Var#(reg,addr+offset));
+              repl = BuildList((stmt, res), repl); }
       default: 
          print ("Warning[VectorizeStmts]: cannot vectorize expression:" cur);
      }
    }
-   res = input;
-   for (pr = repl; pr != NULL; pr = cdr(pr)) 
-   {
-      if(car(pr) == "") continue;
-      (from,to) = car(pr);
-      res = REPLACE(from,to,res);
-   }
+  res = REPLACE(repl, input);
    res
 </xform>
 
@@ -373,30 +658,37 @@ res
 
 <***********************************************>
 <xform VectorizeLoop pars=(vars, vnest) ext=""
-     init_vars=""  save_vars="" reduce_vars="" aligned_arrays="" elem_prec="d" 
-     alignOpt="" trace_decl=GLOBAL.TRACE_DECL  trace_include=GLOBAL.TRACE_INCL trace=GLOBAL.TRACE_TARGET>
+     init_vars=""  save_vars="" reduce_vars="" reduce_ops="" aligned_arrays="" elem_prec="d" ret_new_vars=""
+     alignOpt="" trace_decl=GLOBAL.TRACE_DECL  trace_include=GLOBAL.TRACE_INCL trace=GLOBAL.TRACE_TARGET nvreg=0>
    elemsize = ((elem_prec=="d")? 8 : 4);
    iReglen =  ((elem_prec=="d")? (GLOBAL.REG_LEN/8) : (GLOBAL.REG_LEN/4));
    threeop = (GLOBAL.REG_LEN==32);
    iRegno = GLOBAL.REG_NO;
-
    if (ext == "") ext = vnest;
-   (r1, repl, wkreg) = AssignVECReg[reduce_vars=reduce_vars; aligned_arrays=aligned_arrays](vars,iRegno,ext);
+   <*Assign VEC# for each variable and assign each a register*>
+   (r1, repl, wkreg) = AssignVECReg[reduce_vars=reduce_vars;reduce_ops=reduce_ops;aligned_arrays=aligned_arrays;init_vars=init_vars;nvreg=nvreg](vars,iRegno,ext);
    if (repl == "")  {
      RETURN(ext); 
    }
    if (init_vars != "") {
-         foreach ( init_vars :  (cur = (Name#_ | STRING)) : TRUE) {
+         foreach cur=CODE.Name|ID \in init_vars s.t. 1 do
             r1= BuildList(ExpStmt#(Assign#(repl[cur], Uop#("*",(Uop#("&",cur))))), r1) ;
-         }
-      } 
+         enddo
+      }
+   <*Create a copy of vnest without if-statements to check where variables are used*>
+   noif = COPY(vnest);
+   foreach cur=Nest#(If#(_),_) \in noif s.t. 1 do
+     noif = REPLACE(cur, "", noif);
+   enddo
+   <*If the saved variable is used outside of the scalar portion then add statement for saving back to memory*>
    if (save_vars != "") {
-         foreach ( save_vars :  (cur = (Name#_ | STRING)) : TRUE) {
-            r1= BuildList(r1, ExpStmt#(Assign#( Uop#("*",(Uop#("&",cur))), repl[cur]))) ;
-         }
-      } 
-   
-   Nest#(loop,body) = vnest;
+         foreach cur=CODE.Name|ID \in save_vars s.t. 1 do
+            if(Lookup(cur, noif))
+              r1= BuildList(r1, ExpStmt#(Assign#( Uop#("*",(Uop#("&",cur))), repl[cur]))) ;
+         enddo
+      }
+
+      Nest#(loop,body) = vnest;
       if (alignOpt != "") {
          (addr,addrp, name) = alignOpt; 
          AppendDecl[trace=trace_decl]("size_t", name);
@@ -408,7 +700,7 @@ res
       if (vnest != r3) (_,r2) = EraseTraceHandle[repl=r3](vnest, r2);
       if (vnest != r2) (_,r1) = EraseTraceHandle[repl=r2](vnest, r1);
       Append_Include[trace=trace_include](SSEincl#(elem_prec,GLOBAL.REG_LEN));
-      r1 = VectorizeStmts[threeop = threeop](iReglen, wkreg, r1);
+      r1 = VectorizeStmts[threeop = threeop;ret_new_vars=ret_new_vars](iReglen, wkreg, r1);
       EraseTraceHandle[repl=r1](ext,trace);
       r1
 </xform>

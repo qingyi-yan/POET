@@ -41,16 +41,6 @@ bool POETProgram::backtrack=false;
 LvarSymbolTable POETProgram::traceDef;
 LvarSymbolTable POETProgram::paramDef;
 LvarSymbolTable POETProgram::macroDef;
-POETIconst* ASTFactory::zero = new POETIconst(0);
-POETIconst* ASTFactory::one = new POETIconst(1);
-POETString* ASTFactory::emptyString = new POETString("");
-POETString* ASTFactory::linebreak = new POETString("\n");
-POETNull* ASTFactory::emptylist = new POETNull();
-POETType* ASTFactory::intType = new POETType(TYPE_INT);
-POETType* ASTFactory::stringType = new POETType(TYPE_STRING);
-POETType* ASTFactory::floatType = new POETType(TYPE_FLOAT);
-POETType* ASTFactory::idType = new POETType(TYPE_ID);
-POETType*  ASTFactory::lvarAny = new POETType(TYPE_ANY);
 ASTFactory* ASTFactory::_inst = 0;
 std::map<void*, POETCode*> POETAstInterface::codeMap;
 POETProgram* curfile;
@@ -77,6 +67,8 @@ const char* OpName[] =
 extern int user_debug;
 extern bool debug_parse();
 
+POETCode* POETCodeVisitor::apply(POETCode* c) { c->visit(this); return 0; }
+
 POETString* POETProgram:: make_string(const std::string& r)
           { return ASTFactory::inst()->new_string(r); }
 POETIconst* POETProgram:: make_Iconst(int val)
@@ -93,7 +85,9 @@ POETCode* POETProgram:: make_atomType(POETTypeEnum t)
 { return ASTFactory::inst()->new_type(t);  }
 
 std::string POETCode_ext :: toString(ASTOutputEnum config)
-       {  return POETAstInterface::Ast2String(content) + ((children==0 || children == EMPTY)? "" : ("{"+children->toString()+"}")); }
+{  
+   return POETAstInterface::Ast2String(content); 
+}
 
 POETCode* POETProgram:: make_pair(POETCode* r1, POETCode* r2)
           { return ASTFactory::inst()->new_pair(r1,r2); }
@@ -298,6 +292,7 @@ make_typeTor( POETCode* arg1, POETCode* arg2)
 POETCode* POETProgram::
 make_Bop( POETOperatorType t, POETCode* arg1, POETCode* arg2, int lineno)
 {
+  assert(arg1 != 0 && arg2 != 0);
   switch (t) 
   {
      case POET_OP_MAP : return ASTFactory::inst()->new_MAP(arg1,arg2);  

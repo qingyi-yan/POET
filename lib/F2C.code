@@ -44,17 +44,22 @@ Support for using macros to represent linearization of array dimensions
 
 </code>
 
+<code TypeDecl pars=(t : CODE.Type, annot : CODE.Annotations|"")> @t annot@ </code>
+<code VarRef pars=(name : ID, dim : CODE.ArrayDim|"")> @name dim@ </code>
+
 <code FunctionCall pars=(function, args : CODE.ExpList)>
 @function@(@args@)
 </code> 
 
+<code StmtBlock pars=(stmts : LIST(GLOBAL.FSTMT,"\n"))> @stmts@ 
+</code>
 
 <code F2CInclude >
 @res=NULL; if (GLOBAL.arrref=="") GLOBAL.arrref=NULL;
 for (p=GLOBAL.arrref; p != NULL; p=cdr(p)) 
 {
   array=car(p);
-  TAG#(_,ArrayType#(_,dim))|ArrayType#(_,dim)=GLOBAL.SymTable[array];
+  TAG#(_,ArrayType#(_,dim))|ArrayType#(_,dim)=get_type(array);
   GLOBAL.arrref_macro[array]=1;
   res= MacroDef#(array,dim) :: res;
 }
@@ -92,7 +97,7 @@ switch (sub)
 
 <code ArrayAccess pars=(array,subscript)>
 @ if (GLOBAL.arrref_macro[array]=="") {
-  TAG#(_,ArrayType#(_,dim))|ArrayType#(_,dim)=GLOBAL.SymTable[array];
+  TAG#(_,ArrayType#(_,dim))|ArrayType#(_,dim)=get_type(array);
 (array@[@UnparseArraySub(dim,subscript)@]@)
   }
   else {
@@ -129,14 +134,14 @@ for (@i@=@((start:INT)?REBUILD(start-1):start)@; @i@<@stop@; @i@+=@step@)
 <*********************>
 
 <code ParamName pars=(id : ID) >
-@(car(GLOBAL.SymTable))[id]@ @id@
+@(get_type(id))@ @id@
 </code>
 
-<code SubroutineDecl pars=(name:ID, params:LIST(ParamName,","), body:LIST(F77STMT,"\n"))>
-void @name@(@params@)@((body == "")?";":@
+<code SubroutineDecl pars=(name:ID, params:LIST(ParamName,","), body:LIST(_,"\n"))>
+void @name@(@params@)
 {
-  @body@
-}@)@
+  @(enter_block(body); body)@
+}
 </code>
 
 
@@ -204,20 +209,18 @@ else @rest@
 
 <code ArrayDim pars=(dim:LIST(EXP,"*"))> [@dim@] </code>
 
-<code Variable pars=(name,arrDim)> 
-@(tab=car(GLOBAL.SymTable);
-if (!(tab : MAP)) ERROR("No Symbol Table!");
-switch(m=tab[name])
+<code Variable pars=(name,init)> 
+@(switch(m=get_type(name))
 {
-case TAG#("PARAM",type): "" 
-case TAG#("FUN",type): (type " " name "();\n")
-case "": ERROR("No type info for variable:" name);
-default: (m " "  name arrDim ";\n")
+ case TAG#("PARAM",type): "" 
+ case TAG#("FUN",type): (type " " name "();\n")
+ case ""|name: ERROR("No type info for variable:" name "\n" tab);
+default: (m " "  name init ";\n")
 })@
 </code>
 
 <code VarDeclStmt pars=(type, var)> 
-@var@
+@var@;
 </code>
 
 

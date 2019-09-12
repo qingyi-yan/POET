@@ -5,20 +5,20 @@ routine = void jacobi7_3(const int nx,const int ny,int nz,const double alpha,dou
    int i;int j;int k;int t;
    fac = 6.0/(A0[0]*A0[0]);
    double* l0;double* lnext;
-   for (t=0; t<timesteps; t+=1) 
+   for (t=0; t<timesteps; t+=1)
      {
-        for (k=1; k<nz-1; k+=1) 
+        for (k=1; k<nz-1; k+=1)
           {
-             for (j=1; j<ny-1; j+=1) 
+             for (j=1; j<ny-1; j+=1)
                {
-                  for (i=1; i<nx-1; i+=1) 
+                  for (i=1; i<nx-1; i+=1)
                     {
-                       if (t%2==0)  
+                       if (t%2==0) 
                          {
                             l0 = A0;
                             lnext = Anext;
                          }
-                       else  
+                       else 
                          {
                             lnext = A0;
                             l0 = Anext;

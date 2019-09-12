@@ -23,7 +23,7 @@ void tomcatv( int n, double * x, double* y, double* aa, double* dd, double *d, d
   double pxx, qxx, pyy, qyy, pxy, qxy;
   double rel = 2.0 / 0.98;
   {
-  /*@; BEGIN(nest1=Nest)@*/ for (j = 1; j < n-1; ++j) {
+  /*@; BEGIN(nest1=CODE.Nest)@*/ for (j = 1; j < n-1; ++j) {
     for (i = 1; i < n-1; ++i) {
        xx = arr_ref(x,i+1,j) - arr_ref(x,i-1,j);
        yx = arr_ref(y,i+1,j) - arr_ref(y, i-1, j);

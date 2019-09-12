@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2016.8.2)  30 MAR 2017 14:18
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2016.8.2)  12 SEP 2019 15:21
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -269,11 +269,11 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <10.95> on input line 1.
  [3
 
-] [4])
+] [4] [5])
 \tf@toc=\write5
 \openout5 = `manual.toc'.
 
- [5] [6]
+ [6]
 Chapter 1.
 LaTeX Font Info:    Try loading font information for OMS+cmr on input line 118.
 
@@ -530,14 +530,14 @@ Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2683.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2683.
 
 Package rerunfilecheck Info: File `manual.out' has not changed.
-(rerunfilecheck)             Checksum: 1554EF74032D0331D656A634EE00348A;8765.
+(rerunfilecheck)             Checksum: 2F2A865852BD9B2AEF6AED35798187F2;8840.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2683.
  ) 
 Here is how much of TeX's memory you used:
- 6627 strings out of 493304
- 96985 string characters out of 6139872
+ 6628 strings out of 493304
+ 97009 string characters out of 6139872
  188546 words of memory out of 5000000
- 9846 multiletter control sequences out of 15000+600000
+ 9847 multiletter control sequences out of 15000+600000
  12020 words of font info for 42 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
  29i,6n,32p,769b,505s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -556,10 +556,10 @@ b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texl
 ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
-Output written on manual.pdf (59 pages, 384847 bytes).
+Output written on manual.pdf (59 pages, 385352 bytes).
 PDF statistics:
- 1077 PDF objects out of 1200 (max. 8388607)
- 990 compressed objects within 10 object streams
+ 1081 PDF objects out of 1200 (max. 8388607)
+ 994 compressed objects within 10 object streams
  213 named destinations out of 1000 (max. 500000)
- 985 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 993 words of extra memory for PDF output out of 10000 (max. 10000000)
 

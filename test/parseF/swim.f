@@ -149,7 +149,7 @@ C
 C        INITIALIZE CONSTANTS AND ARRAYS
 C           R. K. SATO 4/7/86
 C
-C //@; BEGIN(decl1=ParamDeclStmt)
+C //@; BEGIN(decl1=CODE.ParamDeclStmt)
       PARAMETER (N1=1025, N2=1025)
 
       COMMON  U(N1,N2), V(N1,N2), P(N1,N2),
@@ -200,7 +200,7 @@ C      N = N2 - 1
 C
 C     INITIAL VALUES OF THE STREAM FUNCTION AND P
 C
-C //@; BEGIN(looplist1=LoopNestList)
+C //@; BEGIN(looplist1=CODE.LoopNestList)
       DO 50 J=1,NP1
       DO 50 I=1,MP1
       PSI(I,J) = A*SIN((FLOAT(I)-0.5)*DI)*SIN((FLOAT(J)-0.5)*DJ)
@@ -242,7 +242,7 @@ C SPEC removed CCMIC$ MICRO
 C
 C        COMPUTE CAPITAL  U, CAPITAL V, Z AND H
 C
-C //@; BEGIN(decl2=ParamDeclStmt)
+C //@; BEGIN(decl2=CODE.ParamDeclStmt)
       PARAMETER (N1=1025, N2=1025)
 
       COMMON  U(N1,N2), V(N1,N2), P(N1,N2),
@@ -259,7 +259,7 @@ C
       FSDY = 4./DY
 
 C SPEC removed CCMIC$ DO GLOBAL
-C //@; BEGIN(looplist2=LoopNestList)
+C //@; BEGIN(looplist2=CODE.LoopNestList)
       DO 100 J=1,N
       DO 100 I=1,M
       CU(I+1,J) = 0.5*(P(I+1,J)+P(I,J))*U(I+1,J)
@@ -297,7 +297,7 @@ C SPEC removed CCMIC$ MICRO
 C
 C        COMPUTE NEW VALUES OF U,V,P
 C
-C //@; BEGIN(decl3=ParamDeclStmt)
+C //@; BEGIN(decl3=CODE.ParamDeclStmt)
       PARAMETER (N1=1025, N2=1025)
 
       COMMON  U(N1,N2), V(N1,N2), P(N1,N2),
@@ -314,7 +314,7 @@ C
       TDTSDY = TDT/DY
 
 C SPEC removed CCMIC$ DO GLOBAL
-C //@; BEGIN(looplist3=LoopNestList)
+C //@; BEGIN(looplist3=CODE.LoopNestList)
       DO 200 J=1,N
       DO 200 I=1,M
       UNEW(I+1,J) = UOLD(I+1,J)+
@@ -379,7 +379,7 @@ C SPEC removed CCMIC$ MICRO
 C
 C         TIME SMOOTHER
 C
-C //@; BEGIN(decl4=ParamDeclStmt)
+C //@; BEGIN(decl4=CODE.ParamDeclStmt)
       PARAMETER (N1=1025, N2=1025)
 
       COMMON  U(N1,N2), V(N1,N2), P(N1,N2),
@@ -396,7 +396,7 @@ C        TIME SMOOTHING AND UPDATE FOR NEXT CYCLE
 C
 
 C SPEC removed CCMIC$ DO GLOBAL
-C //@; BEGIN(looplist4=LoopNestList)
+C //@; BEGIN(looplist4=CODE.LoopNestList)
       DO 300 J=1,N
       DO 300 I=1,M
       UOLD(I,J) = U(I,J)+ALPHA*(UNEW(I,J)-2.*U(I,J)+UOLD(I,J))

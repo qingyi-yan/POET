@@ -19,7 +19,7 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
    const double * _prefA_0;
    const double * _prefA_0_0;
    _pY_0 = Y;
-   for (i=0; i<-7+M; i+=8) 
+   for (i=0; i<-7+M; i+=8)
      {
         *_pY_0 = 0;
         *(1+_pY_0) = 0;
@@ -31,7 +31,7 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
         *(7+_pY_0) = 0;
         _pY_0 = _pY_0+8;
      }
-   for (i=i; i<M; i+=1) 
+   for (i=i; i<M; i+=1)
      {
         *(Y+i) = 0;
      }
@@ -39,12 +39,12 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
    _pA_1 = _pA_0+lda;
    _pX_0 = X;
    _prefA_0 = A+2*lda;
-   for (j=0; j<-1+N; j+=2) 
+   for (j=0; j<-1+N; j+=2)
      {
         vec_splat(_pX_0,reg1);
         vec_splat(1+_pX_0,reg2);
         alignY = (8 - (((size_t)(Y)) & 0xF) / 8) ;
-        for (i=0; i<alignY; i+=1) 
+        for (i=0; i<alignY; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -59,7 +59,7 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
         _pA_1_0 = _pA_1+alignY;
         _pY_0 = Y+alignY;
         _prefA_0_0 = _prefA_0;
-        for (i=alignY; i<-7+M; i+=8) 
+        for (i=alignY; i<-7+M; i+=8)
           {
              ATL_pfl1R(_prefA_0_0);
              _prefA_0_0 = 8+_prefA_0_0;
@@ -99,7 +99,7 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
              _pA_1_0 = _pA_1_0+8;
              _pY_0 = _pY_0+8;
           }
-        for (i=i; i<-1+M; i+=2) 
+        for (i=i; i<-1+M; i+=2)
           {
              vec_mov_mr_a(Y+i,reg3);
              vec_mov_mr(A+(j*lda+i),reg0);
@@ -110,7 +110,7 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
              vec_add_rr(reg0,reg3);
              vec_mov_rm_a(reg3,Y+i);
           }
-        for (i=i; i<M; i+=1) 
+        for (i=i; i<M; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -126,9 +126,9 @@ void ATL_dgemvN_a1_x1_b0_y1(const int M,const int N,const double alpha,const dou
         _pX_0 = _pX_0+2;
         _prefA_0 = _prefA_0+2*lda;
      }
-   for (j=j; j<N; j+=1) 
+   for (j=j; j<N; j+=1)
      {
-        for (i=0; i<M; i+=1) 
+        for (i=0; i<M; i+=1)
           {
              _a_buf_0_0 = *(A+(j*lda+i));
              *(Y+i) = *(Y+i)+_a_buf_0_0**(X+j);
@@ -160,12 +160,12 @@ void ATL_dgemvN_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
    _pA_1 = _pA_0+lda;
    _pX_0 = X;
    _prefA_0 = A+2*lda;
-   for (j=0; j<-1+N; j+=2) 
+   for (j=0; j<-1+N; j+=2)
      {
         vec_splat(_pX_0,reg1);
         vec_splat(1+_pX_0,reg2);
         alignY = (8 - (((size_t)(Y)) & 0xF) / 8) ;
-        for (i=0; i<alignY; i+=1) 
+        for (i=0; i<alignY; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -180,7 +180,7 @@ void ATL_dgemvN_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
         _pA_1_0 = _pA_1+alignY;
         _pY_0 = Y+alignY;
         _prefA_0_0 = _prefA_0;
-        for (i=alignY; i<-7+M; i+=8) 
+        for (i=alignY; i<-7+M; i+=8)
           {
              ATL_pfl1R(_prefA_0_0);
              _prefA_0_0 = 8+_prefA_0_0;
@@ -220,7 +220,7 @@ void ATL_dgemvN_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
              _pA_1_0 = _pA_1_0+8;
              _pY_0 = _pY_0+8;
           }
-        for (i=i; i<-1+M; i+=2) 
+        for (i=i; i<-1+M; i+=2)
           {
              vec_mov_mr_a(Y+i,reg3);
              vec_mov_mr(A+(j*lda+i),reg0);
@@ -231,7 +231,7 @@ void ATL_dgemvN_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
              vec_add_rr(reg0,reg3);
              vec_mov_rm_a(reg3,Y+i);
           }
-        for (i=i; i<M; i+=1) 
+        for (i=i; i<M; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -247,9 +247,9 @@ void ATL_dgemvN_a1_x1_b1_y1(const int M,const int N,const double alpha,const dou
         _pX_0 = _pX_0+2;
         _prefA_0 = _prefA_0+2*lda;
      }
-   for (j=j; j<N; j+=1) 
+   for (j=j; j<N; j+=1)
      {
-        for (i=0; i<M; i+=1) 
+        for (i=0; i<M; i+=1)
           {
              _a_buf_0_0 = *(A+(j*lda+i));
              *(Y+i) = *(Y+i)+_a_buf_0_0**(X+j);
@@ -279,14 +279,14 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
    const double * _prefA_0_0;
    vec_splat(&beta,reg0);
    alignY = (8 - (((size_t)(Y)) & 0xF) / 8) ;
-   for (i=0; i<alignY; i+=1) 
+   for (i=0; i<alignY; i+=1)
      {
         vec_mov_mr_1(Y+i,reg1);
         vec_mul_rr(reg0,reg1);
         vec_mov_rm_1(reg1,Y+i);
      }
    _pY_0 = Y+alignY;
-   for (i=alignY; i<-7+M; i+=8) 
+   for (i=alignY; i<-7+M; i+=8)
      {
         vec_mov_mr_a(_pY_0,reg1);
         vec_mul_rr(reg0,reg1);
@@ -302,13 +302,13 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
         vec_mov_rm_a(reg1,6+_pY_0);
         _pY_0 = _pY_0+8;
      }
-   for (i=i; i<-1+M; i+=2) 
+   for (i=i; i<-1+M; i+=2)
      {
         vec_mov_mr_a(Y+i,reg1);
         vec_mul_rr(reg0,reg1);
         vec_mov_rm_a(reg1,Y+i);
      }
-   for (i=i; i<M; i+=1) 
+   for (i=i; i<M; i+=1)
      {
         vec_mov_mr_1(Y+i,reg1);
         vec_mul_rr(reg0,reg1);
@@ -318,12 +318,12 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
    _pA_1 = _pA_0+lda;
    _pX_0 = X;
    _prefA_0 = A+2*lda;
-   for (j=0; j<-1+N; j+=2) 
+   for (j=0; j<-1+N; j+=2)
      {
         vec_splat(_pX_0,reg1);
         vec_splat(1+_pX_0,reg2);
         alignY = (8 - (((size_t)(Y)) & 0xF) / 8) ;
-        for (i=0; i<alignY; i+=1) 
+        for (i=0; i<alignY; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -338,7 +338,7 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
         _pA_1_0 = _pA_1+alignY;
         _pY_0 = Y+alignY;
         _prefA_0_0 = _prefA_0;
-        for (i=alignY; i<-7+M; i+=8) 
+        for (i=alignY; i<-7+M; i+=8)
           {
              ATL_pfl1R(_prefA_0_0);
              _prefA_0_0 = 8+_prefA_0_0;
@@ -378,7 +378,7 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
              _pA_1_0 = _pA_1_0+8;
              _pY_0 = _pY_0+8;
           }
-        for (i=i; i<-1+M; i+=2) 
+        for (i=i; i<-1+M; i+=2)
           {
              vec_mov_mr_a(Y+i,reg3);
              vec_mov_mr(A+(j*lda+i),reg0);
@@ -389,7 +389,7 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
              vec_add_rr(reg0,reg3);
              vec_mov_rm_a(reg3,Y+i);
           }
-        for (i=i; i<M; i+=1) 
+        for (i=i; i<M; i+=1)
           {
              vec_mov_mr_1(Y+i,reg3);
              vec_mov_mr_1(_pA_0+i,reg0);
@@ -405,9 +405,9 @@ void ATL_dgemvN_a1_x1_bX_y1(const int M,const int N,const double alpha,const dou
         _pX_0 = _pX_0+2;
         _prefA_0 = _prefA_0+2*lda;
      }
-   for (j=j; j<N; j+=1) 
+   for (j=j; j<N; j+=1)
      {
-        for (i=0; i<M; i+=1) 
+        for (i=0; i<M; i+=1)
           {
              _a_buf_0_0 = *(A+(j*lda+i));
              *(Y+i) = *(Y+i)+_a_buf_0_0**(X+j);

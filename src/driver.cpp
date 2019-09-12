@@ -44,12 +44,13 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 extern EvaluatePOET* evalPOET;
 extern POETProgram* curfile;
-typedef enum {DEBUG_NONE, DEBUG_XFORM = 1, DEBUG_PATTERN = 2, DEBUG_TIME = 4, DEBUG_PARSE= 8, DEBUG_LEX = 16, DEBUG_REPL=32, DEBUG_LOOKAHEAD=64, DEBUG_TRACE=128} 
+typedef enum {DEBUG_NONE, DEBUG_XFORM = 1, DEBUG_PATTERN = 2, DEBUG_TIME = 4, DEBUG_PARSE= 8, DEBUG_LEX = 16, DEBUG_REPL=32, DEBUG_LOOKAHEAD=64, DEBUG_TRACE=128, DEBUG_UNPARSE=256} 
     DebugEnum;
 int debug=DEBUG_NONE;
 unsigned cond_count = 0;
 bool debug_time() { return debug & DEBUG_TIME; } 
 bool debug_parse() { return debug & DEBUG_PARSE; }
+bool debug_unparse() { return debug & DEBUG_UNPARSE; }
 bool debug_lookahead() { return debug & DEBUG_LOOKAHEAD; }
 bool debug_lex() { return debug & DEBUG_LEX; }
 bool debug_xform() { return debug & DEBUG_XFORM; }
@@ -178,6 +179,25 @@ inline POETCode* find_global_var(POETCode* name)
      if (res != 0) return res;
      return 0;
 }
+
+extern "C" POETCode* make_traceVar(POETCode* name, POETCode* inside)
+{ 
+  assert(name != 0); 
+ try {
+  POETCode* res = find_code_or_xform_var(name);
+  if (res != 0) SYM_ALREADY_DEFINED(name->toString()); 
+  res = find_global_var(name);
+  if (res != 0) SYM_ALREADY_DEFINED(name->toString());
+  LocalVar* var1 = curfile->make_traceVar(name);
+  if (inside != 0) {
+     LocalVar* var2 = dynamic_cast<LocalVar*>(inside);
+     assert(var2!=0);
+     var1->get_entry().set_restr(var2);
+  }
+  return var1;
+  } catch (Error err) { std::cerr << "At line " << yylineno << " of file " << curfile->get_filename() << "\n"; exit(1); }
+}
+
  
 extern "C" POETCode* make_varRef(POETCode* name, int config) 
 {
@@ -187,6 +207,13 @@ extern "C" POETCode* make_varRef(POETCode* name, int config)
   switch (config) {
   case CODE_VAR: return curfile->make_codeRef(name, 0);
   case XFORM_VAR: return curfile->make_xformVar(name);
+  case TRACE_VAR: {
+     POETCode* res = find_code_or_xform_var(name);
+     if (res != 0) return res; 
+     res = find_global_var(name);
+     if (res != 0) return res;
+     return make_traceVar(name,0); 
+    }
   case CODE_OR_XFORM_VAR: {
      POETCode* res = find_code_or_xform_var(name);
      if (res != 0) return res; 
@@ -577,24 +604,6 @@ extern "C" POETCode* make_annot_lbegin(POETCode* content, POETCode* match)
   contentlist->reset_next_line(res1);
   return content;
 }
-extern "C" POETCode* make_traceVar(POETCode* name, POETCode* inside)
-{ 
-  assert(name != 0); 
- try {
-  POETCode* res = find_code_or_xform_var(name);
-  if (res != 0) SYM_ALREADY_DEFINED(name->toString()); 
-  res = find_global_var(name);
-  if (res != 0) SYM_ALREADY_DEFINED(name->toString());
-  LocalVar* var1 = curfile->make_traceVar(name);
-  if (inside != 0) {
-     LocalVar* var2 = dynamic_cast<LocalVar*>(inside);
-     assert(var2!=0);
-     var1->get_entry().set_restr(var2);
-  }
-  return var1;
-  } catch (Error err) { std::cerr << "At line " << yylineno << " of file " << curfile->get_filename() << "\n"; exit(1); }
-}
-
 extern "C" POETCode* set_local_static(POETCode* id, POETCode* code, 
                               LocalVarType t, POETCode* restr, bool insert)
 { assert(id != 0); 
@@ -663,6 +672,7 @@ int initialize(int argc, char** argv)
      std::cerr << "\n     -L<dir>: search for POET libraries in the specified directory";
      std::cerr << "\n     -p<name>=<val>: set POET parameter <name> to have value <val>";
      std::cerr << "\n     -dp:     print out debugging info for parsing operations";
+     std::cerr << "\n     -du:     print out debugging info for unparsing operations";
      std::cerr << "\n     -da:     print out debugging info for lookahead computation";
      std::cerr << "\n     -dl:     print out debugging info for lexical analysis";
      std::cerr << "\n     -dx:     print out debugging info for xform routines"; 
@@ -692,6 +702,8 @@ int initialize(int argc, char** argv)
           debug |= DEBUG_TRACE;
      else if (*p == 'd' && *(p+1) == 'a')
           debug |= DEBUG_LOOKAHEAD;
+     else if (*p == 'd' && *(p+1) == 'u')
+          debug |= DEBUG_UNPARSE;
      else if (*p == 'd' && *(p+1) == 'p')
           debug |= DEBUG_PARSE;
      else if (*p == 'd' && *(p+1) == 'l')
@@ -782,9 +794,13 @@ POETProgram* process_file(const char* fname)
            if (yyin != 0)
                 break;
         }
+        if (yyin == 0) { INCORRECT_FNAME(name); }
      }
-     if (yyin == 0) { INCORRECT_FNAME(name); }
-
+     else if (name[0] == '/') {
+        int i = name.rfind("/");
+	std::string dname = name.substr(0, i);
+        lib_dir.push_back(dname);	
+     }
      if (!silent) std:: cerr << "Reading " << filetype << " from file " << name << "\n";
 
      if (!(lexState & LEX_INPUT)) {

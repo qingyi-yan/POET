@@ -6,59 +6,61 @@
 void dscal(const int N, const int M, const double alpha, const double *X, const int incx, double *Y, const int incy, double *A, const lda) 
 {
 	int i;
-int i_bk_1;
-double _Y_0;
-double* __FD__Y_0;
-omp_set_num_threads(2);
-#pragma omp  parallel  
- {
- #pragma omp  for private(__FD__Y_0,_Y_0,i,i_bk_1)
- for (i_bk_1=0; i_bk_1<N; i_bk_1+=64) 
-   {
-      __FD__Y_0 = Y+i_bk_1;
-      for (i=0; i<-7+min(64,N-i_bk_1); i+=8) 
-        {
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-        }
-      for (i=i; i<min(64,N-i_bk_1); i+=1) 
-        {
-           _Y_0 = __FD__Y_0[0];
-           _Y_0 = alpha*_Y_0;
-           __FD__Y_0[0] = _Y_0;
-           __FD__Y_0 = 1+__FD__Y_0;
-        }
-   }
- }
-}
+{
+   int i_bk_1;
+   double _Y_0;
+   double* __FD__Y_0;
+   omp_set_num_threads(2);
+   #pragma omp  parallel  
+    {
+    #pragma omp  for private(__FD__Y_0,_Y_0,i,i_bk_1)
+    for (i_bk_1=0; i_bk_1<N; i_bk_1+=64)
+      {
+         __FD__Y_0 = Y+i_bk_1;
+         for (i=0; i<-7+min(64,N-i_bk_1); i+=8)
+           {
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+           }
+         for (i=i; i<min(64,N-i_bk_1); i+=1)
+           {
+              _Y_0 = __FD__Y_0[0];
+              _Y_0 = alpha*_Y_0;
+              __FD__Y_0[0] = _Y_0;
+              __FD__Y_0 = 1+__FD__Y_0;
+           }
+      }
+    }
+   
+}}
 

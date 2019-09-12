@@ -75,14 +75,14 @@ all_test:
 # Thread blocking factor 512, this size and blocking size should be adjust on the given machine
 
 check: 
+	make now target=dgemvT bk1=64 cpth=0 uj="4 2" ur=2 cp=0
+	make now target=dgemm bk1=64 cpth=0 uj="2 2" ur=2 cp=1
 	make now target=dtrsm_ll
 	make now target=dtrsm_ru
 	make now target=dtrmm_rl bk1=128 uj="4 2" ur=4 dist=0
 	make now target=dtrmm_ru bk1=128 uj="4 2" ur=4 dist=0 cpth=0
 	make now target=dsyrk bk1=64 tbk=128 cp=1 
 	make now target=dsyr2k bk1=64 uj="2 2" tbk=128 cp=1 ur=2
-	make now target=dgemm bk1=64 cpth=0 uj="2 2" ur=2 cp=1
-	make now target=dgemvT bk1=64 cpth=0 uj="4 2" ur=2 cp=0
 	make now target=dgemvN bk1=64 cpth=0 uj="4 2" cpth=0 ur=2 cp=0 sse=0 dist=24
 	make now target=dger uj="4 2" bk1=128 dist=24 ur=4 cp=0
 	make now target=dtrmv sse=0 cp=0 cpth=0 bk1=64 ur=2

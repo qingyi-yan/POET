@@ -14,164 +14,164 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
    int l_bk;
    int j_bk;
    float _b_1_scalar_0_0;
-   for (j_bk=0; j_bk<max(-15+n,-15+m); j_bk+=16) 
+   for (j_bk=0; j_bk<max(-15+n,-15+m); j_bk+=16)
      {
-        for (l_bk=0; l_bk<-15+m; l_bk+=16) 
+        for (l_bk=0; l_bk<-15+m; l_bk+=16)
           {
-             if ((i_bk=0)<-1+l_bk)  
+             if ((i_bk=0)<-1+l_bk) 
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+n)  
+                                 if (j_bk+(1+j)<=-1+n) 
                                    {
                                       arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+n)  
+                                 if (j_bk+(1+j)<=-1+n) 
                                    {
                                       arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
@@ -180,77 +180,77 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16) 
+             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16)
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            for (i=0; i<16; i+=4) 
+                            for (i=0; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
@@ -259,273 +259,273 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             if ((i_bk=i_bk)<15+l_bk)  
+             if ((i_bk=i_bk)<15+l_bk) 
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  _b_1_scalar_0_0 = alpha*_b_1_scalar_0_0;
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+l,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                               }
@@ -534,90 +534,90 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                     }
                }
           }
-        if (l_bk<m)  
+        if (l_bk<m) 
           {
-             if ((i_bk=0)<-1+l_bk)  
+             if ((i_bk=0)<-1+l_bk) 
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+n)  
+                                 if (j_bk+(1+j)<=-1+n) 
                                    {
                                       arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
@@ -626,45 +626,45 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16) 
+             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16)
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            for (i=0; i<16; i+=4) 
+                            for (i=0; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
@@ -673,153 +673,153 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             if ((i_bk=i_bk)<15+l_bk)  
+             if ((i_bk=i_bk)<15+l_bk) 
                {
-                  for (j=0; j<16; j+=2) 
+                  for (j=0; j<16; j+=2)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+(1+j)<=-1+n)  
+                                      if (j_bk+(1+j)<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+l,j_bk+(1+j)) = beta*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                                         }
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+(1+j)<=-1+m)  
+                                 if (j_bk+(1+j)<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j))*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  _b_1_scalar_0_0 = alpha*_b_1_scalar_0_0;
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+l,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                               }
@@ -829,92 +829,92 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                }
           }
      }
-   if (j_bk<max(n,m))  
+   if (j_bk<max(n,m)) 
      {
-        for (l_bk=0; l_bk<-15+m; l_bk+=16) 
+        for (l_bk=0; l_bk<-15+m; l_bk+=16)
           {
-             if ((i_bk=0)<-1+l_bk)  
+             if ((i_bk=0)<-1+l_bk) 
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
@@ -923,45 +923,45 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16) 
+             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16)
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            for (i=0; i<16; i+=4) 
+                            for (i=0; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
@@ -970,153 +970,153 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             if ((i_bk=i_bk)<15+l_bk)  
+             if ((i_bk=i_bk)<15+l_bk) 
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<16; l+=2) 
+                       for (l=0; l<16; l+=2)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            arr_ref_b(b,l_bk+(1+l),j_bk+j) = beta*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+i,l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(1+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(2+i),l_bk+(1+l));
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j)*arr_ref_a(a,i_bk+(3+i),l_bk+(1+l));
                                    }
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  _b_1_scalar_0_0 = alpha*_b_1_scalar_0_0;
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+l,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                               }
@@ -1125,54 +1125,54 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                     }
                }
           }
-        if (l_bk<m)  
+        if (l_bk<m) 
           {
-             if ((i_bk=0)<-1+l_bk)  
+             if ((i_bk=0)<-1+l_bk) 
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 if (j_bk+j<=-1+n)  
+                                 if (j_bk+j<=-1+n) 
                                    {
                                       _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
@@ -1181,29 +1181,29 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16) 
+             for (i_bk=16; i_bk<-1+l_bk; i_bk+=16)
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            for (i=0; i<16; i+=4) 
+                            for (i=0; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
@@ -1212,93 +1212,93 @@ void strmm(int m,int n,float alpha,int lda,int ldb,float beta,float* a,float* b)
                          }
                     }
                }
-             if ((i_bk=i_bk)<15+l_bk)  
+             if ((i_bk=i_bk)<15+l_bk) 
                {
-                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1) 
+                  for (j=0; j<max(n-j_bk,m-j_bk); j+=1)
                     {
-                       for (l=0; l<m-l_bk; l+=1) 
+                       for (l=0; l<m-l_bk; l+=1)
                          {
                             _b_1_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
                             _b_2_scalar_0_0 = arr_ref_b(b,l_bk+l,j_bk+j);
-                            i = 0; 
+                            i = 0;
                               {
-                                 /*SPLIT-START*/if (i_bk==0)  
+                                 /*SPLIT-START*/if (i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (1+i_bk==0)  
+                                 /*SPLIT-START*/if (1+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (2+i_bk==0)  
+                                 /*SPLIT-START*/if (2+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 /*SPLIT-START*/if (3+i_bk==0)  
+                                 /*SPLIT-START*/if (3+i_bk==0) 
                                    {
-                                      if (j_bk+j<=-1+n)  
+                                      if (j_bk+j<=-1+n) 
                                         {
                                            _b_1_scalar_0_0 = beta*_b_1_scalar_0_0;
                                         }
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            for (i=4; i<16; i+=4) 
+                            for (i=4; i<16; i+=4)
                               {
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+i,j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+i,l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(1+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(1+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(2+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(2+i),l_bk+l);
                                    }
-                                 if (j_bk+j<=-1+m)  
+                                 if (j_bk+j<=-1+m) 
                                    {
                                       arr_ref_b(b,i_bk+(3+i),j_bk+j) = alpha*_b_1_scalar_0_0*arr_ref_a(a,i_bk+(3+i),l_bk+l);
                                    }
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  _b_1_scalar_0_0 = alpha*_b_1_scalar_0_0;
                               }
-                            if (j_bk+j<=-1+m)  
+                            if (j_bk+j<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+j) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+j);
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+l,j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+l,j_bk+(1+j));
                               }
-                            if (j_bk+(1+j)<=-1+m)  
+                            if (j_bk+(1+j)<=-1+m) 
                               {
                                  arr_ref_b(b,l_bk+(1+l),j_bk+(1+j)) = alpha*arr_ref_b(b,l_bk+(1+l),j_bk+(1+j));
                               }

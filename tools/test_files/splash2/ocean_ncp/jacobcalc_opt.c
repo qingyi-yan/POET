@@ -1,8 +1,8 @@
 void jacobcalc(double x[IMAX][JMAX],double y[IMAX][JMAX],double z[IMAX][JMAX],long pid,long firstrow,long lastrow,long firstcol,long lastcol,long numrows,long numcols) {
    
-   /*@;BEGIN(Nest1=Nest)@*/for (i=firstrow; i<1+lastrow; i+=1) 
+   /*@;BEGIN(Nest1=Nest)@*/for (i=firstrow; i<1+lastrow; i+=1)
      {
-        /*@;BEGIN(Nest2=Nest)@*/for (iindex=firstcol; iindex<1+lastcol; iindex+=1) 
+        /*@;BEGIN(Nest2=Nest)@*/for (iindex=firstcol; iindex<1+lastcol; iindex+=1)
           {
              f1 = (y[i][iindex-1]+y[i+1][iindex-1]-y[i][iindex+1]-y[i+1][iindex+1])*(x[i+1][iindex]-x[i][iindex]);
              f2 = (y[i-1][iindex-1]+y[i][iindex-1]-y[i-1][iindex+1]-y[i][iindex+1])*(x[i][iindex]-x[i-1][iindex]);

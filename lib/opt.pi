@@ -37,8 +37,9 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 <* architecture-specific parameters*>
 <define REG_NO 16/>   <*# of SSE registers *>
-<define REG_LEN 16/>  <*# of bytes that can be held by each SSE register*>
+<parameter REG_LEN default=16 /> <*# of bytes that can be held by each SSE register*>
 <define FMA 0/>
+<define _variant_map MAP{} />
 
 <* language-specific parameters *>
 <** whether to use pointer arithmetics when possible; affect array copying **>
@@ -59,7 +60,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 <code PostIncrement pars=(ivar)/>
 <code AllocateStore pars=(ptr, type,size) init0=0/>
 <code AllocateStoreWithAlign pars=(ptr, type, size, aloc, align)/>
-<code DeleteStore pars=(ptr,size)/>
+<code DeleteStore pars=(ptr)/>
 <code GccPrefetch pars=(addr,rw,locality)/>
 <code IccPrefetch pars=(addr,hint)/>
 <code IccPrefetchInclude />
@@ -189,7 +190,7 @@ $pivot$ in the original $input$
  The $input$ indicates the function call to inline.
  The $function_definition$ denotes the definition of the function.
 ********************************************************************>
-<xform InlineFunction pars=(function_definition, input) parameters_to_replace="" trace=GLOBAL.TRACE_TARGET/>
+<xform InlineFunction pars=(function_definition, input) parameters_to_replace=NULL trace=GLOBAL.TRACE_TARGET/>
 
 <***********************************************************************
  Strength Reduction optimizations

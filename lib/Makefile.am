@@ -10,3 +10,4 @@ uninstall-hook:
 	for each in $(files); do chmod 644 $(DESTDIR)$(libdir)/$${each}; rm $(DESTDIR)$(libdir)/$${each}; done
 
 include ../Make.inc
+rosedir= $(rose_srcdir)/src/3rdPartyLibraries/POET/lib

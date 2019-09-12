@@ -34,23 +34,23 @@ void relax(long k,double* err,long color,long my_num) {
    maxerr = 0.0;
    t2a = (double**)(q_multi[my_num][k]);
    t2b = (double**)(rhs_multi[my_num][k]);
-   if (color==RED_ITER)  
+   if (color==RED_ITER) 
      {
         
-        /*@;BEGIN(Nest1=Nest)@*/for (i=oddistart; i<iend; i+=1) 
+        /*@;BEGIN(Nest1=Nest)@*/for (i=oddistart; i<iend; i+=1)
           {
              t1a = (double*)(t2a[i]);
              t1b = (double*)(t2b[i]);
              t1c = (double*)(t2a[i-1]);
              t1d = (double*)(t2a[i+1]);
-             for (j=(i+1)%2+1; j<jend; j+=2) 
+             for (j=(i+1)%2+1; j<jend; j+=2)
                {
                   a = t1a[j+1]+t1a[j-1]+t1c[j]+t1d[j]-t1b[j];
                   oldval = t1a[j];
                   newval = a/factor;
                   newerr = oldval-newval;
                   t1a[j] = newval;
-                  if (fabs(newerr)>maxerr)  
+                  if (fabs(newerr)>maxerr) 
                     {
                        maxerr = fabs(newerr);
                     }
@@ -58,22 +58,22 @@ void relax(long k,double* err,long color,long my_num) {
           }
         
      }
-   else if (color==BLACK_ITER)  
+   else if (color==BLACK_ITER) 
      {
-        /*@;BEGIN(Nest5=Nest)@*/for (i=oddistart; i<iend; i+=1) 
+        /*@;BEGIN(Nest5=Nest)@*/for (i=oddistart; i<iend; i+=1)
           {
              t1a = (double*)(t2a[i]);
              t1b = (double*)(t2b[i]);
              t1c = (double*)(t2a[i-1]);
              t1d = (double*)(t2a[i+1]);
-             for (j=i%2+1; j<jend; j+=2) 
+             for (j=i%2+1; j<jend; j+=2)
                {
                   a = t1a[j+1]+t1a[j-1]+t1c[j]+t1d[j]-t1b[j];
                   oldval = t1a[j];
                   newval = a/factor;
                   newerr = oldval-newval;
                   t1a[j] = newval;
-                  if (fabs(newerr)>maxerr)  
+                  if (fabs(newerr)>maxerr) 
                     {
                        maxerr = fabs(newerr);
                     }

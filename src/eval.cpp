@@ -87,14 +87,14 @@ class GetLenVisitor : public POETCodeVisitor
   virtual void visitString(POETString* s) 
      { res = s->get_content().size(); }
   virtual void visitList(POETList* l) 
-     {  res = 1 + apply(l->get_rest()); }
+     {  res = 1 + compute(l->get_rest()); }
   virtual void visitTuple( POETTuple* v) 
      { res = v->size(); } 
   virtual void visitMap( POETMap *m)
      { res = m->size(); }
   virtual void visitUnknown(POETCode_ext* e) { res = 1; }
  public:
-  unsigned apply(POETCode* code) { if (code == 0) return 0; 
+  unsigned compute(POETCode* code) { if (code == 0) return 0; 
                                    res = 1; code->visit(this);  return res; }
 };
 
@@ -237,8 +237,7 @@ public:
      LvarSymbolTable::Entry e = vec[i]->get_entry();
      e.set_entry_type(LVAR_TRACE_OUTDATE);
    }
-   visit(ret);
-   ret = res;
+   ret->visit(this); ret = res;
    for (int i = size-1; i >= 0; --i) {
      LvarSymbolTable::Entry e = vec[i]->get_entry();
      e.set_entry_type(LVAR_TRACE);
@@ -427,6 +426,11 @@ class XformEvalVisitor : public ReplInfoVisitor
        if (tuple1 == 0) { TUPLE_ACC_MISMATCH(fc,tuple,access); }
        else tuple = tuple1;
        switch (tuple->get_enum()) {
+         case SRC_UNKNOWN: {
+             access= apply(access);
+             res = POETAstInterface::getAstAttribute(dynamic_cast<POETCode_ext*>(tuple)->get_content(), access); 
+             return;
+            }
          case SRC_TUPLE: {
             access= apply(access);
             if (access->get_enum() == SRC_LVAR) {
@@ -533,13 +537,23 @@ void XformEvalVisitor::visitOperator(POETOperator* op)
      case POET_OP_CODE:
      case POET_OP_EXP:
          assert (r1 == 0); 
-     case TYPE_LIST: case TYPE_LIST1: case TYPE_TOR: 
+     case TYPE_LIST: case TYPE_LIST1: 
      case POET_OP_RANGE:
      case POET_OP_TUPLE:
      case POET_OP_LIST:
      case POET_OP_LIST1:
      case POET_OP_ANNOT:
          res = op; return;
+     case TYPE_TOR:
+           r1->visit(this); r1 = res;
+           for (int i = 1; i < op->numOfArgs();++i) {
+              r2 = op->get_arg(i); 
+              r2->visit(this); r2 = res;
+              r1 = POETProgram::make_typeTor(r1,r2);
+           }
+           res = r1; 
+//std::cerr << "MAKING TOR :" << res->toString() << " FROM " << op->toString() << "\n";
+           return;
      case POET_OP_ASSERT:
        assert(r1 != 0);
        if (r1 == ZERO)  ASSERT_FAIL(op->get_arg(0));
@@ -659,7 +673,7 @@ void XformEvalVisitor::visitOperator(POETOperator* op)
      }
      case POET_OP_LEN: {
         GetLenVisitor app;
-        res =  fac->new_iconst(app.apply(r1));
+        res =  fac->new_iconst(app.compute(r1));
         break;
      }
      case POET_OP_SPLIT: {
@@ -952,6 +966,7 @@ POETCode* EvaluatePOET:: eval_writeOutput(POETCode* output)
     POETCode* target = EvalTrace(curOutput->get_outputExp());
     target = eval_AST(target);
 
+    std::string fnamestring;
     const char* fnamep = 0;
     POETCode *file = curOutput->get_outputFile();
     if (file != 0) {
@@ -959,7 +974,8 @@ POETCode* EvaluatePOET:: eval_writeOutput(POETCode* output)
        if (file != EMPTY) {
           POETString* fname = dynamic_cast<POETString*>(file);
           if (fname ==0) INCORRECT_STRING( file->toString());
-          fnamep = fname->get_content().c_str();
+	  fnamestring = fname->get_content();
+          fnamep = fnamestring.c_str();
        }
     }
 

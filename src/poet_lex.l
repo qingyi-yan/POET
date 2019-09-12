@@ -109,6 +109,7 @@ extern void* make_any();
 <IN_CODE,IN_INPUT,IN_INPUT_NOANNOT>{id}  { yylval.ptr = make_sourceString(yytext, yyleng); return SOURCE; }
 <IN_CODE,IN_INPUT,IN_INPUT_NOANNOT>{integer} {  yylval.ptr = make_Iconst(yytext,yyleng); return ICONST; }
 <IN_CODE,IN_INPUT,IN_INPUT_NOANNOT>{float}  { yylval.ptr = make_sourceString(yytext, yyleng); return FCONST; }
+<IN_CODE,IN_INPUT,IN_INPUT_NOANNOT>"\\@"  { yylval.ptr = make_sourceString("@", 1); return SOURCE; }
 
 <IN_CODE>{linebreak}?{space}*"</code>" { BEGIN(0); lexState=LEX_DEFAULT; return ENDCODE; }
 <IN_CODE>{linebreak}({space}*"@@")? { yylval.ptr = make_sourceString(yytext,1); return SOURCE; }
@@ -121,7 +122,12 @@ extern void* make_any();
 <IN_INPUT>([\t ]*"/*@") { BEGIN(IN_IARG); lexState=LEX_DEFAULT;  }
 <IN_INPUT>([\t ]*"//@") { BEGIN(IN_IARG1); lexState=LEX_DEFAULT; }
 <IN_INPUT,IN_INPUT_NOANNOT><<EOF>> { BEGIN(0); lexState=LEX_DEFAULT; return INPUT_ENDFILE;}
-<IN_INPUT,IN_INPUT_NOANNOT>(\\\n) { yylval.ptr=make_sourceString("\\\n",2); return INPUT_CONT;}
+<IN_INPUT,IN_INPUT_NOANNOT>(\\\\) { yylval.ptr=make_sourceString("\\\\",2); return SOURCE;}
+<IN_INPUT,IN_INPUT_NOANNOT>("\\"n) { yylval.ptr=make_sourceString("\\\\n",3); return INPUT_CONT;}
+<IN_INPUT,IN_INPUT_NOANNOT>(\\\") { yylval.ptr=make_sourceString("\\\\\"",3); return INPUT_CONT;}
+<IN_INPUT,IN_INPUT_NOANNOT>(\\\') { yylval.ptr=make_sourceString("\\\\'",3); return INPUT_CONT;}
+<IN_INPUT,IN_INPUT_NOANNOT>(\\t) { yylval.ptr=make_sourceString("\\\\t",3); return INPUT_CONT;}
+<IN_INPUT,IN_INPUT_NOANNOT>("\\"{linebreak}) { yylval.ptr=make_sourceString("\\\n", 1); return INPUT_CONT;}
 <IN_INPUT,IN_INPUT_NOANNOT>{linebreak} { yylval.ptr=make_sourceString("\n", 1); return INPUT_ENDL;}
 
 <IN_CODE,IN_INPUT,IN_INPUT_NOANNOT>. {  yylval.ptr = make_sourceString(yytext, yyleng); return SOURCE; }

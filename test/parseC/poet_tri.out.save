@@ -1,6 +1,16 @@
-DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "" "" "" "" ""void" NULLMacro#UnknownUntilEOL#"define"" ""FALSE"" "" "" "" "" "" "" "" "" "" "" ""0" NULLMacro#UnknownUntilEOL#"define"" ""TRUE"" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""HUGE_REAL"" "" "" "" "" "" "" ""1""e""+""32" NULLMacro#UnknownUntilEOL#"define"" ""ISECT_MAX"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""NAME_LEN"" "" "" "" "" "" "" "" ""30" NULLMacro#UnknownUntilEOL#"define"" ""RAYEPS"" "" "" "" "" "" "" "" "" "" ""1""e""-""07" NULLMacro#UnknownUntilEOL#"define"" ""MAX_SUBDIV_LEVEL"" ""3" NULLMacro#UnknownUntilEOL#"define"" ""MAX_RAYINFO"" "" "" "" "" ""(""MAX_SUBDIV_LEVEL"" ""+"" ""1"")" NULLMacro#UnknownUntilEOL#"define"" ""VecDot""(""A"","" ""B"")"" "" "" "" ""("" ""A""[""0""]""*""B""[""0""]"" ""+"" ""A""[""1""]""*""B""[""1""]"" ""+"" ""A""[""2""]""*""B""[""2""]"" "")" NULLMacro#UnknownUntilEOL#"define"" ""ABS""(""A"")"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""("" ""(""A"")"" "">"" ""0.0"" ""?"" ""(""A"")"" "":"" ""-""(""A"")"" "")" NULLMacro#UnknownUntilEOL#"define"" ""IsectAdd""(""hit"","" ""tval"","" ""P"")"" "" ""{"" ""(""hit"")""->""t"" ""="" ""tval"";"" "" ""\
-"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""hit"")""->""pelem"" ""="" ""P"";"" ""}" NULLMacro#UnknownUntilEOL#"define"" ""X_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""Y_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""Z_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""3" NULLMacro#UnknownUntilEOL#"define"" ""CLOCKWISE"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""COUNTER_CLOCKWISE"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""INSIDE""(""x"","" ""a"")"" "" "" "" "" "" "" "" "" "" "" "" ""(""(""(""a"")"" ""<="" ""0.0"" ""&&"" ""(""x"")"" "">="" ""(""a"")"" ""&&"" ""(""x"")"" ""<="" ""0.0"")"" ""||"" ""\
-"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""(""a"")"" "" "">"" "" ""0.0"" ""&&"" ""(""x"")"" "">="" ""0.0"" ""&&"" ""(""x"")"" ""<="" ""(""a"")"")"")" NULLTypeDef#DeclStmt#TypeInfo#(
+DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "" "" "" "" ""void" NULLMacro#UnknownUntilEOL#"define"" ""FALSE"" "" "" "" "" "" "" "" "" "" "" ""0" NULLMacro#UnknownUntilEOL#"define"" ""TRUE"" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""HUGE_REAL"" "" "" "" "" "" "" "EXPO#(
+        "1",
+        Int#(
+          "+",
+          "32"))
+       NULL
+  Macro#UnknownUntilEOL#"define"" ""ISECT_MAX"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""NAME_LEN"" "" "" "" "" "" "" "" ""30" NULLMacro#UnknownUntilEOL#"define"" ""RAYEPS"" "" "" "" "" "" "" "" "" "" "EXPO#(
+        "1",
+        Int#(
+          "-",
+          "07"))
+       NULL
+  Macro#UnknownUntilEOL#"define"" ""MAX_SUBDIV_LEVEL"" ""3" NULLMacro#UnknownUntilEOL#"define"" ""MAX_RAYINFO"" "" "" "" "" ""(""MAX_SUBDIV_LEVEL"" ""+"" ""1"")" NULLMacro#UnknownUntilEOL#"define"" ""VecDot""(""A"","" ""B"")"" "" "" "" ""("" ""A""[""0""]""*""B""[""0""]"" ""+"" ""A""[""1""]""*""B""[""1""]"" ""+"" ""A""[""2""]""*""B""[""2""]"" "")" NULLMacro#UnknownUntilEOL#"define"" ""ABS""(""A"")"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""("" ""(""A"")"" "">"" ""0.0"" ""?"" ""(""A"")"" "":"" ""-""(""A"")"" "")" NULLMacro#UnknownUntilEOL#"define"" ""IsectAdd""(""hit"","" ""tval"","" ""P"")"" "" ""{"" ""(""hit"")""->""t"" ""="" ""tval"";"" "" ""\"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""hit"")""->""pelem"" ""="" ""P"";"" ""}" NULLMacro#UnknownUntilEOL#"define"" ""X_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""Y_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""Z_NORM"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""3" NULLMacro#UnknownUntilEOL#"define"" ""CLOCKWISE"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""1" NULLMacro#UnknownUntilEOL#"define"" ""COUNTER_CLOCKWISE"" "" "" "" "" "" "" ""2" NULLMacro#UnknownUntilEOL#"define"" ""INSIDE""(""x"","" ""a"")"" "" "" "" "" "" "" "" "" "" "" "" ""(""(""(""a"")"" ""<="" ""0.0"" ""&&"" ""(""x"")"" "">="" ""(""a"")"" ""&&"" ""(""x"")"" ""<="" ""0.0"")"" ""||"" ""\"" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""(""(""a"")"" "" "">"" "" ""0.0"" ""&&"" ""(""x"")"" "">="" ""0.0"" ""&&"" ""(""x"")"" ""<="" ""(""a"")"")"")" NULLTypeDef#DeclStmt#TypeInfo#(
         IntType#"char",
         "CHAR",
         "")
@@ -47,112 +57,92 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               PtrType#"CHAR",
               EmptyStmt)#(
               "",
+              "",
               "")
              NULL)
-            (FunctionDecl#(
-              FunctionPtr#"print",
+            FunctionDecl#(
+              "print",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"read",
+            FunctionDecl#(
+              "read",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"binread",
+            FunctionDecl#(
+              "binread",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"transform",
+            FunctionDecl#(
+              "transform",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"intersect",
+            FunctionDecl#(
+              "intersect",
               "",
               "INT",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"pe_intersect",
+            FunctionDecl#(
+              "pe_intersect",
               "",
               "INT",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"normal",
+            FunctionDecl#(
+              "normal",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"normalize",
+            FunctionDecl#(
+              "normalize",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-            (FunctionDecl#(
-              FunctionPtr#"bbox",
+            FunctionDecl#(
+              "bbox",
               "",
               "VOID",
               EmptyStmt)#(
               "",
+              "",
               "")
-             NULL)
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "name"->FunctionType#(
                 "",
                 PtrType#"CHAR")
-"read"->FunctionType#(
+},
+            MAP:{
+"name"->FunctionType#(
                 "",
-                "VOID")
-"print"->FunctionType#(
-                "",
-                "VOID")
-"binread"->FunctionType#(
-                "",
-                "VOID")
-"transform"->FunctionType#(
-                "",
-                "VOID")
-"intersect"->FunctionType#(
-                "",
-                "INT")
-"pe_intersect"->FunctionType#(
-                "",
-                "INT")
-"normal"->FunctionType#(
-                "",
-                "VOID")
-"normalize"->FunctionType#(
-                "",
-                "VOID")
-"bbox"->FunctionType#(
-                "",
-                "VOID")
-}),
+                PtrType#"CHAR")
+})),
         "PPROCS",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -193,7 +183,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "kspecn",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "fcolor"->"COLOR"
 "bcolor"->"COLOR"
 "kdiff"->"REAL"
@@ -201,7 +192,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "ktran"->"REAL"
 "refrindex"->"REAL"
 "kspecn"->"REAL"
-}),
+},
+            MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+})),
         "SURF",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -221,14 +221,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "dfar",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "dnear"->ArrayType#(
                 "REAL",
                 (ArrayDim#3 NULL))
 "dfar"->ArrayType#(
                 "REAL",
                 (ArrayDim#3 NULL))
-}),
+},
+            MAP:{
+"dnear"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+})),
         "BBOX",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -256,17 +265,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "data",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "index"->"INT"
-"object"->StructType#(
-                "object",
-                "")
 "bv"->"BBOX"
 "parent"->PtrType#StructType#(
                   "object",
                   "")
 "data"->PtrType#"CHAR"
-}),
+},
+            MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+                  "object",
+                  "")
+"data"->PtrType#"CHAR"
+})),
         "ELEMENT",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -316,7 +331,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "next",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "name"->ArrayType#(
                 "CHAR",
                 (ArrayDim#"NAME_LEN" NULL))
@@ -325,14 +341,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                   "object",
                   "")
 "pelem"->PtrType#"ELEMENT"
-"object"->StructType#(
-                "object",
-                "")
 "surf"->PtrType#"SURF"
 "bv"->"BBOX"
 "numelements"->"INT"
 "procs"->PtrType#"PPROCS"
-}),
+},
+            MAP:{
+"name"->ArrayType#(
+                "CHAR",
+                (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+                  "object",
+                  "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+})),
         "OBJECT",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -365,18 +392,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "next",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "next"->PtrType#StructType#(
                   "voxel",
                   "")
-"numelements"->"INT"
-"voxel"->StructType#(
-                "voxel",
-                "")
 "id"->"INT"
+"numelements"->"INT"
 "cell"->PtrType#"CHAR"
 "celltype"->"CHAR"
-}),
+},
+            MAP:{
+"next"->PtrType#StructType#(
+                  "voxel",
+                  "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+})),
         "VOXEL",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -432,7 +466,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "btn",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "p"->ArrayType#(
                 "REAL",
                 (ArrayDim#3 NULL))
@@ -442,9 +477,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "n"->ArrayType#(
                 "INT",
                 (ArrayDim#3 NULL))
-"btnode"->StructType#(
-                "btnode",
-                "")
 "pe"->PtrType#PtrType#"ELEMENT"
 "nprims"->"INT"
 "axis"->"INT"
@@ -454,7 +486,27 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                     "btnode",
                     ""),
                 (ArrayDim#2 NULL))
-}),
+},
+            MAP:{
+"p"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"i"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"n"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+                PtrType#StructType#(
+                    "btnode",
+                    ""),
+                (ArrayDim#2 NULL))
+})),
         "BTNODE",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -528,7 +580,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "next",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "min"->ArrayType#(
                 "REAL",
                 (ArrayDim#3 NULL))
@@ -536,9 +589,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                   "grid",
                   "")
 "id"->"INT"
-"grid"->StructType#(
-                "grid",
-                "")
 "hashtable"->PtrType#PtrType#"VOXEL"
 "num_buckets"->"INT"
 "emptycells"->PtrType#"UINT"
@@ -552,7 +602,29 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 (ArrayDim#3 NULL))
 "subdiv_level"->"INT"
 "bintree"->PtrType#"BTNODE"
-}),
+},
+            MAP:{
+"min"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+                  "grid",
+                  "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+})),
         "GRID",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -623,18 +695,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "next",
                 "")
                NULL
-             NULL#MAP:{
-"next"->PtrType#StructType#(
-                  "rayinfo",
-                  "")
+             NULL#(
+            MAP:{
 "d"->ArrayType#(
                 "REAL",
                 (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+                  "rayinfo",
+                  "")
 "index1D"->"INT"
 "grid"->PtrType#"GRID"
-"rayinfo"->StructType#(
-                "rayinfo",
-                "")
 "entry_plane"->"INT"
 "t_in"->"REAL"
 "exit_plane"->"INT"
@@ -648,7 +718,30 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx_inc1D"->ArrayType#(
                 "INT",
                 (ArrayDim#3 NULL))
-}),
+},
+            MAP:{
+"d"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+                  "rayinfo",
+                  "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+                "REAL",
+                (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+})),
         "RAYINFO",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -716,11 +809,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "rinfo",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "level"->"INT"
 "x"->"INT"
-"P"->"VEC3"
 "id"->"LONG"
+"P"->"VEC3"
 "y"->"INT"
 "D"->"VEC3"
 "weight"->"R32"
@@ -736,7 +830,28 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                       "MAX_RAYINFO",
                       1)
                    NULL))
-}),
+},
+            MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+                "RAYINFO",
+                (ArrayDim#Bop#(
+                      "+",
+                      "MAX_RAYINFO",
+                      1)
+                   NULL))
+})),
         "RAY",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -767,13 +882,21 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "b3",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "t"->"REAL"
-"b2"->"REAL"
 "b1"->"REAL"
+"b2"->"REAL"
 "pelem"->PtrType#"ELEMENT"
 "b3"->"REAL"
-}),
+},
+            MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+})),
         "IRECORD",
         "")
   TypeDef#DeclStmt#TypeInfo#(
@@ -821,7 +944,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "vorder",
                 "")
                NULL
-             NULL#MAP:{
+             NULL#(
+            MAP:{
 "d"->"REAL"
 "norm"->"VEC3"
 "vptr"->PtrType#"VEC3"
@@ -832,12 +956,24 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx"->"INT"
 "norminterp"->"BOOL"
 "vorder"->"BOOL"
-}),
+},
+            MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+                "INT",
+                (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+})),
         "TRI",
         "")
   (FunctionDecl#(
     "TriPeIntersect",
-    (TypeDecl#"pr"TypeDecl#"pe"TypeDecl#"hit" NULL),
+    ("pr""pe""hit" NULL),
     "INT",
     StmtBlock#DeclStmt#TypeInfo#(
           "INT",
@@ -902,8 +1038,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
       ExpStmt#Assign#(
           "pt",
           CastExp#(
-            "TRI",
-            "*",
+            PtrType#"TRI",
             PtrAccess#(
               "pe",
               "data")))
@@ -924,8 +1059,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             FunctionCall#(
               "ABS",
               "Rd_dot_Pn"),
-            "RAYEPS"),
+            "RAYEPS")#"",
         Return#0)#(
+        "",
         "",
         "")
       ExpStmt#Assign#(
@@ -956,8 +1092,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
         If#Bop#(
             "<",
             "tval",
-            "RAYEPS"),
+            "RAYEPS")#"",
         Return#0)#(
+        "",
         "",
         "")
       ExpStmt#Assign#(
@@ -978,7 +1115,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             PtrAccess#(
               "pt",
               "vorder"),
-            "COUNTER_CLOCKWISE"),
+            "COUNTER_CLOCKWISE")#"",
         (ExpStmt#Assign#(
               "v2",
               Bop#(
@@ -1004,6 +1141,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                     "vindex"),
                   1)))
            NULL))#(
+        "",
         "",
         "")
       Nest#(
@@ -1035,6 +1173,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                     "vindex"),
                   2)))
            NULL))#(
+        "",
         "",
         "")
       ExpStmt#Assign#(
@@ -1266,8 +1405,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           0)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1315,8 +1455,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           0)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1364,8 +1505,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           0)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               Break NULL))
@@ -1450,8 +1592,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           1)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1499,8 +1642,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           1)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1548,8 +1692,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           1)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               Break NULL))
@@ -1634,8 +1779,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           2)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1683,8 +1829,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           2)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               ExpStmt#Assign#(
@@ -1732,8 +1879,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                             "pt",
                             "norm"),
                           2)
-                         NULL))),
+                         NULL)))#"",
                 Return#0)#(
+                "",
                 "",
                 "")
               Break NULL))
@@ -1749,14 +1897,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "e1"->"VEC3"
 "e2"->"VEC3"
 "e3"->"VEC3"
-"v1"->PtrType#"VEC3"
 "v2"->PtrType#"VEC3"
+"v1"->PtrType#"VEC3"
 "tval"->"REAL"
 "Rd_dot_Pn"->"REAL"
 "Ro_dot_Pn"->"REAL"
 "v3"->PtrType#"VEC3"
 "pt"->PtrType#"TRI"
 },
+      "",
       MAP:{
 "i"->"INT"
 "q1"->"REAL"
@@ -1764,14 +1913,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "e1"->"VEC3"
 "e2"->"VEC3"
 "e3"->"VEC3"
-"v1"->PtrType#"VEC3"
 "v2"->PtrType#"VEC3"
+"v1"->PtrType#"VEC3"
 "tval"->"REAL"
 "Rd_dot_Pn"->"REAL"
 "Ro_dot_Pn"->"REAL"
 "v3"->PtrType#"VEC3"
 "pt"->PtrType#"TRI"
 }))#(
+    "",
     "",
     (DeclStmt#TypeInfo#(
           PtrType#"RAY",
@@ -1792,7 +1942,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
    NULL)
   (FunctionDecl#(
     "IntersectHuniformPrimlist",
-    (TypeDecl#"intersectPrim"TypeDecl#"hit"TypeDecl#"v"TypeDecl#"r"TypeDecl#"pid" NULL),
+    ("intersectPrim""hit""v""r""pid" NULL),
     "VOID",
     StmtBlock#DeclStmt#TypeInfo#(
           PtrType#PtrType#"ELEMENT",
@@ -1847,19 +1997,26 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
       ExpStmt#Assign#(
           "pptr",
           CastExp#(
-            "ELEMENT",
-            ("*""*" NULL),
+            PtrType#PtrType#"ELEMENT",
             PtrAccess#(
               "v",
               "cell")))
-      Nest#(
+      NEST1={Nest#(
         Loop#(
           "i",
           0,
           PtrAccess#(
             "v",
             "numelements"),
-          1)#"",
+          1)#(
+          "",
+          "<",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "<"),
         (ExpStmt#Assign#(
               "pe",
               ArrayAccess#(
@@ -1887,7 +2044,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "TriPeIntersect",
                 ("r""pe""newhit" NULL)))
           Nest#(
-            If#"hitcode",
+            If#"hitcode"#"",
             Nest#(
               If#Bop#(
                   "&&",
@@ -1910,7 +2067,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                         "newhit",
                         0),
                       "t"),
-                    "t_out")),
+                    "t_out"))#"",
               ExpStmt#Assign#(
                   ArrayAccess#(
                     "hit",
@@ -1919,12 +2076,15 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                     "newhit",
                     0)))#(
               "",
+              "",
               ""))#(
+            "",
             "",
             "")
            NULL))#(
         "",
-        "")
+        "",
+        "")}
       Nest#(
         If#Bop#(
             "<",
@@ -1933,12 +2093,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "hit",
                 0),
               "t"),
-            "HUGE_REAL"),
+            "HUGE_REAL")#"",
         ExpStmt#Assign#(
             Uop#(
               "*",
               "intersectPrim"),
             "TRUE"))#(
+        "",
         "",
         "")
       Nest#(
@@ -1950,6 +2111,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "*",
               "intersectPrim"),
             "FALSE"))#(
+        "",
         "",
         "")
        NULL#(
@@ -1964,6 +2126,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           (ArrayDim#"ISECT_MAX" NULL))
 "hitcode"->"INT"
 },
+      "",
       MAP:{
 "i"->"INT"
 "pe"->PtrType#"ELEMENT"
@@ -1975,6 +2138,7 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           (ArrayDim#"ISECT_MAX" NULL))
 "hitcode"->"INT"
 }))#(
+    "",
     "",
     (DeclStmt#TypeInfo#(
           PtrType#"INT",
@@ -2003,10 +2167,11 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
          NULL
        NULL))
    NULL)
-   NULL#MAP:{
+   NULL#(
+  MAP:{
 "r"->PtrType#"RAY"
-"pr"->PtrType#"RAY"
 "v"->PtrType#"VOXEL"
+"pr"->PtrType#"RAY"
 "hit"->PtrType#"IRECORD"
 "CHAR"->IntType#"char"
 "INT"->IntType1#"long"
@@ -2027,112 +2192,92 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           PtrType#"CHAR",
           EmptyStmt)#(
           "",
+          "",
           "")
          NULL)
-        (FunctionDecl#(
-          FunctionPtr#"print",
+        FunctionDecl#(
+          "print",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"read",
+        FunctionDecl#(
+          "read",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"binread",
+        FunctionDecl#(
+          "binread",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"transform",
+        FunctionDecl#(
+          "transform",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"intersect",
+        FunctionDecl#(
+          "intersect",
           "",
           "INT",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"pe_intersect",
+        FunctionDecl#(
+          "pe_intersect",
           "",
           "INT",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"normal",
+        FunctionDecl#(
+          "normal",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"normalize",
+        FunctionDecl#(
+          "normalize",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"bbox",
+        FunctionDecl#(
+          "bbox",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "name"->FunctionType#(
             "",
             PtrType#"CHAR")
-"read"->FunctionType#(
+},
+        MAP:{
+"name"->FunctionType#(
             "",
-            "VOID")
-"print"->FunctionType#(
-            "",
-            "VOID")
-"binread"->FunctionType#(
-            "",
-            "VOID")
-"transform"->FunctionType#(
-            "",
-            "VOID")
-"intersect"->FunctionType#(
-            "",
-            "INT")
-"pe_intersect"->FunctionType#(
-            "",
-            "INT")
-"normal"->FunctionType#(
-            "",
-            "VOID")
-"normalize"->FunctionType#(
-            "",
-            "VOID")
-"bbox"->FunctionType#(
-            "",
-            "VOID")
-})
+            PtrType#"CHAR")
+}))
 "object"->StructType#(
       "object",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2179,7 +2324,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "name"->ArrayType#(
             "CHAR",
             (ArrayDim#"NAME_LEN" NULL))
@@ -2188,14 +2334,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "object",
               "")
 "pelem"->PtrType#"ELEMENT"
-"object"->StructType#(
-            "object",
-            "")
 "surf"->PtrType#"SURF"
 "bv"->"BBOX"
 "numelements"->"INT"
 "procs"->PtrType#"PPROCS"
-})
+},
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+}))
 "ray"->StructType#(
       "ray",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2260,11 +2417,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "rinfo",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "level"->"INT"
 "x"->"INT"
-"P"->"VEC3"
 "id"->"LONG"
+"P"->"VEC3"
 "y"->"INT"
 "D"->"VEC3"
 "weight"->"R32"
@@ -2280,7 +2438,28 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                   "MAX_RAYINFO",
                   1)
                NULL))
-})
+},
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+}))
 "bbox"->StructType#(
       "bbox",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2297,14 +2476,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "dfar",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "dnear"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
 "dfar"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
-})
+},
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+}))
 "PPROCS"->StructType#(
       "pprocs",
       DeclarationBlock#(FunctionDecl#(
@@ -2313,112 +2501,92 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           PtrType#"CHAR",
           EmptyStmt)#(
           "",
+          "",
           "")
          NULL)
-        (FunctionDecl#(
-          FunctionPtr#"print",
+        FunctionDecl#(
+          "print",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"read",
+        FunctionDecl#(
+          "read",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"binread",
+        FunctionDecl#(
+          "binread",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"transform",
+        FunctionDecl#(
+          "transform",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"intersect",
+        FunctionDecl#(
+          "intersect",
           "",
           "INT",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"pe_intersect",
+        FunctionDecl#(
+          "pe_intersect",
           "",
           "INT",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"normal",
+        FunctionDecl#(
+          "normal",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"normalize",
+        FunctionDecl#(
+          "normalize",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-        (FunctionDecl#(
-          FunctionPtr#"bbox",
+        FunctionDecl#(
+          "bbox",
           "",
           "VOID",
           EmptyStmt)#(
           "",
+          "",
           "")
-         NULL)
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "name"->FunctionType#(
             "",
             PtrType#"CHAR")
-"read"->FunctionType#(
+},
+        MAP:{
+"name"->FunctionType#(
             "",
-            "VOID")
-"print"->FunctionType#(
-            "",
-            "VOID")
-"binread"->FunctionType#(
-            "",
-            "VOID")
-"transform"->FunctionType#(
-            "",
-            "VOID")
-"intersect"->FunctionType#(
-            "",
-            "INT")
-"pe_intersect"->FunctionType#(
-            "",
-            "INT")
-"normal"->FunctionType#(
-            "",
-            "VOID")
-"normalize"->FunctionType#(
-            "",
-            "VOID")
-"bbox"->FunctionType#(
-            "",
-            "VOID")
-})
+            PtrType#"CHAR")
+}))
 "surf"->StructType#(
       "surf",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2456,7 +2624,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "kspecn",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "fcolor"->"COLOR"
 "bcolor"->"COLOR"
 "kdiff"->"REAL"
@@ -2464,7 +2633,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "ktran"->"REAL"
 "refrindex"->"REAL"
 "kspecn"->"REAL"
-})
+},
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+}))
 "SURF"->StructType#(
       "surf",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2502,7 +2680,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "kspecn",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "fcolor"->"COLOR"
 "bcolor"->"COLOR"
 "kdiff"->"REAL"
@@ -2510,7 +2689,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "ktran"->"REAL"
 "refrindex"->"REAL"
 "kspecn"->"REAL"
-})
+},
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+}))
 "BBOX"->StructType#(
       "bbox",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2527,14 +2715,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "dfar",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "dnear"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
 "dfar"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
-})
+},
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+}))
 "element"->StructType#(
       "element",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2559,17 +2756,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "data",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "index"->"INT"
-"object"->StructType#(
-            "object",
-            "")
 "bv"->"BBOX"
 "parent"->PtrType#StructType#(
               "object",
               "")
 "data"->PtrType#"CHAR"
-})
+},
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+}))
 "ELEMENT"->StructType#(
       "element",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2594,17 +2797,23 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "data",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "index"->"INT"
-"object"->StructType#(
-            "object",
-            "")
 "bv"->"BBOX"
 "parent"->PtrType#StructType#(
               "object",
               "")
 "data"->PtrType#"CHAR"
-})
+},
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+}))
 "OBJECT"->StructType#(
       "object",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2651,7 +2860,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "name"->ArrayType#(
             "CHAR",
             (ArrayDim#"NAME_LEN" NULL))
@@ -2660,14 +2870,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "object",
               "")
 "pelem"->PtrType#"ELEMENT"
-"object"->StructType#(
-            "object",
-            "")
 "surf"->PtrType#"SURF"
 "bv"->"BBOX"
 "numelements"->"INT"
 "procs"->PtrType#"PPROCS"
-})
+},
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+}))
 "voxel"->StructType#(
       "voxel",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2697,18 +2918,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "next"->PtrType#StructType#(
               "voxel",
               "")
-"numelements"->"INT"
-"voxel"->StructType#(
-            "voxel",
-            "")
 "id"->"INT"
+"numelements"->"INT"
 "cell"->PtrType#"CHAR"
 "celltype"->"CHAR"
-})
+},
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+}))
 "grid"->StructType#(
       "grid",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2779,7 +3007,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "min"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
@@ -2787,9 +3016,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "grid",
               "")
 "id"->"INT"
-"grid"->StructType#(
-            "grid",
-            "")
 "hashtable"->PtrType#PtrType#"VOXEL"
 "num_buckets"->"INT"
 "emptycells"->PtrType#"UINT"
@@ -2803,7 +3029,29 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             (ArrayDim#3 NULL))
 "subdiv_level"->"INT"
 "bintree"->PtrType#"BTNODE"
-})
+},
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+}))
 "VOXEL"->StructType#(
       "voxel",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2833,18 +3081,25 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "next"->PtrType#StructType#(
               "voxel",
               "")
-"numelements"->"INT"
-"voxel"->StructType#(
-            "voxel",
-            "")
 "id"->"INT"
+"numelements"->"INT"
 "cell"->PtrType#"CHAR"
 "celltype"->"CHAR"
-})
+},
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+}))
 "btnode"->StructType#(
       "btnode",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -2897,7 +3152,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "btn",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "p"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
@@ -2907,9 +3163,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "n"->ArrayType#(
             "INT",
             (ArrayDim#3 NULL))
-"btnode"->StructType#(
-            "btnode",
-            "")
 "pe"->PtrType#PtrType#"ELEMENT"
 "nprims"->"INT"
 "axis"->"INT"
@@ -2919,7 +3172,27 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "btnode",
                 ""),
             (ArrayDim#2 NULL))
-})
+},
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+}))
 "pe"->PtrType#"ELEMENT"
 "BTNODE"->StructType#(
       "btnode",
@@ -2973,7 +3246,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "btn",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "p"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
@@ -2983,9 +3257,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "n"->ArrayType#(
             "INT",
             (ArrayDim#3 NULL))
-"btnode"->StructType#(
-            "btnode",
-            "")
 "pe"->PtrType#PtrType#"ELEMENT"
 "nprims"->"INT"
 "axis"->"INT"
@@ -2995,7 +3266,27 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "btnode",
                 ""),
             (ArrayDim#2 NULL))
-})
+},
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+}))
 "GRID"->StructType#(
       "grid",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3066,7 +3357,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "min"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
@@ -3074,9 +3366,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "grid",
               "")
 "id"->"INT"
-"grid"->StructType#(
-            "grid",
-            "")
 "hashtable"->PtrType#PtrType#"VOXEL"
 "num_buckets"->"INT"
 "emptycells"->PtrType#"UINT"
@@ -3090,7 +3379,29 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             (ArrayDim#3 NULL))
 "subdiv_level"->"INT"
 "bintree"->PtrType#"BTNODE"
-})
+},
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+}))
 "rayinfo"->StructType#(
       "rayinfo",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3158,18 +3469,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
-"next"->PtrType#StructType#(
-              "rayinfo",
-              "")
+         NULL#(
+        MAP:{
 "d"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
 "index1D"->"INT"
 "grid"->PtrType#"GRID"
-"rayinfo"->StructType#(
-            "rayinfo",
-            "")
 "entry_plane"->"INT"
 "t_in"->"REAL"
 "exit_plane"->"INT"
@@ -3183,7 +3492,30 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx_inc1D"->ArrayType#(
             "INT",
             (ArrayDim#3 NULL))
-})
+},
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+}))
 "RAYINFO"->StructType#(
       "rayinfo",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3251,18 +3583,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "next",
             "")
            NULL
-         NULL#MAP:{
-"next"->PtrType#StructType#(
-              "rayinfo",
-              "")
+         NULL#(
+        MAP:{
 "d"->ArrayType#(
             "REAL",
             (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
 "index1D"->"INT"
 "grid"->PtrType#"GRID"
-"rayinfo"->StructType#(
-            "rayinfo",
-            "")
 "entry_plane"->"INT"
 "t_in"->"REAL"
 "exit_plane"->"INT"
@@ -3276,7 +3606,30 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx_inc1D"->ArrayType#(
             "INT",
             (ArrayDim#3 NULL))
-})
+},
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+}))
 "RAY"->StructType#(
       "ray",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3341,11 +3694,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "rinfo",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "level"->"INT"
 "x"->"INT"
-"P"->"VEC3"
 "id"->"LONG"
+"P"->"VEC3"
 "y"->"INT"
 "D"->"VEC3"
 "weight"->"R32"
@@ -3361,7 +3715,28 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                   "MAX_RAYINFO",
                   1)
                NULL))
-})
+},
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+}))
 "irecord"->StructType#(
       "irecord",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3389,13 +3764,21 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "b3",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "t"->"REAL"
-"b2"->"REAL"
 "b1"->"REAL"
+"b2"->"REAL"
 "pelem"->PtrType#"ELEMENT"
 "b3"->"REAL"
-})
+},
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+}))
 "IRECORD"->StructType#(
       "irecord",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3423,13 +3806,21 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "b3",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "t"->"REAL"
-"b2"->"REAL"
 "b1"->"REAL"
+"b2"->"REAL"
 "pelem"->PtrType#"ELEMENT"
 "b3"->"REAL"
-})
+},
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+}))
 "tri"->StructType#(
       "tri",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3474,7 +3865,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "vorder",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "d"->"REAL"
 "norm"->"VEC3"
 "vptr"->PtrType#"VEC3"
@@ -3485,7 +3877,19 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx"->"INT"
 "norminterp"->"BOOL"
 "vorder"->"BOOL"
-})
+},
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+}))
 "TRI"->StructType#(
       "tri",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3530,7 +3934,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
             "vorder",
             "")
            NULL
-         NULL#MAP:{
+         NULL#(
+        MAP:{
 "d"->"REAL"
 "norm"->"VEC3"
 "vptr"->PtrType#"VEC3"
@@ -3541,13 +3946,1825 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "indx"->"INT"
 "norminterp"->"BOOL"
 "vorder"->"BOOL"
-})
+},
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+}))
 "TriPeIntersect"->FunctionType#(
-      (TypeDecl#"pr"TypeDecl#"pe"TypeDecl#"hit" NULL),
+      ("pr""pe""hit" NULL),
       "INT")
 "IntersectHuniformPrimlist"->FunctionType#(
-      (TypeDecl#"intersectPrim"TypeDecl#"hit"TypeDecl#"v"TypeDecl#"r"TypeDecl#"pid" NULL),
+      ("intersectPrim""hit""v""r""pid" NULL),
       "VOID")
 "intersectPrim"->PtrType#"INT"
 "pid"->"INT"
-}
+},
+  MAP:{
+"r"->PtrType#"RAY"
+"v"->PtrType#"VOXEL"
+"pr"->PtrType#"RAY"
+"hit"->PtrType#"IRECORD"
+"CHAR"->IntType#"char"
+"INT"->IntType1#"long"
+"UINT"->IntType1#"unsigned""long" NULL
+"BOOL"->IntType1#"unsigned""long" NULL
+"LONG"->IntType1#"long"
+"R32"->FloatType#"float"
+"REAL"->FloatType#"double"
+"VEC3"->ArrayType#(
+      "REAL",
+      (ArrayDim#3 NULL))
+"COLOR"->"VEC3"
+"pprocs"->StructType#(
+      "pprocs",
+      DeclarationBlock#(FunctionDecl#(
+          FunctionPtr#"name",
+          "",
+          PtrType#"CHAR",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+         NULL)
+        FunctionDecl#(
+          "print",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "read",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "binread",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "transform",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "pe_intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "normal",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "normalize",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "bbox",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+         NULL#(
+        MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+},
+        MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+}))
+"object"->StructType#(
+      "object",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "CHAR",
+              (ArrayDim#"NAME_LEN" NULL)),
+            "name",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"PPROCS",
+            "procs",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"SURF",
+            "surf",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+},
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+}))
+"ray"->StructType#(
+      "ray",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "LONG",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "x",
+            "")
+          TypeInfo#(
+            "INT",
+            "y",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "P",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "R32",
+            "weight",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"RAYINFO",
+            "ri",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "ri_indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "RAYINFO",
+              (ArrayDim#Bop#(
+                    "+",
+                    "MAX_RAYINFO",
+                    1)
+                 NULL)),
+            "rinfo",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+},
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+}))
+"bbox"->StructType#(
+      "bbox",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dnear",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dfar",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+},
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+}))
+"PPROCS"->StructType#(
+      "pprocs",
+      DeclarationBlock#(FunctionDecl#(
+          FunctionPtr#"name",
+          "",
+          PtrType#"CHAR",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+         NULL)
+        FunctionDecl#(
+          "print",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "read",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "binread",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "transform",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "pe_intersect",
+          "",
+          "INT",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "normal",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "normalize",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+        FunctionDecl#(
+          "bbox",
+          "",
+          "VOID",
+          EmptyStmt)#(
+          "",
+          "",
+          "")
+         NULL#(
+        MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+},
+        MAP:{
+"name"->FunctionType#(
+            "",
+            PtrType#"CHAR")
+}))
+"surf"->StructType#(
+      "surf",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "COLOR",
+            "fcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "COLOR",
+            "bcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kdiff",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspec",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "ktran",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "refrindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspecn",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+},
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+}))
+"SURF"->StructType#(
+      "surf",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "COLOR",
+            "fcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "COLOR",
+            "bcolor",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kdiff",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspec",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "ktran",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "refrindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "kspecn",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+},
+        MAP:{
+"fcolor"->"COLOR"
+"bcolor"->"COLOR"
+"kdiff"->"REAL"
+"kspec"->"REAL"
+"ktran"->"REAL"
+"refrindex"->"REAL"
+"kspecn"->"REAL"
+}))
+"BBOX"->StructType#(
+      "bbox",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dnear",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "dfar",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+},
+        MAP:{
+"dnear"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"dfar"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+}))
+"element"->StructType#(
+      "element",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "parent",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "data",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+},
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+}))
+"ELEMENT"->StructType#(
+      "element",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "parent",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "data",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+},
+        MAP:{
+"index"->"INT"
+"bv"->"BBOX"
+"parent"->PtrType#StructType#(
+              "object",
+              "")
+"data"->PtrType#"CHAR"
+}))
+"OBJECT"->StructType#(
+      "object",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "index",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "CHAR",
+              (ArrayDim#"NAME_LEN" NULL)),
+            "name",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BBOX",
+            "bv",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"PPROCS",
+            "procs",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"SURF",
+            "surf",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "object",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+},
+        MAP:{
+"name"->ArrayType#(
+            "CHAR",
+            (ArrayDim#"NAME_LEN" NULL))
+"index"->"INT"
+"next"->PtrType#StructType#(
+              "object",
+              "")
+"pelem"->PtrType#"ELEMENT"
+"surf"->PtrType#"SURF"
+"bv"->"BBOX"
+"numelements"->"INT"
+"procs"->PtrType#"PPROCS"
+}))
+"voxel"->StructType#(
+      "voxel",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "cell",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "CHAR",
+            "celltype",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "voxel",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+},
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+}))
+"grid"->StructType#(
+      "grid",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"VOXEL",
+            "hashtable",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"UINT",
+            "emptycells",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pepa",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_prims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_buckets",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "min",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "cellsize",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "subdiv_level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"BTNODE",
+            "bintree",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "grid",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+},
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+}))
+"VOXEL"->StructType#(
+      "voxel",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"CHAR",
+            "cell",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "CHAR",
+            "celltype",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "numelements",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "voxel",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+},
+        MAP:{
+"next"->PtrType#StructType#(
+              "voxel",
+              "")
+"id"->"INT"
+"numelements"->"INT"
+"cell"->PtrType#"CHAR"
+"celltype"->"CHAR"
+}))
+"btnode"->StructType#(
+      "btnode",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pe",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "p",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "nprims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "n",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "i",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "axis",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "totalPrimsAllocated",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              PtrType#StructType#(
+                  "btnode",
+                  ""),
+              (ArrayDim#2 NULL)),
+            "btn",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+},
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+}))
+"pe"->PtrType#"ELEMENT"
+"BTNODE"->StructType#(
+      "btnode",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pe",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "p",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "nprims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "n",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "i",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "axis",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "totalPrimsAllocated",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              PtrType#StructType#(
+                  "btnode",
+                  ""),
+              (ArrayDim#2 NULL)),
+            "btn",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+},
+        MAP:{
+"p"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"i"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"n"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"pe"->PtrType#PtrType#"ELEMENT"
+"nprims"->"INT"
+"axis"->"INT"
+"totalPrimsAllocated"->"INT"
+"btn"->ArrayType#(
+            PtrType#StructType#(
+                "btnode",
+                ""),
+            (ArrayDim#2 NULL))
+}))
+"GRID"->StructType#(
+      "grid",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "INT",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"VOXEL",
+            "hashtable",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"UINT",
+            "emptycells",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#PtrType#"ELEMENT",
+            "pepa",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_prims",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "num_buckets",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "min",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "cellsize",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "subdiv_level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"BTNODE",
+            "bintree",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "grid",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+},
+        MAP:{
+"min"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "grid",
+              "")
+"id"->"INT"
+"hashtable"->PtrType#PtrType#"VOXEL"
+"num_buckets"->"INT"
+"emptycells"->PtrType#"UINT"
+"pepa"->PtrType#PtrType#"ELEMENT"
+"num_prims"->"INT"
+"indx_inc"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"cellsize"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"subdiv_level"->"INT"
+"bintree"->PtrType#"BTNODE"
+}))
+"rayinfo"->StructType#(
+      "rayinfo",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#"GRID",
+            "grid",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "entry_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_in",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "exit_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_out",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "delta",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "index3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "index1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "rayinfo",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+},
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+}))
+"RAYINFO"->StructType#(
+      "rayinfo",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            PtrType#"GRID",
+            "grid",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "entry_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_in",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "exit_plane",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "t_out",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "REAL",
+              (ArrayDim#3 NULL)),
+            "delta",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "index3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "index1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc1D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#StructType#(
+                "rayinfo",
+                ""),
+            "next",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+},
+        MAP:{
+"d"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"next"->PtrType#StructType#(
+              "rayinfo",
+              "")
+"index1D"->"INT"
+"grid"->PtrType#"GRID"
+"entry_plane"->"INT"
+"t_in"->"REAL"
+"exit_plane"->"INT"
+"t_out"->"REAL"
+"delta"->ArrayType#(
+            "REAL",
+            (ArrayDim#3 NULL))
+"index3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx_inc1D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+}))
+"RAY"->StructType#(
+      "ray",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "LONG",
+            "id",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "x",
+            "")
+          TypeInfo#(
+            "INT",
+            "y",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "P",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "VEC3",
+            "D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "level",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "R32",
+            "weight",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "indx_inc3D",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"RAYINFO",
+            "ri",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "ri_indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "RAYINFO",
+              (ArrayDim#Bop#(
+                    "+",
+                    "MAX_RAYINFO",
+                    1)
+                 NULL)),
+            "rinfo",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+},
+        MAP:{
+"level"->"INT"
+"x"->"INT"
+"id"->"LONG"
+"P"->"VEC3"
+"y"->"INT"
+"D"->"VEC3"
+"weight"->"R32"
+"indx_inc3D"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"ri"->PtrType#"RAYINFO"
+"ri_indx"->"INT"
+"rinfo"->ArrayType#(
+            "RAYINFO",
+            (ArrayDim#Bop#(
+                  "+",
+                  "MAX_RAYINFO",
+                  1)
+               NULL))
+}))
+"irecord"->StructType#(
+      "irecord",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "REAL",
+            "t",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b1",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b2",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b3",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+},
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+}))
+"IRECORD"->StructType#(
+      "irecord",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "REAL",
+            "t",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"ELEMENT",
+            "pelem",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b1",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b2",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "b3",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+},
+        MAP:{
+"t"->"REAL"
+"b1"->"REAL"
+"b2"->"REAL"
+"pelem"->PtrType#"ELEMENT"
+"b3"->"REAL"
+}))
+"tri"->StructType#(
+      "tri",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "VEC3",
+            "norm",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "vptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "nptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "vindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "norminterp",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "vorder",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+},
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+}))
+"TRI"->StructType#(
+      "tri",
+      DeclarationBlock#DeclStmt#TypeInfo#(
+            "VEC3",
+            "norm",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "REAL",
+            "d",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "vptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            PtrType#"VEC3",
+            "nptr",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            ArrayType#(
+              "INT",
+              (ArrayDim#3 NULL)),
+            "vindex",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "INT",
+            "indx",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "norminterp",
+            "")
+           NULL
+        DeclStmt#TypeInfo#(
+            "BOOL",
+            "vorder",
+            "")
+           NULL
+         NULL#(
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+},
+        MAP:{
+"d"->"REAL"
+"norm"->"VEC3"
+"vptr"->PtrType#"VEC3"
+"nptr"->PtrType#"VEC3"
+"vindex"->ArrayType#(
+            "INT",
+            (ArrayDim#3 NULL))
+"indx"->"INT"
+"norminterp"->"BOOL"
+"vorder"->"BOOL"
+}))
+"TriPeIntersect"->FunctionType#(
+      ("pr""pe""hit" NULL),
+      "INT")
+"IntersectHuniformPrimlist"->FunctionType#(
+      ("intersectPrim""hit""v""r""pid" NULL),
+      "VOID")
+"intersectPrim"->PtrType#"INT"
+"pid"->"INT"
+})

@@ -39,7 +39,14 @@ and change conrresponding state in $info$
 Vectorize the innermost loop surrounding array references in info, 
 by modifying code inside $scope$, the input code to optimize. 
 *******************************************************************>
-<xform invoke_simd pars=(info, array_name_to_scalars, array_name_to_loop_dimensions, scope) ret_new_vars = "" global_vars="" data_type = ""/>
+<xform invoke_simd pars=(info, array_name_to_scalars, array_name_to_loop_dimensions, scope) 
+       ret_new_vars = "" global_vars="" data_type = "" pthrds="" omp_reduce_vars="" omp_reduce_op="" />
+
+<*******************************************************************
+Assigns constants a variable and replaces them within the scope so
+they can be used in vector operations
+********************************************************************>
+<xform replace_constants pars=(input, init_vars, scope, constants, c, reg)/>
 
 <*****************************************************************
 reduce $exps$ array references computation. If applied parallelization,
@@ -57,3 +64,4 @@ Cleanup unnecessary loop boundary checking conditions
 among $scope$ code region
 *************************************************>
 <xform invoke_loop_splitting pars=(scope) lmap=("","","")/>
+

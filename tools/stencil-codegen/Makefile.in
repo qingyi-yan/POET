@@ -194,6 +194,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+rose_srcdir = @rose_srcdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -208,6 +209,7 @@ dim = 1
 time = 20
 elem = float
 points = 3
+comp = diff
 all: all-am
 
 .SUFFIXES:
@@ -395,7 +397,7 @@ now:
 
 check:
 	make now
-	diff out.c stencil-3.c
+	$(comp) out.c stencil-3.c
 
 clean:
 	rm out.C out2.cu  *.o a.out *_tester.cu

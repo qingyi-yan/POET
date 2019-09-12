@@ -59,7 +59,7 @@ c
 c...............................................................|
 c
 c     perform forward substitution
-c  //@; BEGIN(looplist1=LoopNestList)
+c  //@; BEGIN(looplist1=CODE.LoopNestList)
       do 10 j=1,N  
       do 10 i=1,N
          duz(i,j,1) = duz(i,j,1)*b(1)
@@ -122,7 +122,7 @@ c...............................................................|
 c
 c     perform forward substitution
 c
-c  //@; BEGIN(looplist2=LoopNestList)
+c  //@; BEGIN(looplist2=CODE.LoopNestList)
       do 10 k=1,N
       do 10 i=1,N
          duy(i,1,k) = duy(i,1,k)*b(1)
@@ -177,7 +177,7 @@ c...............................................................|
 c
 c     perform forward substitution
 c
-c  //@; BEGIN(looplist3=LoopNestList)
+c  //@; BEGIN(looplist3=CODE.LoopNestList)
       do 10 k=1,N
       do 10 j=1,N
          dux(1,j,k) = dux(1,j,k)*b(1)

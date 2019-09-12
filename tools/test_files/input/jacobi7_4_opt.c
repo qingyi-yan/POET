@@ -116,11 +116,11 @@ void* t_pipeline(void *input) {
   int k;
   int j;
   int i;
-  /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1) 
+  /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1)
     {
-       for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1) 
+       for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1)
          {
-            if (k<-1+(nz-1))  
+            if (k<-1+(nz-1)) 
               {
                  {
                    struct t_WorkGroup_Type* cur = t_workgroup + 1+k;
@@ -130,7 +130,7 @@ void* t_pipeline(void *input) {
                    pthread_mutex_unlock(&cur->mutex);
                  }
               }
-            if (k>=2)  
+            if (k>=2) 
               {
                  {
                    struct t_WorkGroup_Type* cur = t_workgroup + -1+k;
@@ -140,16 +140,16 @@ void* t_pipeline(void *input) {
                    pthread_mutex_unlock(&cur->mutex);
                  }
               }
-            /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1) 
+            /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1)
               {
-                 /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1) 
+                 /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1)
                    {
-                      if (t%2==0)  
+                      if (t%2==0) 
                         {
                            l0 = A0;
                            lnext = Anext;
                         }
-                      else  
+                      else 
                         {
                            lnext = A0;
                            l0 = Anext;

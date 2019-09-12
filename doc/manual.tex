@@ -228,13 +228,13 @@ serves to substitute a pre-defined set of strings with other strings.
 <input from=inputFile annot=0 to=inputCode/>
 
 <eval 
-return = inputCode;
+res = inputCode;
 for ((p_input = inputString,p_output=outputString); p_input != NULL;
       (p_input = TAIL(p_input); p_output=TAIL(p_output)))
-   { return = REPLACE(HEAD(p_input), HEAD(p_output), return);}
+   { res = REPLACE(HEAD(p_input), HEAD(p_output), res);}
 />
 
-<output to=outputFile from=return/>
+<output to=outputFile from=res/>
 \end {verbatim}
 \note  The $type$ attribute within a parameter declaration ensures that only a value of proper type
 can be assigned to the parameter. In particular,  the type $(STRING...)$ specifies a list of strings.
@@ -257,10 +257,10 @@ $HEAD(list)$ returns the single value, and $TAIL(list)$ returns $NULL$.
 with the values of global variables $inputString$ and $outputString$ respectively (each variable
 has a list of strings as content). 
 It then examines whether $p\_input$ is an empty string. As long as $p\_input$ is not empty,
-the body of the $for$ loop is evaluated, which modifies the value of the $return$ variable by 
+the body of the $for$ loop is evaluated, which modifies the value of the $res$ variable by 
 invoking the built-in $REPLACE$ operator.
 Each time the $REPLACE$ operator is invoked, it replaces all the occurrences of $HEAD(p\_input)$
-with $HEAD(p\_output)$ in the input code contained in the $return$ variable, where $HEAD(\_input)$
+with $HEAD(p\_output)$ in the input code contained in the $res$ variable, where $HEAD(\_input)$
 and $HEAD(p\_output)$ returns the first string contained $p\_input$ and $p\_output$ respectively.
 At the end of each iteration, both $p\_input$ and $p\_output$ are modified with the $TAIL$
 of their original values. 
@@ -886,7 +886,7 @@ For example, the following code template definition
 specifies that the $Loop$ code template can be considered a derived instance of the $Ctrl$ code template and therefore can
 match the pattern $CODE.Ctrl$.
 
-\paragraph {The {\it rebuild} attribute}  
+\subsection {The {\it rebuild} attribute}  
 This attribute specifies an alternative expression that should be used to substitute the resulting 
 code template object during parsing or when the REBUILD operator (see Section~\ref {sec-op-xform}) is invoked. 
 For example, the following code template definition

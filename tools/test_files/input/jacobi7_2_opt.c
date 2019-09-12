@@ -8,20 +8,20 @@ void jacobi7_2(const int nx,const int ny,int nz,const double alpha,double* A0,co
    fac = 6.0/(A0[0]*A0[0]);
    double* l0;double* lnext;
    
-   /*@;BEGIN(Nest2_group3=Nest)@*/for (k=1; k<nz-1+timesteps; k+=1) 
+   /*@;BEGIN(Nest2_group3=Nest)@*/for (k=1; k<nz-1+timesteps; k+=1)
      {
-        /*@;BEGIN(Nest1=Nest)@*/for (t=max(0,1+(k-(nz-1))); t<min(timesteps,k); t+=1) 
+        /*@;BEGIN(Nest1=Nest)@*/for (t=max(0,1+(k-(nz-1))); t<min(timesteps,k); t+=1)
           {
-             /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1) 
+             /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1)
                {
-                  /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1) 
+                  /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1)
                     {
-                       if (t%2==0)  
+                       if (t%2==0) 
                          {
                             l0 = A0;
                             lnext = Anext;
                          }
-                       else  
+                       else 
                          {
                             lnext = A0;
                             l0 = Anext;

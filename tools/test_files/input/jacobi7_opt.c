@@ -14,25 +14,25 @@ void jacobi7(const int nx,const int ny,int nz,const double alpha,double* A0,cons
    int k_bk_2;
    int j_bk_3;
    int i_bk_4;
-   /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1) 
+   /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1)
      {
         omp_set_num_threads(_TH_1);
         #pragma omp  parallel  
          {
          /*@;BEGIN(Nest2_group3=Nest)@*/#pragma omp  for private(k,j,i,k_bk_1,k_bk_2,j_bk_3,i_bk_4)
-         for (k_bk_1=1; k_bk_1<nz-1; k_bk_1+=_NB_1) 
+         for (k_bk_1=1; k_bk_1<nz-1; k_bk_1+=_NB_1)
            {
-              /*@;BEGIN(Nest2=Nest)@*/for (k_bk_2=0; k_bk_2<min(_NB_1,-k_bk_1+(-1+nz)); k_bk_2+=32) 
+              /*@;BEGIN(Nest2=Nest)@*/for (k_bk_2=0; k_bk_2<min(_NB_1,-k_bk_1+(-1+nz)); k_bk_2+=32)
                 {
-                   /*@;BEGIN(Nest3=Nest)@*/for (j_bk_3=1; j_bk_3<-1+ny; j_bk_3+=32) 
+                   /*@;BEGIN(Nest3=Nest)@*/for (j_bk_3=1; j_bk_3<-1+ny; j_bk_3+=32)
                      {
-                        /*@;BEGIN(Nest4=Nest)@*/for (i_bk_4=1; i_bk_4<-1+nx; i_bk_4+=32) 
+                        /*@;BEGIN(Nest4=Nest)@*/for (i_bk_4=1; i_bk_4<-1+nx; i_bk_4+=32)
                           {
-                             for (k=0; k<min(32,min(_NB_1-k_bk_2,-k_bk_2+(-k_bk_1+(-1+nz)))); k+=1) 
+                             for (k=0; k<min(32,min(_NB_1-k_bk_2,-k_bk_2+(-k_bk_1+(-1+nz)))); k+=1)
                                {
-                                  for (j=0; j<min(32,-j_bk_3+(-1+ny)); j+=1) 
+                                  for (j=0; j<min(32,-j_bk_3+(-1+ny)); j+=1)
                                     {
-                                       for (i=0; i<min(32,-i_bk_4+(-1+nx)); i+=1) 
+                                       for (i=0; i<min(32,-i_bk_4+(-1+nx)); i+=1)
                                          {
                                             Anext[Index3D(nx,ny,i_bk_4+i,j_bk_3+j,k_bk_1+(k_bk_2+k))] = -(A0[Index3D(nx,ny,i_bk_4+i,j_bk_3+j,k_bk_1+(k_bk_2+k))]*fac)+(A0[Index3D(nx,ny,-1+(i_bk_4+i),j_bk_3+j,k_bk_1+(k_bk_2+k))]+(A0[Index3D(nx,ny,1+(i_bk_4+i),j_bk_3+j,k_bk_1+(k_bk_2+k))]+(A0[Index3D(nx,ny,i_bk_4+i,-1+(j_bk_3+j),k_bk_1+(k_bk_2+k))]+(A0[Index3D(nx,ny,i_bk_4+i,1+(j_bk_3+j),k_bk_1+(k_bk_2+k))]+(A0[Index3D(nx,ny,i_bk_4+i,j_bk_3+j,1+(k_bk_1+(k_bk_2+k)))]+A0[Index3D(nx,ny,i_bk_4+i,j_bk_3+j,-1+(k_bk_1+(k_bk_2+k)))])))));
                                          }

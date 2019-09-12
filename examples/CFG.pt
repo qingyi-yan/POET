@@ -21,7 +21,7 @@ include Loops.incl
      if (cur : Loop|ExpStmt) { curBlock = cur :: curBlock; }
   enddo
   if (curBlock!="") 
-     blocks[start] = BasicBlock#(count+1, curBlock);
+     blocks[start] = BasicBlock#(count, curBlock);
   blocks
 </xform>
 

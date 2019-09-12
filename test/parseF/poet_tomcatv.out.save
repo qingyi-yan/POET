@@ -1,11 +1,11 @@
 NoParse#"INTEGER""	""NMAX""
-""
+""""
 "" ""PARAMETER"" ""(""NMAX"" ""="" ""1025"")""
-""
+""""
 "" ""INTEGER""	""ITMAX""
 ""
 "" ""REAL""*""8""	""EPS"","" ""RELFA"","" ""REL""
-""
+""""
 "" ""PARAMETER"" "" "" "" "" "" "" "" ""("" ""ITMAX"" ""="" ""1000"")""
 ""
 "" ""PARAMETER"" "" "" "" "" "" "" "" ""("" ""RELFA"" ""="" ""0.98""D0"" "")""
@@ -36,21 +36,21 @@ NoParse#"INTEGER""	""NMAX""
 ""
 "" ""REAL""*""8""	""ABX"","" ""ABY""
 ""
-"" ""OPEN""(""10"",""FILE""=""'""TOMCATV"".""MODEL""'"",""STATUS""=""'""OLD""'"",""ERR""=""999"")""
+"" ""OPEN""(""10"",""FILE""="Char#"TOMCATV"".""MODEL" NULL",""STATUS""="Char#"OLD"",""ERR""=""999"")""
 ""
 "" ""GOTO"" ""1""
 ""
-""999""PRINT"" ""*"","" ""'""FILE"" """""TOMCATV"".""MODEL""""" ""DOES"" ""NOT"" ""EXIST"";"" ""STOP""'""
+""999""PRINT"" ""*"","" "Char#"FILE"" """""TOMCATV"".""MODEL""""" ""DOES"" ""NOT"" ""EXIST"";"" ""STOP" NULL"
 ""
 "" ""STOP""
 ""
 ""1""CONTINUE""
 ""
 "" ""READ""("" ""5"","" ""*"" "")"" ""N"","" ""ITACT"","" ""DLO"","" ""DHI"","" ""ALPHA""
+""""
+"" ""IF"" ""(""ITACT"" "".GT."" ""ITMAX"" "".OR."" ""N"" "".GT."" ""NMAX"" "")"" ""THEN""
 ""
-"" ""IF"" ""(""ITACT"" "".""GT""."" ""ITMAX"" "".""OR""."" ""N"" "".""GT""."" ""NMAX"" "")"" ""THEN""
-""
-""	""PRINT"" ""*"","" ""'""Please"" ""recompile"":"" "" ""This"" ""version"" ""is"" ""lacking"" ""Storage""'""
+""	""PRINT"" ""*"","" "Char#"Please"" ""recompile"":"" "" ""This"" ""version"" ""is"" ""lacking"" ""Storage" NULL"
 ""
 ""	""STOP""
 ""
@@ -66,7 +66,7 @@ NoParse#"INTEGER""	""NMAX""
 ""
 "" ""GOTO"" ""2""
 ""
-""990""PRINT"" ""*"","" ""'"""""TOMCATV"".""MODEL"" ""INCOSISTANT"";"" ""STOP""'""
+""990""PRINT"" ""*"","" "Char#""""TOMCATV"".""MODEL"" ""INCOSISTANT"";"" ""STOP" NULL"
 ""
 "" ""STOP""
 ""
@@ -77,7 +77,7 @@ NoParse#"INTEGER""	""NMAX""
 "" "" "" ""RXM""(""ITER"")"" "" ""="" ""0.""D0""
 ""
 "" "" "" ""RYM""(""ITER"")"" "" ""="" ""0.""D0""
-"LoopNestList#Nest#(
+"loopnest1={LoopNestList#Nest#(
       Loop#(
         "J",
         2,
@@ -86,6 +86,8 @@ NoParse#"INTEGER""	""NMAX""
           "N",
           1),
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -99,6 +101,8 @@ NoParse#"INTEGER""	""NMAX""
               "N",
               1),
             1)#(
+            "",
+            "<",
             "",
             "",
             "",
@@ -182,16 +186,17 @@ NoParse#"INTEGER""	""NMAX""
                   D0FLOAT#(
                     "0.25",
                     "D0"),
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "*",
-                      "XY",
-                      "XY"),
-                    Bop#(
-                      "*",
-                      "YY",
-                      "YY"))))
+                  ("("Bop#(
+                      "+",
+                      Bop#(
+                        "*",
+                        "XY",
+                        "XY"),
+                      Bop#(
+                        "*",
+                        "YY",
+                        "YY"))
+                     NULL)))
             ExpStmt#Assign#(
                 "B",
                 Bop#(
@@ -199,16 +204,17 @@ NoParse#"INTEGER""	""NMAX""
                   D0FLOAT#(
                     "0.25",
                     "D0"),
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "*",
-                      "XX",
-                      "XX"),
-                    Bop#(
-                      "*",
-                      "YX",
-                      "YX"))))
+                  ("("Bop#(
+                      "+",
+                      Bop#(
+                        "*",
+                        "XX",
+                        "XX"),
+                      Bop#(
+                        "*",
+                        "YX",
+                        "YX"))
+                     NULL)))
             ExpStmt#Assign#(
                 "C",
                 Bop#(
@@ -216,16 +222,17 @@ NoParse#"INTEGER""	""NMAX""
                   D0FLOAT#(
                     "0.125",
                     "D0"),
-                  Bop#(
-                    "+",
-                    Bop#(
-                      "*",
-                      "XX",
-                      "XY"),
-                    Bop#(
-                      "*",
-                      "YX",
-                      "YY"))))
+                  ("("Bop#(
+                      "+",
+                      Bop#(
+                        "*",
+                        "XX",
+                        "XY"),
+                      Bop#(
+                        "*",
+                        "YX",
+                        "YY"))
+                     NULL)))
             ExpStmt#Assign#(
                 ArrayAccess#(
                   "AA",
@@ -515,6 +522,8 @@ NoParse#"INTEGER""	""NMAX""
           1),
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -527,6 +536,8 @@ NoParse#"INTEGER""	""NMAX""
             "N",
             1),
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -572,6 +583,8 @@ NoParse#"INTEGER""	""NMAX""
           1),
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -597,6 +610,8 @@ NoParse#"INTEGER""	""NMAX""
           1),
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -609,6 +624,8 @@ NoParse#"INTEGER""	""NMAX""
             "N",
             1),
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -636,21 +653,22 @@ NoParse#"INTEGER""	""NMAX""
                 D0FLOAT#(
                   "1.",
                   "D0"),
-                Bop#(
-                  "-",
-                  ArrayAccess#(
-                    "DD",
-                    ("I""J" NULL)),
-                  Bop#(
-                    "*",
+                ("("Bop#(
+                    "-",
                     ArrayAccess#(
-                      "AA",
-                      ("I"Bop#(
-                          "-",
-                          "J",
-                          1)
-                         NULL)),
-                    "R"))))
+                      "DD",
+                      ("I""J" NULL)),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "AA",
+                        ("I"Bop#(
+                            "-",
+                            "J",
+                            1)
+                           NULL)),
+                      "R"))
+                   NULL)))
           ExpStmt#Assign#(
               ArrayAccess#(
                 "RX",
@@ -699,6 +717,8 @@ NoParse#"INTEGER""	""NMAX""
           "N",
           1),
         1)#(
+        "",
+        "<",
         "",
         "",
         "",
@@ -764,6 +784,8 @@ NoParse#"INTEGER""	""NMAX""
           "-",
           1))#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -777,6 +799,8 @@ NoParse#"INTEGER""	""NMAX""
             1),
           1)#(
           "",
+          "<",
+          "",
           "",
           "",
           ""),
@@ -786,23 +810,24 @@ NoParse#"INTEGER""	""NMAX""
                 ("I""J" NULL)),
               Bop#(
                 "*",
-                Bop#(
-                  "-",
-                  ArrayAccess#(
-                    "RX",
-                    ("I""J" NULL)),
-                  Bop#(
-                    "*",
-                    ArrayAccess#(
-                      "AA",
-                      ("I""J" NULL)),
+                ("("Bop#(
+                    "-",
                     ArrayAccess#(
                       "RX",
-                      ("I"Bop#(
-                          "+",
-                          "J",
-                          1)
-                         NULL)))),
+                      ("I""J" NULL)),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "AA",
+                        ("I""J" NULL)),
+                      ArrayAccess#(
+                        "RX",
+                        ("I"Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL))))
+                   NULL),
                 ArrayAccess#(
                   "D",
                   ("I""J" NULL))))
@@ -812,23 +837,24 @@ NoParse#"INTEGER""	""NMAX""
                 ("I""J" NULL)),
               Bop#(
                 "*",
-                Bop#(
-                  "-",
-                  ArrayAccess#(
-                    "RY",
-                    ("I""J" NULL)),
-                  Bop#(
-                    "*",
-                    ArrayAccess#(
-                      "AA",
-                      ("I""J" NULL)),
+                ("("Bop#(
+                    "-",
                     ArrayAccess#(
                       "RY",
-                      ("I"Bop#(
-                          "+",
-                          "J",
-                          1)
-                         NULL)))),
+                      ("I""J" NULL)),
+                    Bop#(
+                      "*",
+                      ArrayAccess#(
+                        "AA",
+                        ("I""J" NULL)),
+                      ArrayAccess#(
+                        "RY",
+                        ("I"Bop#(
+                            "+",
+                            "J",
+                            1)
+                           NULL))))
+                   NULL),
                 ArrayAccess#(
                   "D",
                   ("I""J" NULL))))
@@ -843,6 +869,8 @@ NoParse#"INTEGER""	""NMAX""
           1),
         1)#(
         "",
+        "<",
+        "",
         "",
         "",
         ""),
@@ -855,6 +883,8 @@ NoParse#"INTEGER""	""NMAX""
             "N",
             1),
           1)#(
+          "",
+          "<",
           "",
           "",
           "",
@@ -884,12 +914,12 @@ NoParse#"INTEGER""	""NMAX""
                   "RY",
                   ("I""J" NULL))))
            NULL))#"")#""
-    Label#130 NULL
+    Label#130 NULL}
   "ABX"" "" ""="" ""ABS""(""RXM""(""ITER"")"")""
 ""
 "" "" "" ""ABY"" "" ""="" ""ABS""(""RYM""(""ITER"")"")""
 ""
-"" "" "" ""IF"" ""(""ABX"".""LE"".""EPS"".""AND"".""ABY"".""LE"".""EPS"")"" "" ""GOTO"" "" ""150""
+"" "" "" ""IF"" ""(""ABX"".LE.""EPS"".AND.""ABY"".LE.""EPS"")"" "" ""GOTO"" "" ""150""
 ""
 ""140""CONTINUE""
 ""
@@ -907,9 +937,9 @@ NoParse#"INTEGER""	""NMAX""
 ""
 ""600""FORMAT""(""D20"".14"",""D20"".14"")""
 ""
-""1100""FORMAT""(""/""/""/"",""'"" "" "" "" "" ""2""-""D"" ""ITERATION"" ""BEHAVIOR""'"")""
+""1100""FORMAT""(""/""/""/"","Char#" "" "" "" "" ""2""-""D"" ""ITERATION"" ""BEHAVIOR" NULL")""
 ""
-""1200""FORMAT""(""/"",""'"" "" "" ""IT"" "" "" "" ""X""-""RES"" "" "" "" "" "" ""Y""-""RES""'"",""/"")""
+""1200""FORMAT""(""/"","Char#" "" "" ""IT"" "" "" "" ""X""-""RES"" "" "" "" "" "" ""Y""-""RES" NULL",""/"")""
 ""
 ""1300""FORMAT""(""1""X"",""I4"",""E11"".4"",""E11"".4"")""
 ""

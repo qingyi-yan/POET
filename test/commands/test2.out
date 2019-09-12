@@ -8,48 +8,58 @@ END DEBUGGING at level 1
 parsing result=Uop#(
   "-",
   3)
-Uop#(
+"
+"Uop#(
   "-",
   3)
-EXPO#(
+"
+"EXPO#(
   "3.2",
   "5")
-(
+"
+"(
 "3.2",
 "a5")
-3.2
-.1
-DeclStmt#TypeInfo#(
+"
+""3.2""
+"".1""
+"DeclStmt#TypeInfo#(
     ArrayType#(
       IntType#"int",
       ArrayDim#3),
     "abc",
     "")
-DeclStmt#TypeInfo#(
+"
+"DeclStmt#TypeInfo#(
     ArrayType#(
       StaticType#IntType#"char",
       ArrayDim#"MAXLINE"),
     "listname_base",
     "")
-DeclStmt#TypeInfo#(
+"
+"DeclStmt#TypeInfo#(
     "ABC",
     "abc",
     "")
-FunctionDecl#(
+"
+"FunctionDecl#(
   "p",
   "",
   "ABC",
   EmptyStmt)#(
   "",
+  "",
   "")
-Bop#(
+"
+"Bop#(
   "-",
   Bop#(
     "+",
     "a",
     "b"),
   "c")
-Bop#(
+"
+"Bop#(
   "*",
   "beta",
   ArrayAccess#(
@@ -61,24 +71,36 @@ Bop#(
         "j",
         "ldc"),
       "i")))
-Loop#(
+"
+"var={Loop#(
   "i",
   0,
   "100",
   2)#(
   "",
+  "<",
   "",
   "",
   "",
-  "")
-Bop#(
+  "",
+  "",
+  "<")}
+"
+"Bop#(
   "+",
   Uop#(
     "-",
     1),
   "N")
-3.7
-Bop#(
+"
+"Uop#(
+  "-",
+  Uop#(
+    "*",
+    "N"))
+"
+""3.7""
+"Bop#(
   "!=",
   ArrayAccess#(
     ArrayAccess#(
@@ -86,7 +108,8 @@ Bop#(
       0),
     "i"),
   0)
-
+"
+" NULL
 
 DEBUGGING at level 1
 ("GOO" "abc")==>cur1=foo

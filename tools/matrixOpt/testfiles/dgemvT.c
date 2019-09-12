@@ -3,7 +3,7 @@ void dgemvT(const int M,const int N,const double alpha,const double *A,const int
 {
   int i;
   int j;
-/*@; BEGIN(MM_pat[type="double"]) @*/
+/*@; BEGIN(nest1=MM_pat[type="double"]) @*/
   for (i = 0; i <= -1 + M; i += 1) {
     Y[i] = (beta * Y[i]);
     for (j = 0; j <= -1 + N; j += 1) {

@@ -83,7 +83,7 @@ C
         WRITE(6,6) NIT, RNM2, RNMU
       
 
-C //@; BEGIN(end0=Label)
+C //@; BEGIN(end0=CODE.Label)
 1000  CONTINUE
 C
 C
@@ -148,7 +148,7 @@ C
       INTEGER I3, I2, I1
 C      WRITE(0,*) "SIZE", N
 C
-C //@; BEGIN(nest1=SingleLoop)
+C //@; BEGIN(nest1=CODE.SingleLoop)
       DO 600 I3=2,N-1
       DO 600 I2=2,N-1
       DO 600 I1=2,N-1
@@ -190,7 +190,7 @@ C
       INTEGER I3, I2, I1
 
 C
-C //@; BEGIN(nest2=SingleLoop)
+C //@; BEGIN(nest2=CODE.SingleLoop)
       DO 600 I3=2,N-1
       DO 600 I2=2,N-1
       DO 600 I1=2,N-1
@@ -229,7 +229,7 @@ C
       REAL*8 R(MK,MK,MK), S(MJ,MJ,MJ)
       INTEGER J3, J2, J1, I3, I2, I1
 C
-C //@; BEGIN(nest3=SingleLoop)
+C //@; BEGIN(nest3=CODE.SingleLoop)
       DO 100 J3=2,MJ-1
         I3 = 2*J3-1
       DO 100 J2=2,MJ-1
@@ -270,7 +270,7 @@ C
       INTEGER M, N
       INTEGER I3, I2, I1
 C
-C //@; BEGIN(nest3=LoopNestList)
+C //@; BEGIN(nest4=CODE.LoopNestList)
       DO 400 I3=2,M-1
          DO 200 I2=2,M-1
             DO 100 I1=2,M-1

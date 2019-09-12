@@ -80,8 +80,8 @@ class @name@ @parents@
 <code UsingDecl pars=(t : LIST(ID,"::"))> using @t@ </code>
 
 <code ClassBody symtab=""
-  pars=(decls:LIST(CODE.Comment|CODE.AccessControl|CODE.FriendDecl|CODE.TemplateDecl|CODE.TypeDef|CODE.Constructor|CODE.Destructor|CODE.UsingDecl|CODE.EmptyStmt|CODE.TypeInfoDeclParse,"\n")) 
-  parse=(eval(XFORM.enter_block("")) "{" decls "}"
+  pars=(decls:LIST(CODE.Comment2|CODE.AccessControl|CODE.FriendDecl|CODE.TemplateDecl|CODE.TypeDef|CODE.Constructor|CODE.Destructor|CODE.UsingDecl|CODE.EmptyStmt|CODE.TypeInfoDeclParse,"\n")) 
+  parse=(eval(XFORM.enter_block("NEW")) "{" decls "}"
          eval(return(ClassBody[symtab=XFORM.exit_block(decls)]#decls)))
   >
 {
@@ -109,7 +109,7 @@ friend @type@; </code>
 <code GlobalConstructor  symtab=""  lookahead=3
   pars=(name:GlobalConstructorName, params:LIST(CODE.ParamDeclParse,","),
         inits : CODE.ConstructorInit|"", body: CODE.Stmt) 
-  parse=(name "(" eval(XFORM.enter_block("")) params ")" inits body
+  parse=(name "(" eval(XFORM.enter_block("NEW")) params ")" inits body
          eval(return(Constructor[symtab=XFORM.exit_block(params)]#(name,params,inits,body))))
   >
 @name@ (@params@) @inits@ @body@
@@ -118,7 +118,7 @@ friend @type@; </code>
 <code Constructor  symtab=""  lookahead=2
   pars=(name:ID, params:LIST(CODE.ParamDeclParse,","),
         inits : CODE.ConstructorInit|"", body: CODE.Stmt) 
-  parse=(name "(" eval(XFORM.enter_block("")) params ")" inits body
+  parse=(name "(" eval(XFORM.enter_block("NEW")) params ")" inits body
          eval(return(Constructor[symtab=XFORM.exit_block(params)]#(name,params,inits,body))))
   >
 @name@ (@params@) @inits@ @body@

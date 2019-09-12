@@ -379,23 +379,31 @@ ParseExp::Result ParseExp::ParseItemType(POETCode* input, int *p_lineno)
            else return Result(0,input);
       }
       else return Result(0,input);
-     if (funcall->get_entry().get_code() != 0 && get_head(input) == lp)
-     {
+     while (true) {
+       if (funcall->get_entry().get_code() != 0 && get_head(input) == lp)
+      {
+//std::cerr << "trying function call : " << res->toString() << "\n";
+//std::cerr << "input is now: " << input->toString() << "\n";
         Result resOfTail = ParseExpImpl(NextToken(input,p_lineno),exp_bop->get_entry().get_code(),0, p_lineno);
         std::vector<POETCode*> argVec; 
         while (resOfTail.first!=0 && (get_head(resOfTail.second) != rp)) {
               argVec.push_back(resOfTail.first);
               resOfTail=ParseExpImpl(NextToken(resOfTail.second,p_lineno),exp_bop->get_entry().get_code(),0, p_lineno);
         }
+        if (get_head(resOfTail.second) != rp) break;
         if (resOfTail.first!=0) argVec.push_back(resOfTail.first);
         POETCode* args = Vector2List(argVec);
         if (args == 0) args = EMPTY;
-        return Result(InvokeExpMacro(funcall->get_entry().get_code(),
-                                     PAIR(res,args)),
-                          NextToken(resOfTail.second,p_lineno));
+        res = InvokeExpMacro(funcall->get_entry().get_code(),
+                                     PAIR(res,args));
+        input=NextToken(resOfTail.second,p_lineno);
+//std::cerr << "Done function call : " << res->toString() << "\n";
+//std::cerr << "input is now: " << input->toString() << "\n";
      }
      else if (arrref->get_entry().get_code() != 0 && get_head(input) == lb )
      {
+//std::cerr << "trying array access: " << res->toString() << "\n";
+//std::cerr << "input is now: " << input->toString() << "\n";
         std::vector<POETCode*> argVec; 
         while (get_head(input) == lb) 
         {
@@ -408,9 +416,13 @@ ParseExp::Result ParseExp::ParseItemType(POETCode* input, int *p_lineno)
         POETCode* args = Vector2List(argVec);
         if (args == 0) args = EMPTY;
         CodeVar* fvar = dynamic_cast<CodeVar*>(arrref->get_entry().get_code());
-        return Result(InvokeExpMacro(arrref->get_entry().get_code(),
-                                     PAIR(res,args)),input);
+        res = InvokeExpMacro(arrref->get_entry().get_code(),
+                                     PAIR(res,args));
+//std::cerr << "done array access: " << res->toString() << "\n";
+//std::cerr << "input is now: " << input->toString() << "\n";
      }
+     else break;
+    }
      return Result(res, input);
   }
 
@@ -423,7 +435,7 @@ ParseExp::ParseExpImpl(POETCode* input, POETCode* bop, POETCode* inherit, int *p
     {
        POETCode* p_input = MatchOp(cur, input,p_lineno);
        if (p_input != 0) {
-          Result resOfRest = ParseItemType(p_input, p_lineno);
+          Result resOfRest = ParseExpImpl(p_input, 0, inherit, p_lineno);
           if (resOfRest.first != 0) {
              if (buildUop->get_entry().get_code()!=0) {
                 XformVar* xvar = dynamic_cast<XformVar*>(buildUop->get_entry().get_code());
@@ -496,6 +508,7 @@ inline POETCode* SubList(POETCode* l1, POETCode* stop, POETCode*& rest) {
 }
 
 inline POETCode* MergeList(POETCode* l1, POETCode* l2) {
+  if (l2 == 0) return l1;
   POETList* ll2 = dynamic_cast<POETList*>(l2);
   if (ll2 == 0 && l2 != EMPTY) {
       ll2 = ASTFactory::inst()->new_list(l2, 0);
@@ -563,7 +576,7 @@ class ParseMatchVisitor  : public EvaluatePOET, public POETCodeVisitor
     if (r1_head->get_enum() == SRC_OP && static_cast<POETUop*>(r1_head)->get_op() == POET_OP_ANNOT) {
        r1 = SkipEmpty(get_tail(r1), &lineno);
        POETCode* leftOver = 0;
-       POETCode* r1_arg=static_cast<POETUop*>(r1_head)->get_arg();
+       POETCode* r1_arg=SkipEmpty(static_cast<POETUop*>(r1_head)->get_arg(), &lineno);
        POETCode* nres = apply(r1_arg,EMPTY,&leftOver);
        if (leftOver == 0) r1 = nres;
        else r1 = fac->new_list(nres,leftOver); 
@@ -662,12 +675,12 @@ class ParseMatchVisitor  : public EvaluatePOET, public POETCodeVisitor
               res = fac->new_list(res, 0);
            return; } 
      }
-     POETCode* _r1 = r1;
+     POETCode* _r1 = r1, *_inherit=inherit;
      try { parseList(op, elemType, sep); }
      catch (ParseError err) { 
        if (!backtrack || sep!=EMPTY || fullmatch==0) throw err; 
        else { 
-            r1 = _r1; res = firstResult; 
+            r1 = _r1; inherit=_inherit; res = firstResult; 
             if (res->get_enum() == SRC_LIST)
                res = fac->new_list(res, 0);
              return; 
@@ -821,7 +834,7 @@ class ParseMatchVisitor  : public EvaluatePOET, public POETCodeVisitor
             return;
          }
          else  {
-            POETCode* r1save = r1;
+            POETCode* r1save = r1, *inherit_save=inherit;
             size_t size = op->numOfArgs();
             for (unsigned i = 0; i < size; ++i) {
                POETCode* arg = op->get_arg(i);
@@ -841,7 +854,7 @@ class ParseMatchVisitor  : public EvaluatePOET, public POETCodeVisitor
                }
                try { apply(arg, EMPTY);
                     if (res != 0) return; }
-               catch (ParseError err) { r1 = r1save; }
+               catch (ParseError err) { r1 = r1save; inherit=inherit_save; }
             }
          }
          PARSE_MISMATCH(get_head(r1),op,lineno);

@@ -17,8 +17,8 @@ void jacobi7_4(const int nx,const int ny,int nz,const double alpha,double* A0,co
    double* l0;double* lnext;
    
      int ___i;
-     t_workgroup = (struct t_WorkGroup_Type*)malloc(-1+(nz-1)*sizeof(struct t_WorkGroup_Type));
-     for(___i=0;___i<-1+(nz-1); ___i++) {
+     t_workgroup = (struct t_WorkGroup_Type*)malloc(-2+nz*sizeof(struct t_WorkGroup_Type));
+     for(___i=0;___i<-2+nz; ___i++) {
          struct t_WorkGroup_Type* cur = t_workgroup+___i;
          pthread_mutex_init(&cur->mutex, NULL);
          pthread_cond_init(&cur->cond, NULL);
@@ -58,7 +58,7 @@ void jacobi7_4(const int nx,const int ny,int nz,const double alpha,double* A0,co
      t_params.nx = (int)nx;
    
      pthread_t *thread_id = (pthread_t*)malloc(sizeof(pthread_t) * 2);
-     unsigned worksize = (-1+(nz-1)) / 2 + 1;
+     unsigned worksize = (-2+nz) / 2 + 1;
      for(___i=0; ___i < 2; ___i++) {
         struct t_WorkBlock_Type *cur = (struct t_WorkBlock_Type*)malloc(sizeof(struct t_WorkBlock_Type));
         cur->params = &t_params;
@@ -70,7 +70,7 @@ void jacobi7_4(const int nx,const int ny,int nz,const double alpha,double* A0,co
         pthread_join(thread_id[___i], NULL);
      }
    
-     for(___i=0;___i<-1+(nz-1); ___i++) {
+     for(___i=0;___i<-2+nz; ___i++) {
          struct t_WorkGroup_Type* cur = t_workgroup + ___i;
          pthread_mutex_destroy(&cur->mutex);
          pthread_cond_destroy(&cur->cond);
@@ -116,11 +116,11 @@ void* t_pipeline(void *input) {
   int k;
   int j;
   int i;
-  /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1) 
+  /*@;BEGIN(Nest1=Nest)@*/for (t=0; t<timesteps; t+=1)
     {
-       for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1) 
+       for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1)
          {
-            if (k<-1+(nz-1))  
+            if (k<-2+nz) 
               {
                  {
                    struct t_WorkGroup_Type* cur = t_workgroup + 1+k;
@@ -130,7 +130,7 @@ void* t_pipeline(void *input) {
                    pthread_mutex_unlock(&cur->mutex);
                  }
               }
-            if (k>=2)  
+            if (k>=2) 
               {
                  {
                    struct t_WorkGroup_Type* cur = t_workgroup + -1+k;
@@ -140,16 +140,16 @@ void* t_pipeline(void *input) {
                    pthread_mutex_unlock(&cur->mutex);
                  }
               }
-            /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1) 
+            /*@;BEGIN(Nest3=Nest)@*/for (j=1; j<ny-1; j+=1)
               {
-                 /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1) 
+                 /*@;BEGIN(Nest4=Nest)@*/for (i=1; i<nx-1; i+=1)
                    {
-                      if (t%2==0)  
+                      if (t%2==0) 
                         {
                            l0 = A0;
                            lnext = Anext;
                         }
-                      else  
+                      else 
                         {
                            lnext = A0;
                            l0 = Anext;

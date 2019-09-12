@@ -1,8 +1,3 @@
-<********
- TODO: Need to add type checking function.
-     Hopefully try to "store" typeinfo for 
-     each expression in the input code
-********>
 
 <xform GetExpressionType pars=(node)>
 ERROR ("We did not implement type checking right now!");
@@ -77,7 +72,7 @@ UnrollJam[factor=factor;cleanup=0](innermost, nest);
     if (data_type == "") ERROR("No type for this node!");
   }
   svars = NULL;
-  foreach (car(r) : ArrayAccess#(aname,_)|Uop#("*",Bop#("+",aname,_)|(aname=ID)) : TRUE){}
+  foreach (car(r) : ArrayAccess#(aname1,_)|Uop#("*",Bop#("+",aname1,_)|(aname1=ID)) : TRUE){ aname=aname1; break; }
 
   for ((pr=r, pl=loops, pi=info); pr!=NULL; (pr=cdr(pr), pl=cdr(pl), pi=cdr(pi))) {
     (_,cur_loop) = car(pl); cur_info = car(pi); cur_r = car(pr);
@@ -101,7 +96,8 @@ UnrollJam[factor=factor;cleanup=0](innermost, nest);
 
 <xform invoke_simd 
        pars=(info, array_name_to_scalars, array_name_to_loop_dimensions, scope) 
-       ret_new_vars = "" global_vars="" data_type = "" pthrds="" omp_reduce_vars="" >
+       ret_new_vars="" global_vars="" local_vars="" data_type="" pthrds="" 
+       omp_reduce_vars="" omp_reduce_ops="" nvreg=0>
   if (data_type == "") {
     data_type = GetExpressionType(car(exps));
     if (data_type == "") ERROR("No type for this node!");
@@ -109,53 +105,68 @@ UnrollJam[factor=factor;cleanup=0](innermost, nest);
   for (p=scope; p!=NULL; p=cdr(p)) innermost = car(p);
   scope = car(scope);
   save_vars = NULL; init_vars=NULL; reduce_vars=NULL; aligned_arrays = NULL;
-  arrsplit = NULL; reg=""; 
+  arrsplit = NULL; reg=NULL; 
   foreach entry=(arrname=_,arrinfo=_) \in info do 
     cur_scalars=array_name_to_scalars[arrname];
+    if (cur_scalars==NULL) continue;
     cur_dim=array_name_to_loop_dimensions[arrname]; 
     for (pi = arrinfo; pi != NULL; pi = cdr(pi)) {
       cur_info = car(pi); 
-      if (car(cur_scalars) : (arr_ref=_,scalar=_)) {
+      if ((cur_scalars != NULL) && (car(cur_scalars) : (arr_ref=_,scalar=_))) {
          cur_scalars=cdr(cur_scalars);  
          TRACE(arrsplit, SplitStmt[prefix="tmp";var_type=data_type;
              trace_newVars=arrsplit](scalar,innermost));
       }
+      innerloop = NULL;
       if (car(cur_dim) : (arr_ref=_, loop_dim=_)) { 
           cur_dim = cdr(cur_dim); 
           for (q=loop_dim; q!=NULL; q=cdr(q)) innerloop=car(q);
       }
-      if (innerloop == innermost) reg = BuildList((scalar,1),reg);
+      if (innerloop == NULL) {
+        ERROR("ERROR[invoke_simd]: innerloop cannot be type NULL");
+      }
+      if (innerloop == innermost) reg = (scalar,1)::reg;
       else {
-        reg = BuildList((scalar,0), reg);
+        reg = (scalar,0):: reg;
         if (innerloop != scope) {
           if (Lookup("R",cur_info)) init_vars=scalar::init_vars;
           if (Lookup("W",cur_info)) save_vars=scalar::save_vars;
         }
-        if (Lookup("RW",cur_info)) reduce_vars=scalar::reduce_vars;
+        if (Lookup("reduce",cur_info)) reduce_vars=scalar::reduce_vars;
       }
       if (Lookup("copied", cur_info)) aligned_arrays=scalar::aligned_arrays;
     }
   enddo
-  ret_new_vars = AppendList(ERASE(ret_new_vars), arrsplit);
-  reg = BuildList((arrsplit,1),reg);
+
+  foreach c=ID|CODE.Name \in local_vars do
+    reg = (c,1) :: reg;
+  enddo
+
+  REPLACE(ERASE(ret_new_vars), AppendList(ERASE(ret_new_vars), arrsplit), ret_new_vars);
+  reg = (arrsplit,1)::reg;
   rename_vars = NULL;
+  <*Stores variables based on their uses.*>
   foreach (global_vars : (CLEAR idx, CLEAR sinfo) : TRUE) {
     if (Lookup(idx, innermost)) {
-      reg = BuildList((idx, 0), reg);
+      reg = (idx, 0)::reg;
       if (Lookup("R", sinfo)) init_vars = idx::init_vars;
       if (Lookup("W", sinfo)) save_vars = idx::save_vars;
       if (Lookup("RW", sinfo)) {
-             reduce_vars = idx::reduce_vars;
              rename_vars = idx :: rename_vars; 
+      }
+      if(Lookup("reduce", sinfo)){
+             reduce_vars = idx :: reduce_vars;
       }
     }
   }
   newscope = scope;
+  <*If a variable needs to be renamed "_reg" is added and vec_splats are added to the beginning and end of loop*>
   foreach var=ID|CODE.Name \in rename_vars do 
     if (!(var : CODE.Name#(tmp=_))) tmp = var;
     var_reg = Name#(AppendList(tmp,"_reg")); 
-    if (!pthrds  <* no openmp has been done before*>
-         || !(Lookup(var, omp_reduce_vars)))  { 
+    if ((!pthrds 
+         || (!Lookup("max",omp_reduce_ops) || !Lookup("min",omp_reduce_ops)))   <* no openmp has been done before or max and min are the operators *>
+         || !(Lookup(var, omp_reduce_vars)))  {
       newscope = ExpStmt#(Assign#(var_reg, Uop#("*",Uop#("&",var))))
               ::newscope
               ::ExpStmt#(Assign#(Uop#("*",Uop#("&",var)), var_reg));
@@ -175,9 +186,86 @@ UnrollJam[factor=factor;cleanup=0](innermost, nest);
   if (scope != newscope)
      REPLACE(scope, newscope, GLOBAL.TRACE_TARGET);
   scope = newscope;
-  if (scope : Nest) {scope = scope[Nest.body];}
-  VectorizeLoop[init_vars=init_vars;save_vars=save_vars;reduce_vars=reduce_vars;
-                ext=scope;aligned_arrays=aligned_arrays](reg,innermost);
+  constants = NULL; body = innermost[Nest.body];
+  newbody = body;
+  <*Replaces VarRef ++ with an equivalent Bop so it can be more easily changed*>
+  foreach z=CODE.VarRef#(x=_, "++") \in COPY(body) do
+    newbody=REPLACE(z, Assign#(x,Bop#("+", x, 1)), newbody);
+  enddo
+  <*Looks for all constants within assign commands and assigns them variables*>
+  foreach z=CODE.Assign#(CLEAR f, CLEAR d) \in COPY(body) do
+    if(d:INT|FLOAT|"NULL"|INT_0x)
+    {
+      (newbody, init_vars, newscope, constants, reg) = 
+                     replace_constants(newbody, init_vars, newscope, constants, d, reg);
+    }
+    <*If it contains an array access then do not replace*>
+    else if (d:ArrayAccess#(_,_)) continue;
+    <*Look through all Bop to find any constants used as operands*>
+    foreach e=Bop#(_, x=_, y=_) \in d s.t. FALSE do
+      if((x:INT|FLOAT|"NULL"|INT_0x) || (y:INT|FLOAT|"NULL"|INT_0x)){
+        if (x:INT|FLOAT|"NULL"|INT_0x){
+          (newbody, init_vars, newscope, constants, reg) = 
+                     replace_constants(newbody, init_vars, newscope, constants, x, reg);
+        }
+        if (y:INT|FLOAT|"NULL"|INT_0x){
+          (newbody, init_vars, newscope, constants, reg) = 
+                     replace_constants(newbody, init_vars, newscope, constants, y, reg);
+        }
+      }
+      else continue; <*If neither operand is a constant then do nothing*>
+    enddo
+  enddo
+  <*Also looks for constants inside of the condition*>
+  foreach z=CODE.If#(CLEAR d) \in COPY(newbody) do
+   foreach e=Bop#(_, x=_, y=_) \in d s.t. FALSE do
+      if((x:INT|FLOAT|"NULL"|INT_0x) || (y:INT|FLOAT|"NULL"|INT_0x)){
+        if (x:INT|FLOAT|"NULL"|INT_0x){
+          (newbody, init_vars, newscope, constants, reg) =
+                     replace_constants(newbody, init_vars, newscope, constants, x, reg);
+        }
+        if (y:INT|FLOAT|"NULL"|INT_0x){
+          (newbody, init_vars, newscope, constants, reg) =
+                     replace_constants(newbody, init_vars, newscope, constants, y, reg);
+        }
+      }
+      else continue; <*If neither operand is a constant then do nothing*>
+   enddo
+  enddo
+  if (body != newbody)
+     newscope = REPLACE(body, newbody, newscope);
+  if (scope != newscope)
+     REPLACE(scope, newscope, GLOBAL.TRACE_TARGET);
+  <*strips outter loop if there are nested loops*>
+  if (scope : Nest && Lookup(Nest#(_,_), scope[Nest.body])) {scope = scope[Nest.body];}
+  VectorizeLoop[init_vars=init_vars;save_vars=save_vars;reduce_vars=reduce_vars;reduce_ops=omp_reduce_ops;
+                ret_new_vars=ret_new_vars;ext=scope;aligned_arrays=aligned_arrays;nvreg=nvreg](reg,innermost);
+</xform>
+
+<* convert constants to scalar variables s.t. they can be loaded*>
+<xform replace_constants pars=(input, init_vars, scope, constants, c, reg)>
+   if (Lookup(c, constants)) return(input, init_vars, scope, constants, reg);
+   constants = c :: constants;
+   vname = "__v_"^c;
+   <*if it is a float replace the decimal with underscore, also replaces #s*>
+   tmpname = REPLACE(".","_",SPLIT("",vname));
+   tmpname = REPLACE("#","",SPLIT("",tmpname));
+   vname="";
+   foreach piece=_ \in tmpname do
+     vname=piece^vname;
+   enddo
+   if (c == "NULL") t = PtrType#"void"; else if(c:FLOAT) t = "double"; else t = "long";
+   init_vars = vname :: init_vars;
+   scope=CODE.DeclStmt#(TypeInfo#(t, vname, CODE.VarInit#c))::scope;
+   newbody = REPLACE(c, vname, input);
+   reg= (vname,0)::reg;
+   foreach r=ArrayAccess#(CLEAR arr, CLEAR sub) \in input do
+     if (Lookup(vname, sub)) {
+       r_new = REPLACE(vname, c, r);
+       newbody = REPLACE(r, r_new, input);
+     }
+   enddo
+   return(newbody, init_vars, scope, constants, reg);
 </xform>
 
 <xform invoke_strength_reduction pars=(exps, infos, dims)
@@ -187,7 +275,7 @@ UnrollJam[factor=factor;cleanup=0](innermost, nest);
     if (data_type == "") ERROR("No type for this node!");
   }
   refs = COPY(exps);
-  foreach (exps : ArrayAccess#(CLEAR arr,_) : TRUE) {} 
+  foreach ArrayAccess#(CLEAR arr1,_) \in exps do  arr=arr1; break; enddo
   outloops = "";
   if (outside_loc:Nest) outloops = outside_loc[Nest.ctrl];
   FiniteDiff[scalar=(tag/1);copied_array=(Lookup("copied",infos));refs=refs;
@@ -256,7 +344,7 @@ switch (scope)
   case OMPParallelBlock#cur : OMPParallelBlock#(invoke_loop_splitting(cur))
   case (first second): BuildList(invoke_loop_splitting(first), invoke_loop_splitting(second))
   case UnrolledFromIvar#(ivar,size,cur): UnrolledFromIvar#(ivar,size,invoke_loop_splitting(cur))
-  case CODE.FunctionDecl|CODE.ExpStmt|CODE.VarDeclStmt|CODE.AllocateStore|CODE.AllocateStoreWithAlign|CODE.DeleteStore|CODE.OMPSetNumThreads|""|NULL: scope
+  case CODE.FunctionDecl|CODE.DeclStmt|CODE.ExpStmt|CODE.VarDeclStmt|CODE.AllocateStore|CODE.AllocateStoreWithAlign|CODE.DeleteStore|CODE.OMPSetNumThreads|""|NULL: scope
 }
 </xform>
 
@@ -289,3 +377,4 @@ switch (scope)
      REPLACE(ERASE(trace_privateVars), private_vars, trace_privateVars); 
   input 
 </xform>
+

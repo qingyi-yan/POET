@@ -3697,7 +3697,7 @@ yyreduce:
 
   case 210:
 #line 343 "poet_yacc.y" /* yacc.c:1646  */
-    { (yyval).ptr=make_sourceAssign(make_varRef((yyvsp[-3]).ptr,ASSIGN_VAR), (yyvsp[0]).ptr); }
+    { (yyval).ptr=make_sourceAssign(make_varRef((yyvsp[-3]).ptr,(yyvsp[-4]).config), (yyvsp[0]).ptr); }
 #line 3702 "poet_yacc.c" /* yacc.c:1646  */
     break;
 
@@ -5085,7 +5085,7 @@ yyreduce:
 
   case 446:
 #line 540 "poet_yacc.y" /* yacc.c:1646  */
-    {(yyval).config=CODE_OR_XFORM_VAR;}
+    {(yyval).config=TRACE_VAR;}
 #line 5090 "poet_yacc.c" /* yacc.c:1646  */
     break;
 
@@ -5097,7 +5097,7 @@ yyreduce:
 
   case 448:
 #line 541 "poet_yacc.y" /* yacc.c:1646  */
-    {(yyval).config=CODE_OR_XFORM_VAR; }
+    {(yyval).config=TRACE_VAR; }
 #line 5102 "poet_yacc.c" /* yacc.c:1646  */
     break;
 
@@ -5109,7 +5109,7 @@ yyreduce:
 
   case 450:
 #line 543 "poet_yacc.y" /* yacc.c:1646  */
-    {(yyval).config=CODE_OR_XFORM_VAR; }
+    {(yyval).config=TRACE_VAR; }
 #line 5114 "poet_yacc.c" /* yacc.c:1646  */
     break;
 

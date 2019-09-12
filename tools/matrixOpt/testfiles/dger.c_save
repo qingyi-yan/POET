@@ -10,446 +10,448 @@ void dger(const int M,const int N,const double alpha,const double *X,const int i
 {
   int i;
   int j;
-int j_bk_1;
-int j_bk_2;
-int i_bk_3;
-double _X_0;
-double _Y_0;
-double _Y_1;
-double _Y_2;
-double _Y_3;
-double _A_0_0;
-double _A_1_0;
-double _A_2_0;
-double _A_3_0;
-double _tmp__split;
-double* __FD__X_0;
-double* __FD__X_0_0;
-double* __FD__Y_0;
-double* __FD__Y_0_0;
-double* __FD__A_0;
-double* __FD__A_0_0;
-double* __FD__A_0_0_0;
-double* __FD__A_0_0_0_0;
-omp_set_num_threads(2);
-#pragma omp  parallel  
- {
- #pragma omp  for private(__FD__A_0,__FD__A_0_0,__FD__A_0_0_0,__FD__A_0_0_0_0,__FD__Y_0,__FD__Y_0_0,__FD__X_0,__FD__X_0_0,_A_0_0,_A_1_0,_A_2_0,_A_3_0,_Y_0,_Y_1,_Y_2,_Y_3,_X_0,i,j,j_bk_1,j_bk_2,i_bk_3)
- for (j_bk_1=0; j_bk_1<N; j_bk_1+=256) 
-   {
-      __FD__Y_0 = Y+j_bk_1*incY;
-      __FD__A_0 = A+j_bk_1*lda;
-      for (j_bk_2=0; j_bk_2<-127+min(256,N-j_bk_1); j_bk_2+=128) 
-        {
-           __FD__X_0 = X;
-           __FD__A_0_0 = __FD__A_0;
-           for (i_bk_3=0; i_bk_3<-127+M; i_bk_3+=128) 
-             {
-                __FD__Y_0_0 = __FD__Y_0;
-                __FD__A_0_0_0 = __FD__A_0_0;
-                for (j=0; j<128; j+=4) 
-                  {
-                     vec_splat(__FD__Y_0_0,reg5);
-                     vec_splat(__FD__Y_0_0+incY,reg6);
-                     vec_splat(__FD__Y_0_0+2*incY,reg7);
-                     vec_splat(__FD__Y_0_0+3*incY,reg8);
-                     __FD__X_0_0 = __FD__X_0;
-                     __FD__A_0_0_0_0 = __FD__A_0_0_0;
-                     for (i=0; i<128; i+=8) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     __FD__Y_0_0 = __FD__Y_0_0+4*incY;
-                     __FD__A_0_0_0 = __FD__A_0_0_0+4*lda;
-                  }
-                __FD__X_0 = __FD__X_0+128;
-                __FD__A_0_0 = __FD__A_0_0+128;
-             }
-           if (i_bk_3<M)  
-             {
-                __FD__Y_0_0 = __FD__Y_0;
-                __FD__A_0_0_0 = __FD__A_0_0;
-                for (j=0; j<128; j+=4) 
-                  {
-                     vec_splat(__FD__Y_0_0,reg5);
-                     vec_splat(__FD__Y_0_0+incY,reg6);
-                     vec_splat(__FD__Y_0_0+2*incY,reg7);
-                     vec_splat(__FD__Y_0_0+3*incY,reg8);
-                     __FD__X_0_0 = __FD__X_0;
-                     __FD__A_0_0_0_0 = __FD__A_0_0_0;
-                     for (i=0; i<-7+min(128,M-i_bk_3); i+=8) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     for (i=i; i<-1+min(128,M-i_bk_3); i+=2) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
-                          vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
-                          vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
-                          vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
-                          vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     for (i=i; i<M-i_bk_3; i+=1) 
-                       {
-                          vec_mov_mr_1(__FD__A_0_0_0+i,reg1);
-                          vec_mov_mr_1(__FD__A_0_0_0+(lda+i),reg2);
-                          vec_mov_mr_1(__FD__A_0_0_0+(2*lda+i),reg3);
-                          vec_mov_mr_1(__FD__A_0_0_0+(3*lda+i),reg4);
-                          vec_mov_mr_1(__FD__X_0+i,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg6,reg0);
-                          vec_add_rr(reg0,reg2);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg7,reg0);
-                          vec_add_rr(reg0,reg3);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg8,reg0);
-                          vec_add_rr(reg0,reg4);
-                          vec_mov_rm_1(reg1,__FD__A_0_0_0+i);
-                          vec_mov_rm_1(reg2,__FD__A_0_0_0+(lda+i));
-                          vec_mov_rm_1(reg3,__FD__A_0_0_0+(2*lda+i));
-                          vec_mov_rm_1(reg4,__FD__A_0_0_0+(3*lda+i));
-                       }
-                     __FD__Y_0_0 = __FD__Y_0_0+4*incY;
-                     __FD__A_0_0_0 = __FD__A_0_0_0+4*lda;
-                  }
-                __FD__X_0 = __FD__X_0+128;
-                __FD__A_0_0 = __FD__A_0_0+128;
-             }
-           __FD__Y_0 = __FD__Y_0+128*incY;
-           __FD__A_0 = __FD__A_0+128*lda;
-        }
-      if (j_bk_2<min(256,N-j_bk_1))  
-        {
-           __FD__X_0 = X;
-           __FD__A_0_0 = __FD__A_0;
-           for (i_bk_3=0; i_bk_3<-127+M; i_bk_3+=128) 
-             {
-                __FD__Y_0_0 = __FD__Y_0;
-                __FD__A_0_0_0 = __FD__A_0_0;
-                for (j=0; j<min(256-j_bk_2,-j_bk_2+(N-j_bk_1)); j+=1) 
-                  {
-                     vec_splat(__FD__Y_0_0,reg5);
-                     __FD__X_0_0 = __FD__X_0;
-                     __FD__A_0_0_0_0 = __FD__A_0_0_0;
-                     for (i=0; i<128; i+=8) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     __FD__Y_0_0 = __FD__Y_0_0+incY;
-                     __FD__A_0_0_0 = __FD__A_0_0_0+lda;
-                  }
-                __FD__X_0 = __FD__X_0+128;
-                __FD__A_0_0 = __FD__A_0_0+128;
-             }
-           if (i_bk_3<M)  
-             {
-                __FD__Y_0_0 = __FD__Y_0;
-                __FD__A_0_0_0 = __FD__A_0_0;
-                for (j=0; j<min(256-j_bk_2,-j_bk_2+(N-j_bk_1)); j+=1) 
-                  {
-                     vec_splat(__FD__Y_0_0,reg5);
-                     __FD__X_0_0 = __FD__X_0;
-                     __FD__A_0_0_0_0 = __FD__A_0_0_0;
-                     for (i=0; i<-7+min(128,M-i_bk_3); i+=8) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     for (i=i; i<-1+min(128,M-i_bk_3); i+=2) 
-                       {
-                          vec_mov_mr(__FD__A_0_0_0_0,reg1);
-                          vec_mov_mr(__FD__X_0_0,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm(reg1,__FD__A_0_0_0_0);
-                          __FD__X_0_0 = __FD__X_0_0+2;
-                          __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
-                       }
-                     for (i=i; i<M-i_bk_3; i+=1) 
-                       {
-                          vec_mov_mr_1(__FD__A_0_0_0+i,reg1);
-                          vec_mov_mr_1(__FD__X_0+i,reg9);
-                          vec_mov_rr(reg9,reg0);
-                          vec_mul_rr(reg5,reg0);
-                          vec_add_rr(reg0,reg1);
-                          vec_mov_rm_1(reg1,__FD__A_0_0_0+i);
-                       }
-                     __FD__Y_0_0 = __FD__Y_0_0+incY;
-                     __FD__A_0_0_0 = __FD__A_0_0_0+lda;
-                  }
-                __FD__X_0 = __FD__X_0+128;
-                __FD__A_0_0 = __FD__A_0_0+128;
-             }
-           __FD__Y_0 = __FD__Y_0+128*incY;
-           __FD__A_0 = __FD__A_0+128*lda;
-        }
-   }
- }
-}
+{
+   int j_bk_1;
+   int j_bk_2;
+   int i_bk_3;
+   double _X_0;
+   double _Y_0;
+   double _Y_1;
+   double _Y_2;
+   double _Y_3;
+   double _A_0_0;
+   double _A_1_0;
+   double _A_2_0;
+   double _A_3_0;
+   double _tmp__split;
+   double* __FD__X_0;
+   double* __FD__X_0_0;
+   double* __FD__Y_0;
+   double* __FD__Y_0_0;
+   double* __FD__A_0;
+   double* __FD__A_0_0;
+   double* __FD__A_0_0_0;
+   double* __FD__A_0_0_0_0;
+   omp_set_num_threads(2);
+   #pragma omp  parallel  
+    {
+    #pragma omp  for private(__FD__A_0,__FD__A_0_0,__FD__A_0_0_0,__FD__A_0_0_0_0,__FD__Y_0,__FD__Y_0_0,__FD__X_0,__FD__X_0_0,_A_0_0,_A_1_0,_A_2_0,_A_3_0,_Y_0,_Y_1,_Y_2,_Y_3,_X_0,i,j,j_bk_1,j_bk_2,i_bk_3,_tmp__split)
+    for (j_bk_1=0; j_bk_1<N; j_bk_1+=256)
+      {
+         __FD__Y_0 = Y+j_bk_1*incY;
+         __FD__A_0 = A+j_bk_1*lda;
+         for (j_bk_2=0; j_bk_2<-127+min(256,N-j_bk_1); j_bk_2+=128)
+           {
+              __FD__X_0 = X;
+              __FD__A_0_0 = __FD__A_0;
+              for (i_bk_3=0; i_bk_3<-127+M; i_bk_3+=128)
+                {
+                   __FD__Y_0_0 = __FD__Y_0;
+                   __FD__A_0_0_0 = __FD__A_0_0;
+                   for (j=0; j<128; j+=4)
+                     {
+                        vec_splat(__FD__Y_0_0,reg5);
+                        vec_splat(__FD__Y_0_0+incY,reg6);
+                        vec_splat(__FD__Y_0_0+2*incY,reg7);
+                        vec_splat(__FD__Y_0_0+3*incY,reg8);
+                        __FD__X_0_0 = __FD__X_0;
+                        __FD__A_0_0_0_0 = __FD__A_0_0_0;
+                        for (i=0; i<128; i+=8)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        __FD__Y_0_0 = __FD__Y_0_0+4*incY;
+                        __FD__A_0_0_0 = __FD__A_0_0_0+4*lda;
+                     }
+                   __FD__X_0 = __FD__X_0+128;
+                   __FD__A_0_0 = __FD__A_0_0+128;
+                }
+              if (i_bk_3<M) 
+                {
+                   __FD__Y_0_0 = __FD__Y_0;
+                   __FD__A_0_0_0 = __FD__A_0_0;
+                   for (j=0; j<128; j+=4)
+                     {
+                        vec_splat(__FD__Y_0_0,reg5);
+                        vec_splat(__FD__Y_0_0+incY,reg6);
+                        vec_splat(__FD__Y_0_0+2*incY,reg7);
+                        vec_splat(__FD__Y_0_0+3*incY,reg8);
+                        __FD__X_0_0 = __FD__X_0;
+                        __FD__A_0_0_0_0 = __FD__A_0_0_0;
+                        for (i=0; i<-7+min(128,M-i_bk_3); i+=8)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        for (i=i; i<-1+min(128,M-i_bk_3); i+=2)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__A_0_0_0_0+lda,reg2);
+                             vec_mov_mr(__FD__A_0_0_0_0+2*lda,reg3);
+                             vec_mov_mr(__FD__A_0_0_0_0+3*lda,reg4);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             vec_mov_rm(reg2,__FD__A_0_0_0_0+lda);
+                             vec_mov_rm(reg3,__FD__A_0_0_0_0+2*lda);
+                             vec_mov_rm(reg4,__FD__A_0_0_0_0+3*lda);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        for (i=i; i<M-i_bk_3; i+=1)
+                          {
+                             vec_mov_mr_1(__FD__A_0_0_0+i,reg1);
+                             vec_mov_mr_1(__FD__A_0_0_0+(lda+i),reg2);
+                             vec_mov_mr_1(__FD__A_0_0_0+(2*lda+i),reg3);
+                             vec_mov_mr_1(__FD__A_0_0_0+(3*lda+i),reg4);
+                             vec_mov_mr_1(__FD__X_0+i,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg6,reg0);
+                             vec_add_rr(reg0,reg2);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg7,reg0);
+                             vec_add_rr(reg0,reg3);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg8,reg0);
+                             vec_add_rr(reg0,reg4);
+                             vec_mov_rm_1(reg1,__FD__A_0_0_0+i);
+                             vec_mov_rm_1(reg2,__FD__A_0_0_0+(lda+i));
+                             vec_mov_rm_1(reg3,__FD__A_0_0_0+(2*lda+i));
+                             vec_mov_rm_1(reg4,__FD__A_0_0_0+(3*lda+i));
+                          }
+                        __FD__Y_0_0 = __FD__Y_0_0+4*incY;
+                        __FD__A_0_0_0 = __FD__A_0_0_0+4*lda;
+                     }
+                   __FD__X_0 = __FD__X_0+128;
+                   __FD__A_0_0 = __FD__A_0_0+128;
+                }
+              __FD__Y_0 = __FD__Y_0+128*incY;
+              __FD__A_0 = __FD__A_0+128*lda;
+           }
+         if (j_bk_2<min(256,N-j_bk_1)) 
+           {
+              __FD__X_0 = X;
+              __FD__A_0_0 = __FD__A_0;
+              for (i_bk_3=0; i_bk_3<-127+M; i_bk_3+=128)
+                {
+                   __FD__Y_0_0 = __FD__Y_0;
+                   __FD__A_0_0_0 = __FD__A_0_0;
+                   for (j=0; j<min(256-j_bk_2,-j_bk_2+(N-j_bk_1)); j+=1)
+                     {
+                        vec_splat(__FD__Y_0_0,reg5);
+                        __FD__X_0_0 = __FD__X_0;
+                        __FD__A_0_0_0_0 = __FD__A_0_0_0;
+                        for (i=0; i<128; i+=8)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        __FD__Y_0_0 = __FD__Y_0_0+incY;
+                        __FD__A_0_0_0 = __FD__A_0_0_0+lda;
+                     }
+                   __FD__X_0 = __FD__X_0+128;
+                   __FD__A_0_0 = __FD__A_0_0+128;
+                }
+              if (i_bk_3<M) 
+                {
+                   __FD__Y_0_0 = __FD__Y_0;
+                   __FD__A_0_0_0 = __FD__A_0_0;
+                   for (j=0; j<min(256-j_bk_2,-j_bk_2+(N-j_bk_1)); j+=1)
+                     {
+                        vec_splat(__FD__Y_0_0,reg5);
+                        __FD__X_0_0 = __FD__X_0;
+                        __FD__A_0_0_0_0 = __FD__A_0_0_0;
+                        for (i=0; i<-7+min(128,M-i_bk_3); i+=8)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        for (i=i; i<-1+min(128,M-i_bk_3); i+=2)
+                          {
+                             vec_mov_mr(__FD__A_0_0_0_0,reg1);
+                             vec_mov_mr(__FD__X_0_0,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm(reg1,__FD__A_0_0_0_0);
+                             __FD__X_0_0 = __FD__X_0_0+2;
+                             __FD__A_0_0_0_0 = __FD__A_0_0_0_0+2;
+                          }
+                        for (i=i; i<M-i_bk_3; i+=1)
+                          {
+                             vec_mov_mr_1(__FD__A_0_0_0+i,reg1);
+                             vec_mov_mr_1(__FD__X_0+i,reg9);
+                             vec_mov_rr(reg9,reg0);
+                             vec_mul_rr(reg5,reg0);
+                             vec_add_rr(reg0,reg1);
+                             vec_mov_rm_1(reg1,__FD__A_0_0_0+i);
+                          }
+                        __FD__Y_0_0 = __FD__Y_0_0+incY;
+                        __FD__A_0_0_0 = __FD__A_0_0_0+lda;
+                     }
+                   __FD__X_0 = __FD__X_0+128;
+                   __FD__A_0_0 = __FD__A_0_0+128;
+                }
+              __FD__Y_0 = __FD__Y_0+128*incY;
+              __FD__A_0 = __FD__A_0+128*lda;
+           }
+      }
+    }
+   
+}}
 

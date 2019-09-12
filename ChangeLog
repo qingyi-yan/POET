@@ -1,7 +1,48 @@
 **** poet-1.10:
  TODO: fix search engine scripts and add tuning to POET release
- TODO: change pcg main function to automatically check the include directories of POET, using the make install directories first and the original install directory, including POET/include
-*** poet-1.05.03
+** poet-1.07.03
+June 18, 2019: allow function calls to be made through pattern matching operator.
+June 17, 2019: fix Fortran parsing support
+May 23, 2019: fix tracing of input code so that variables used to tag the input code are automatically tracing handles. 
+May 22, 2019: fix reverse traversal of POET AST so that replacement can be built correctly for SIMD
+May 14, 2019: fix checking of Loop to not require the index variable to have integer type;
+May 14, 2019: add directory of the .pt file when searching for include files.
+?? change pcg main function to automatically check the include directories of POET, using the make install directories first and the original install directory, including POET/include
+Mar 14, 2019: add parsing of \@ inside code template specifictions
+Mar 25, 2019: fix traversal of external nodes to support backward AST traversal
+Mar 1, 2019: fix parsing of multiple unary operators in expression parsing
+Dec 26: improve parsing of expression to check closing of right parenthesis.
+Dec 21: fix incorrect line numbers when the input file contains multi-line comments: by redefining the rebuild routine for multi-line tokens (comments
+Dec 20: add Python-front.code and test directory for parsing python
+Dec 18: improve parsing of tokens in POET: recognize special tokens including "\\\"", etc. Causing strings to be mis-recognized:
+Oct 18, 2018: Added extra loop to all loop optimizations to account for N not
+being divisible by 4
+Oct 10, 2018: Added and changed the finding of constants in if and bop 
+Sept 20, 2018: Added support for "++"
+Sept 19, 2018: Code cleanup of constant handling and normalizing index
+variables
+Sept 11, 2018: expanded constant replacement to replace all occurances instead
+of just the last entry. Now also handles hex values.
+** poet-1.07.02
+r629 | qyi | 2018-06-22 14:11:12 -0600 (Fri, 22 Jun 2018) | 1 line
+fix optHighLevel and OptConfig in lib
+------------------------------------------------------------------------
+r626 | qyi | 2018-06-16 09:13:54 -0600 (Sat, 16 Jun 2018) | 1 line
+refactor OptConfig for pattern driven optimization
+------------------------------------------------------------------------
+r624 | qyi | 2018-06-11 11:34:57 -0600 (Mon, 11 Jun 2018) | 1 line
+refactor code in matrixOpt into lib
+------------------------------------------------------------------------
+r603 | qyi | 2018-04-15 09:27:45 -0600 (Sun, 15 Apr 2018) | 1 line
+incorporate matrix info in expOpt
+------------------------------------------------------------------------
+Jan 21, 2018: fix handling of int constant values and NULL in SIMD vectorization (high-level)
+*** poet-1.07.01
+Oct 29: change the evaluation of TOR to evaluate its arguments
+July 12: change the AST for CastExp
+June 15:  Change the semantics of foreach so that the pattern variables are reset at each iteration; changed handling of external AST types.
+*** poet-1.06
+Apr 22, 2017: change AST traversal to no longer traverse code template attributess
 Sep 25, 2016: fix Cfront.code to support "&=" operator
 Sep 15, 2016: fix traversal of AST with multiple modifications to the same handle
 Apr 8, 2016: fix the lost of surrounding lists when passing them as parameters

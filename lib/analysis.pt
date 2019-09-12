@@ -1,6 +1,7 @@
+include Loops.incl
 include analysis.pi
 
-<xform enter_block pars=(block) tab=GLOBAL.SymTable> 
+<xform enter_block pars=(block) tab=GLOBAL.SymTable>
   switch (block) {
    case VAR : RETURN (enter_block(ERASE(block)));
    case CODE.FunctionDecl: newtab=block[FunctionDecl.symtab];
@@ -8,14 +9,15 @@ include analysis.pi
    case CODE.DeclarationBlock: newtab=block[DeclarationBlock.symtab];
    case CODE.ClassBody: newtab=block[ClassBody.symtab];
    case CODE.TemplateDecl#(_,d) : return enter_block(d);
-   case CODE.EmptyStmt|"": newtab = MAP{}; 
-  }
-  GLOBAL.SymTable=newtab :: tab;
-  block
-</xform>
-
+   case CODE.Constructor : newtab = block[Constructor.symtab];
+   case "NEW": newtab=MAP{}; 
+   }
+   GLOBAL.SymTable=newtab :: tab;
+   block
+ </xform>
+ 
 <xform exit_block pars=(block) tab=GLOBAL.SymTable >
-   if (tab : NULL) 
+   if (tab : NULL)
       { PRINT("[exit_block]: unmatched exit block:" block); RETURN NULL; }
    res=car(tab);
    oldtab=cdr(tab);
@@ -23,71 +25,82 @@ include analysis.pi
    res
 </xform>
 
-<xform insert_typeInfo pars=(type,vars) tab=GLOBAL.SymTable>
-if (tab == NULL) { GLOBAL.SymTable=tab=MAP{}; }
-tab = car(tab);
+<xform insert_typeInfo pars=(type,vars) gtab=GLOBAL.SymTable>
+if (gtab == NULL) { GLOBAL.SymTable=gtab=MAP{}; }
+tab = car(gtab);
 switch (vars)
 {
  case CODE.TypeInfo#(t,v,_): insert_typeInfo(t,v)
- case CODE.FunctionDecl#(name, params, ret, _): 
+ case CODE.FunctionDecl#(name, params, ret, _):
        insert_typeInfo(CODE.FunctionType#(params,ret), name)
  case (a b) : insert_typeInfo(type,a); insert_typeInfo(type,b); (type,vars)
  case CODE.ExternDecl#a|CODE.DeclStmt#a : insert_typeInfo(type,a)
  case CODE.TypeDef#(name, newname): tab[name]=newname; vars
  case CODE.Variable#(name,dim) : if (dim!="") type=ArrayType#(type,dim);
-                            pre=tab[name];
-                            if (pre:TAG#(tag,"")) type=TAG#(tag,type); 
-                            else if (pre != "") ERROR("duplicate decl:" name);
-                            tab[name]=type; 
+                            pre=tab[name]; d = ""; 
+                            if (pre=="" && ((d=cdr(gtab))!=NULL)) pre=(car (cdr gtab))[name];
+                            if (pre:TAG#(tag,"")) type=TAG#(tag,type);
+                            else if (pre != "") print("Warning: duplicate decl:" name);
+                            tab[name]=type; if (d != NULL) (car d)[name]=type;
                             (type,vars)
  case CODE.ParamName#(name): tab[name]=TAG#("PARAM",type); vars
- case CODE.Constructor#(name,_,_,_)|CODE.Destructor#(name,_) 
-     | CODE.TemplateType#(ClassType#(name,_,_),_): 
-        tab[name]=vars; 
+ case CODE.Constructor#(name,_,_,_)|CODE.Destructor#(name,_)
+     | CODE.TemplateType#(ClassType#(name,_,_),_):
+        tab[name]=vars;
  case TypeDef#d : insert_typeInfo(type,d)
  case CODE.TypeDecl#decl | CODE.InlineDecl#decl : insert_typeInfo(type,decl);
  case CODE.TemplateDecl#(param,decl): insert_typeInfo(param,decl);
  case CODE.ClassTypeName: (vars, NULL)
- case CODE.StructType#(name,body): 
-       if (tab[name] == "" || body != "") 
+ case CODE.StructType#(name,body):
+       if (tab[name] == "" || body != "")
              tab[name]=vars; <<*StructType#(name,"");
- case CODE.ClassType#(name,body,inherit) : 
+ case CODE.ClassType#(name,body,inherit) :
     switch (car(type)) {
     case "": tab[name]=tab["this"]=ClassType#(name,"",inherit);
-    case CODE.TemplateParameterDecl#(_,n1=_): 
+    case CODE.TemplateParameterDecl#(_,n1=_):
        if (body != "") {
            body = body[ClassBody.symtab];
-           body[n1] = type; 
+           body[n1] = type;
        }
-       foreach cur=(CLEAR n,CLEAR t) \in body do
+       foreach cur=(n=_,t=_) \in body do
           if (!Lookup(CODE.TypeName#(name,_), t)) {
             t1 = REPLACE(name, CODE.TypeName#(name,type),t);
             if (t1 != t) body[n]=t1;
           }
        enddo
-       tab[name]=TemplateType#(ClassType#(name,body,inherit),type); 
+       tab[name]=TemplateType#(ClassType#(name,body,inherit),type);
     }
- case CODE.FunctionPtr#(name,param): 
+ case CODE.FunctionPtr#(name,param):
         tab[name] = CODE.FunctionType#(type,param); (type,vars)
- case ID | CODE.Name | CODE.ScopedName|CODE.Operator: 
-        if (type != "") tab[vars]=type;  
+ case ID | CODE.Name | CODE.ScopedName|CODE.Operator:
+        if (type != "") tab[vars]=type;
         (type,vars)
  case CODE.FunctionPtr#(name) : tab[name]=type; (type,vars)
  case ""|NULL : (type,NULL)
- case CODE.Uop|CODE.TypeName|CODE.RegisterType|CODE.FloatType|CODE.VoidType|CODE.StaticType|CODE.ConstType|CODE.IntType|CODE.IntType1|CODE.Comment|CODE.BookKeeping|CODE.EmptyStmt|CODE.Macro|CODE.AtomicModify|CODE.Return|CODE.AccessControl|CODE.FriendDecl|CODE.ExpStmt|CODE.Nest|CODE.StmtBlock|CODE.SwitchStmt : vars
+ case CODE.Uop|CODE.TypeName|CODE.EnumType|CODE.DeclarationBlock|CODE.UnionType|CODE.RegisterType|CODE.FloatType|CODE.VoidType|CODE.StaticType|CODE.VolatileType|CODE.InlineType|CODE.ConstType|CODE.IntType|CODE.IntType1|CODE.Comment|CODE.BookKeeping|CODE.EmptyStmt|CODE.Macro|CODE.AtomicModify|CODE.Return|CODE.AccessControl|CODE.FriendDecl|CODE.ExpStmt|CODE.Nest|CODE.StmtBlock|CODE.SwitchStmt : vars
 }
 
 </xform>
 
 <xform get_type pars=(exp) tab=GLOBAL.SymTable>
   switch (exp) {
+  case n=ID|CODE.Name:
+      res = "";
+      for (p = tab; p != NULL && res== ""; p = cdr(p))
+          { if (car(p) != "") res = (car p)[n]; }
+<*
+      if (res == "") {
+        print("[get_type]:Cannot find type for: " exp "\n symbol table: " tab);
+        assert(0);
+      } *>
+      res
   case INT: return CODE.IntType;
   case ScopedName#(("std" TypeName#("pair",_))): return exp;
   case CODE.NewAlloc#(t,_) : get_type(t)
   case CODE.Alias#t : get_type(t)
   case CODE.VoidType | CODE.IntType | CODE.IntType1 | "bool" | "size_t"
      | ScopedName#("std" "size_t") | ScopedName#(("std" "string")) | CODE.TypeName: exp
-  case Bop#("+",v1,v2)|Bop#(":",Bop#("?",_,v1),v2): 
+  case Bop#("+",v1,v2)|Bop#(":",Bop#("?",_,v1),v2):
         t1 = get_type(v1); t2 = get_type(v2);
         if (t1 == t2) return t1;
         if (t1 : CODE.PtrType && t2 : CODE.IntType|CODE.IntType1) return t1;
@@ -99,32 +112,22 @@ switch (vars)
   case Bop#(">"|"<"|"<="|">="|"=="|"!=",_,_) : "bool"
   case CODE.RefType#t1: RefType#(get_type(t1))
   case CODE.PtrType#t1: PtrType#(get_type(t1))
-  case ID|CODE.Name: 
-      res = ""; 
-      for (p = tab; p != NULL && res== ""; p = cdr(p))
-          { if (car(p) != "") res = (car p)[exp]; }
-      if (res == "") {
-        return exp;
-        print("[get_type]:Cannot find type for: " exp "\n symbol table: " tab);
-        assert(0);
-      }
-      res
   case CODE.Uop#("&",deref): PtrType#(get_type(deref))
-  case CODE.ArrayAccess#(var,sub): 
-      CODE.ArrayType#(t,_)|CODE.PtrType#t|CODE.AtomicPtrType#t = get_type(var); 
-      t 
+  case CODE.ArrayAccess#(var,sub):
+      CODE.ArrayType#(t,_)|CODE.PtrType#t|CODE.AtomicPtrType#t = get_type(var);
+      t
   case CODE.PtrAccess#(var,fd) | CODE.ObjAccess#(var,fd) | Uop#(fd="*",var):
-      CODE.PtrType#t|CODE.AtomicPtrType#t|t = get_type(var); 
+      CODE.PtrType#t|CODE.AtomicPtrType#t|t = get_type(var);
       param=arg="";
-      if (t : CODE.TypeName#(t1=_,arg=_) | (t1=ID)) { 
-         for (t2 = get_type(t1); t2 : CODE.TypeName#(t1=_,_)|ID; t2=get_type(t1)) { }
+      if (t : CODE.TypeName#(t1=_,arg=_)) {
+         for (t2 = get_type(t1); t2 : CODE.TypeName#(t1=_,_); t2=get_type(t1)) { }
           t = t2;
       }
       switch (t) {
          case CODE.DeclarationBlock: t2tab = t2[DeclarationBlock.symtab] ;
          case CODE.TemplateType#(CODE.ClassType#(t3=_,body=_,_), param=_):
                    t2tab=body;
-         case CODE.StructType#(t1=_,t2=_) | CODE.ClassType#(t1=_,t2=_,_): 
+         case CODE.StructType#(t1=_,t2=_) | CODE.ClassType#(t1=_,t2=_,_):
            if (t2 == "") {
              t3 = get_type(t1);
              if (t3 == "") ERROR("Struct type undefined: " t " in " tab);
@@ -132,15 +135,24 @@ switch (vars)
              StructType#(t1,t2)|ClassType#(t1,t2,_)|t2 = t3;
            }
            t2tab = t2[DeclarationBlock.symtab] ;
+         case ScopedName#("std" CODE.TypeName#("pair", CODE.TemplateInstantiation#((first=_) (second=_)))) :
+             if (fd == "first") res = first;
+             else if (fd == "second") res = second;
+             fd = "*";
+         case "auto"|"": t2tab=""; "" <* do nothing *>
       }
-      if (fd != "*") res = get_type[ tab=t2tab ](fd);
-      else res = t2;
+      if (t2tab != "" && fd != "*") res = get_type[ tab=t2tab ](fd);
+      else res = t;
+
       if (arg != "") {
           for ( (p = param;p1=arg); p != NULL && p1 != NULL; (p = cdr(p);p1=cdr(p1))) {
                res = REPLACE(car(p),car(p1), res);
            }
       }
       res
+      case CODE.CopyName#(p_copy=_) :
+        get_type(p_copy)
+      default: "auto"
   }
 </xform>
 
@@ -161,8 +173,8 @@ switch (vars)
 <xform member_variables pars=(input)>
   vars = NULL;
   foreach (input : (cur=CODE.DeclStmt | CODE.FunctionDecl | CODE.ClassType) : TRUE) {
-    if (cur : CODE.DeclStmt#(CLEAR info) && (car info) : CODE.TypeInfo) {
-          foreach_r (info : (cur=CODE.TypeInfo#(CLEAR t,CLEAR v,_)):TRUE)
+    if (cur : CODE.DeclStmt#(info=_) && (car info) : CODE.TypeInfo) {
+          foreach_r (info : (cur=CODE.TypeInfo#(t=_,v=_,_)):TRUE)
              {    vars = cur :: vars; }
     }
   }
@@ -175,28 +187,27 @@ switch (vars)
       return NULL;
   }
   if (classbody == "") {
-     foreach (global : CODE.ClassType#(classname, CLEAR classbody) : TRUE) {
+     foreach (global : CODE.ClassType#(classname, classbody=_) : TRUE) {
         if (classbody != "") break;
-     }   
+     }
      if (classbody == "") {
         PRINT("No definition found for class type: " input);
         return NULL;
      }
   }
-  input = classbody[ClassBody.decls]; 
+  input = classbody[ClassBody.decls];
   ops=NULL;
   foreach cur=(CODE.TemplateDecl|CODE.FunctionDecl|CODE.ClassType) \in input do
      if (cur : CODE.TemplateDecl#(_,CODE.FunctionDecl#(CLEAR f,CLEAR p,CLEAR r, CLEAR b))|CODE.FunctionDecl#(CLEAR f,CLEAR p,CLEAR r, CLEAR b)) {
        if (b : CODE.EmptyStmt) {
-          foreach cur1=CODE.TemplateDecl#(_,d=_)|CODE.InlineDecl#(d=_) | (d=CODE.FunctionDecl) \in global do 
+          foreach cur1=CODE.TemplateDecl#(_,d=_)|CODE.InlineDecl#(d=_) | (d=CODE.FunctionDecl) \in global do
              if (d : InlineDecl#(tmp=_)) d = tmp;
              if (d : CODE.FunctionDecl#(ScopedName#((classname|CODE.TypeName#(classname,_)) f), CLEAR p1,r,CLEAR b)) {
-                 if (b != "" && match_type(p, p1)) {cur = cur1; break; } 
+                 if (b != "" && match_type(p, p1)) {cur = cur1; break; }
              }
           enddo
-       } 
-       if (b:EmptyStmt) 
-           print ("Error: cannot find global definition for:" classname "::" cur);
+       }
+       if (b:EmptyStmt) "";
        else ops = cur::ops;
      }
   enddo
@@ -205,7 +216,7 @@ switch (vars)
 
 <xform collect_mod pars=(op) >
   switch (op) {
-    case CODE.Assign#(lhs, _) | CODE.Uop#("--"|"++",lhs) 
+    case CODE.Assign#(lhs, _) | CODE.Uop#("--"|"++",lhs)
        | CODE.VarRef#(lhs,"++"|"--") | CODE.DeleteStmt#(lhs) : lhs
     case INT|CODE.Break | CODE.EmptyStmt | NULL | CODE.True | CODE.False |
          CODE.DeclStmt | CODE.VariableParse | ID | CODE.Name |
@@ -214,8 +225,9 @@ switch (vars)
     case CODE.FunctionCall#("assert"|CODE.ScopedName#("std" "make_pair"),_) : NULL
     case CODE.impl_variant#(_,_,block) : collect_mod(car block)
     case CODE.VEC#(name,_,_,_,_) : name
-    case Nest#(first, second) : AppendList(collect_mod(first), collect_mod(second))
-    case If#(exp) : collect_mod(exp);
+    case Nest#(first, second) : AppendList[erase_replicate=1](collect_mod(first), collect_mod(second))
+    case If#(exp) : collect_mod(exp)
+    default: "___UNKNOWN___"
     <<*     CODE.FunctionCall | <* for now ignores side effects *>
    }
 </xform>
@@ -224,21 +236,25 @@ switch (vars)
   switch (op) {
      case  CODE.FunctionCall#(_,rhs) | CODE.FunctionCallParameter#(rhs) | CODE.VarConstructor#rhs | DeleteStmt#(rhs) |
            CODE.TypeInfo#(_,_,rhs) | CODE.VarInit#(rhs) | CODE.NewAlloc#(_,rhs) |
-           CODE.ArraySubscript#rhs | CODE.CastExp#(_,_,rhs) |
+           CODE.ArraySubscript#rhs | CODE.CastExp#(_,rhs) | CODE.Return#(rhs) |
            CODE.Uop#("!"|"*"|"++"|"--"|"&",rhs) | CODE.VarRef#(rhs,"++"|"--"):
          collect_global_read(rhs)
-     case CODE.PtrAccess#(rhs,_) | CODE.Bop#(".",rhs,_) | CODE.Uop#("*",rhs)
-         | CODE.ObjAccess#(rhs,_)  | CODE.Uop#(_,rhs):
+     case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.Uop#("*",rhs=_)
+         | CODE.ObjAccess#(rhs=_,_)  | CODE.ArrayAccess#(_,rhs=_) | CODE.Uop#(_,rhs=_):
          BuildList(collect_global_read(rhs), op)
-     case CODE.Assign#(op1,op2) 
-         | CODE.Bop#(_,op1,op2)
+     case CODE.Assign#(op1,op2):
+         switch (op1) {
+         case Uop#("*",d1=_) | PtrAccess#(d1=_,_) | CODE.ArrayAccess#(d1=_,_) | ObjAccess#(d1=_,_) : AppendList[erase_replicate=1](collect_global_read(d1), collect_global_read(op2))
+         case ID|Name: collect_global_read(op2)
+         default: collect_global_read(op2)
+         }
+     case CODE.Bop#(_,op1,op2)
          | CODE.ArrayAccess#(op1,op2)
          | (op1,op2) | (op1 op2) | CODE.FunctionParameterDecl#(op1,op2):
-       BuildList(collect_global_read(op1),
-                 collect_global_read(op2));
-    case ID|CODE.Name|CODE.ScopedName: if (Lookup(op, local_vars)) { "" } else { op }
-    case CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|"": ""
-    case CODE.DeclStmt#d : 
+       BuildList(collect_global_read(op1), collect_global_read(op2))
+    case ID|CODE.Name|CODE.ScopedName: if (Lookup(op, local_vars)) { "" } else {op}
+    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|"": ""
+    case CODE.DeclStmt#d :
          if (car(d) : CODE.TypeInfo) { collect_global_read(d) } else { "" }
     case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|NULL: NULL
     case CODE.impl_variant#(_,_,block) : collect_global_read(car block)
@@ -250,17 +266,19 @@ switch (vars)
   switch (op) {
    case CODE.DeclStmt:
         res = NULL;
-        foreach (op : CODE.TypeInfo#(CLEAR t,CLEAR v, _) : TRUE) {
+        foreach (op : CODE.TypeInfo#(t=_,v=_, _) : TRUE) {
            if (!Lookup(v,res))
               res = v :: res;
          }
          res
-   case (first second) : AppendList(collect_local_vars(first), collect_local_vars(second))
+   case (first second) : AppendList[erase_replicate=1](collect_local_vars(first), collect_local_vars(second))
    case CODE.For#(init,test,incr) : collect_local_vars(init)
    case CODE.Loop#(i,_,_,_)|CODE.Loop_r#(i,_,_,_) : i
    case CODE.Nest#(_,s) | CODE.StmtBlock#(s) : collect_local_vars(s)
-   case CODE.Assign|INT|CODE.Break|CODE.EmptyStmt|CODE.If|CODE.While|CODE.Bop|CODE.ExpStmt|CODE.Nest|CODE.Else|CODE.Return|""|CODE.DeleteStmt|NULL: NULL
+   case CODE.Assign|INT|ID|CODE.Break|CODE.EmptyStmt|CODE.If|CODE.While|CODE.Bop|CODE.ExpStmt|CODE.Nest|CODE.Else|CODE.Return|""|CODE.DeleteStmt|NULL: NULL
    case CODE.impl_variant#(_,_,block) : collect_local_vars(car block)
+   case ID: op
+   case INT|STRING: NULL
   }
 </xform>
 
@@ -271,19 +289,33 @@ switch (vars)
     case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
          global_modread(s);
     case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
-        m1=r1=m2=r2=NULL;
-        local_vars = AppendList(local_vars,collect_local_vars(first));
+        local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
         (m1,r1)=global_modread(first);
-        if (rest != NULL) (m2,r2)=global_modread(rest);
+        if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
+        else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
     case CODE.Else|"" : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
-    default: (collect_mod(op), collect_global_read[local_vars=local_vars](op))
+    default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
   }
 </xform>
 
-<xform is_known_operator pars=(name)  >
-   switch (name) {
+<xform is_array_access pars=(fun) array_types=GLOBAL.ARRAY_TYPES  treat_function_as_array=0 >
+   switch (fun) {
+    case Bop#(".","this", obj=CODE.Name|ID) | (obj=(CODE.Name|STRING))|Bop#(".", obj=_, "()") : 
+           r = (obj : (t=XFORM.get_type));
+    default: r = (fun : (t=XFORM.get_type));
+   }
+   assert(r != 0);
+  <*  if (treat_function_as_array) return 1; *>
+   if (t : CODE.RefType#(t1=_)) t = t1;
+   if (t : CODE.Name#(t1=_)) t = t1;
+   return Lookup(t, array_types);
+</xform>
+
+<xform is_known_operator pars=(fun)  >
+   switch (fun) {
+    case "fabs": TRUE
     case CODE.ScopedName#("std" "to_string"|"make_pair") | "assert" :
           TRUE
     case CODE.ScopedName#("std" "memset"|"memcpy"|"memmove")|"memset"|"memcpy"|"memmove": TRUE;
@@ -310,14 +342,14 @@ switch (vars)
 </xform>
 
 <xform find_access_control pars=(op, scope)>
-  if (op : CODE.TemplateDecl#(_,d=_)) op = d; 
+  if (op : CODE.TemplateDecl#(_,d=_)) op = d;
   if (op : CODE.InlineDecl#(d=_)) op = d;
   (FunctionDecl|Constructor)#(name,params,_,_)=op;
   if (name : CODE.ScopedName#(_ (n1=_))) name = n1;
   acc = "private";
   foreach cur=CODE.AccessControl#(acc=_)|CODE.FunctionDecl#(name,_,_,_)|CODE.Constructor#(name,_,_,_) \in scope do
-    if (!(cur : CODE.AccessControl)) return acc; 
-  enddo 
+    if (!(cur : CODE.AccessControl)) return acc;
+  enddo
   print("Error: cannot find " op);
   assert(0);
 </xform>
@@ -325,7 +357,7 @@ switch (vars)
 <********************************************************>
 <* collect all dereferences of ptr that may be modified *>
 <********************************************************>
-<xform collect_ptr_mod pars=(ptr,block) 
+<xform collect_ptr_mod pars=(ptr,block)
        whole_program=NULL level=1 alias=NULL assigns=NULL >
   if (alias== NULL) alias=MAP{};
   if (assigns==NULL) assigns=MAP{};
@@ -338,8 +370,8 @@ switch (vars)
              res = NULL;
              for ( (p1=pars;p2=args); p2 != NULL; (p1=cdr(p1);p2=cdr(p2))) {
                r1 = collect_ptr_mod(ptr, car(p2));
-               if (r1 != NULL) { 
-                 r2 = collect_ptr_mod(car(p1), body);  
+               if (r1 != NULL) {
+                 r2 = collect_ptr_mod(car(p1), body);
                  r2 = REPLACE(car(p1), car(p2), r2);
                  res = r2 :: res;
                }
@@ -350,7 +382,7 @@ switch (vars)
         }
     case ""|CODE.Break|NULL|CODE.True|CODE.False|INT|CODE.NewAlloc|CODE.Return|CODE.BookKeeping|CODE.TypeInfo#(_,_,"")|CODE.CastExp: NULL
     case ptr: if (level <= 0) { block } else { NULL }
-    case ID | CODE.Name : 
+    case ID | CODE.Name :
         if ( (r1 = alias[block]) >= level) { block }
         else { NULL }
     case CODE.Bop#("+"|"-"|"*"|"/"|"%"|"<="|"<"|">="|">"|"=="|"!="|"<<",_,_): NULL
@@ -359,20 +391,20 @@ switch (vars)
          if (res != NULL) res = var;
          res
     case TypeInfo#(_,_,""): NULL
-    case CODE.Assign#(lhs, rhs) | CODE.TypeInfo#(_,lhs,VarInit#rhs): 
+    case CODE.Assign#(lhs, rhs) | CODE.TypeInfo#(_,lhs,VarInit#rhs):
          assigns[lhs] = rhs;
          assigns[rhs] = lhs;
          if (lhs : ID | CODE.Name) {
-           level_lhs = alias[lhs]; if (level_lhs == "") level_lhs= 0; 
-           for (i=level_lhs+1; 
-               (i < 10 && (res=collect_ptr_mod[level=i](ptr,rhs)) != NULL); i=i+1) 
+           level_lhs = alias[lhs]; if (level_lhs == "") level_lhs= 0;
+           for (i=level_lhs+1;
+               (i < 10 && (res=collect_ptr_mod[level=i](ptr,rhs)) != NULL); i=i+1)
              { alias[lhs] = i; }
            NULL
          }
          else {
            lhs1 = lhs; extra=NULL;
            for (i=0; lhs1 : PtrAccess#(lhs2=_,_); i = i + 1) {
-             lhs1 = lhs2; 
+             lhs1 = lhs2;
              e = assigns[lhs1];
              if (e != "") extra = e :: extra;
            }
@@ -392,85 +424,103 @@ switch (vars)
             }
             res1
          }
-         else { NULL } 
-    case CODE.Uop#("--"|"++",lhs)|CODE.VarRef#(lhs,"++"|"--")|CODE.DeleteStmt#(lhs): 
+         else { NULL }
+    case CODE.Uop#("--"|"++",lhs)|CODE.VarRef#(lhs,"++"|"--")|CODE.DeleteStmt#(lhs):
        collect_ptr_mod(ptr,lhs)
-    case (first rest) | CODE.Bop#(":", Bop#("?",_,first), rest): 
-         AppendList(collect_ptr_mod(ptr,first), collect_ptr_mod(ptr,rest))
+    case (first rest) | CODE.Bop#(":", Bop#("?",_,first), rest):
+         AppendList[erase_replicate=1](collect_ptr_mod(ptr,first), collect_ptr_mod(ptr,rest))
     case Nest#(ctrl,body) | CODE.StmtBlock#body:
         res= collect_ptr_mod(ptr,body);
         if (block : Nest#(CODE.While,_)) { <* repeat due to aliasing *>
            res=collect_ptr_mod(ptr,body); }
         if (res != NULL) {
-           if (block : StmtBlock) { ("ENTER",block) :: AppendList(res, ("EXIT", block)) }
+           if (block : StmtBlock) { ("ENTER",block) :: AppendList[erase_replicate=1](res, ("EXIT", block)) }
            else { res }
         }
         else { NULL }
     case FunctionCall#params:
        ERROR("to be added");
-  }  
-</xform>
-
-<* collect all uses of var, which is defined in stmt, in input *>
-<xform collect_variable_uses pars=(var, stmt, input) 
-       found_stmt=FALSE output=(_res_before,_res_after) >
-  switch (input)
-  {
-  case stmt : (NULL,NULL)
-  case CODE.StmtBlock#s : collect_variable_uses(var,stmt,s)
-  case CODE.ExpStmt#(CODE.FunctionCall#(_,e)):
-        if (Lookup(var, e)) { (found_stmt)? (NULL,input) : (input, NULL) }
-        else { (NULL,NULL) }
-  case CODE.ExpStmt#(CODE.Assign#(lhs,rhs)) : 
-        if (Lookup(var, rhs) || (lhs != var && Lookup(var, lhs))) { 
-           (found_stmt)? (NULL,input) : (input, NULL)
-        }
-        else { (NULL,NULL) }
-  case ExpStmt#(Uop#("++"|"--", lhs)|VarRef#(lhs,"++"|"--")):
-       if (Lookup(var, lhs)) 
-         { found_stmt? (NULL,input) : (input,NULL) } 
-       else { (NULL,NULL) }
-  case CODE.Return#exp | CODE.While#(exp) | CODE.If#(exp) | CODE.DeclStmt#exp: 
-       if (Lookup(var, exp)) 
-         { found_stmt? (NULL,input) : (input,NULL) } 
-       else { (NULL,NULL) }
-  case CODE.For#(s1,s2,s3) | CODE.Loop_r#(_,s1,s2,s3) | CODE.Loop#(_,s1,s2,s3): 
-        if (s1 == stmt) found_stmt = 1;
-        if (Lookup(var, (s1 s2 s3))) { 
-           (found_stmt)? (NULL,input) : (input, NULL)
-        }
-        else { (NULL,NULL) }
-  case CODE.BookKeeping|Else|""|NULL|CODE.Break: (NULL,NULL)
-  case (first second):
-      (res_before, res_after) = collect_variable_uses(var,stmt,first);
-      if (!found_stmt) { found_stmt=Lookup(stmt,first); }
-      if (!found_stmt) {
-         (res2_before, res2_after) = collect_variable_uses(var,stmt,second);
-         if (first : ExpStmt#(CODE.Assign#(var,_) | CODE.Return)) 
-             res_before=res_after=NULL; 
-      }
-      else {
-         if (first : ExpStmt#(CODE.Assign#(var,_) | CODE.Return)) 
-            res2_after=res2_before=NULL;
-         else
-            (res2_before, res2_after) = collect_variable_uses(var,stmt,second);
-      }
-      (AppendList(res_before, res2_before), AppendList(res_after, res2_after))
-  case CODE.Nest#(ctrl,body):
-     switch(ctrl) {
-      case For#(DeclStmt#TypeInfo#(_,i,_),_,Uop#("++",i)|VarRef#(i,"++"))|Loop_r#(i,_,_,_)|Loop#(i,_,_,_):
-           if (!(Lookup(i, var))) found_stmt=Lookup(stmt,body); 
-      case CODE.While|CODE.For: found_stmt=Lookup(stmt,body); 
-      case CODE.If|CODE.Else: ""
-
-     }
-     (res_before, res_after) = collect_variable_uses(var,stmt,ctrl);
-     (res2_before, res2_after) = collect_variable_uses(var,stmt,body);
-     (AppendList(res_before, res2_before), AppendList(res_after, res2_after))
   }
 </xform>
 
-<xform compute_points_to_path pars=(from, to, stmt, input) 
+<* collect all uses of var, which is defined in stmt, in input *>
+<xform collect_variable_defuse pars=(var, stmt, input)
+   dir="use" found_stmt=FALSE output=(_res_before,_res_after,_found_stmt,_stop) >
+  if (!found_stmt && input : stmt)  return (NULL,NULL,1,0);
+  switch (input) {
+  case CODE.FunctionDecl#(_,_,_,body) : collect_variable_defuse(var,stmt,body)
+  case CODE.StmtBlock#s | (first second):
+     res_before = res_after = NULL; stop = 0;
+     foreach t=stmt | CODE.Nest|CODE.ExpStmt|CODE.DeclStmt \in input do 
+         (res1_before, res1_after, found,stop2) = collect_variable_defuse(var,stmt,t);
+         if (stop != 2) stop = stop2;
+         if (stop != 2) {
+            res_before = AppendList[erase_replicate=1](res_before, res1_before);
+            res_after = AppendList[erase_replicate=1](res_after,  res1_after);
+         }
+         if (!found_stmt) { found_stmt=found; }
+         if (found_stmt && stop == 2) { stop = 0; }
+         if (stop == 1) break;
+     enddo
+     (res_before, res_after, found_stmt, 0)
+  case CODE.Assign#(lhs,rhs) | CODE.TypeInfo#(_,lhs,rhs) 
+       | Bop#("+="|"-="|"*="|"/="|"&="|"|=", lhs, rhs)
+       | Uop#("++"|"--", lhs=rhs=_)|VarRef#(lhs=rhs=_,"++"|"--"):
+        (r1_b,r1_a, found_stmt, stop2) = collect_variable_defuse(var,stmt,rhs);
+        if (lhs : var) {
+           if (dir == "use") { (NULL,NULL,found_stmt,2) }
+           else if (found_stmt) { (r1_b,r1_a,found_stmt,1) } 
+           else { (input, NULL, found_stmt, 0) }  
+        }
+        else if (dir == "use") {
+           if (Lookup(lhs, var)) { (NULL,NULL,found_stmt, 2) }
+           else {
+             (r2_b,r2_a, found_stmt, 0) = collect_variable_defuse(var,stmt,lhs);
+             r_b = r_a = NULL;
+             if (r1_b != NULL || r2_b != NULL) r_b = input;
+             if (r1_a != NULL || r2_a != NULL) r_a = input;
+             (r_b, r_a, found_stmt, stop2)
+           }
+        }
+        else { (NULL, NULL, found_stmt, stop2) }
+  case CODE.FunctionCall#(_,e)|(e=CODE.Bop|CODE.Uop)|CODE.VarInit#e:
+        if (dir == "def") { (NULL, NULL, 0, 0) }
+        else if (Lookup(var, e))
+          { (found_stmt)? (NULL,input,0,0) : (input, NULL,0,0) }
+        else { (NULL,NULL,0,0) }
+  case CODE.Return#exp | CODE.While#(exp) | CODE.If#(exp)|CODE.ExpStmt#exp|CODE.DeclStmt#exp:
+       (ra, rb, f, s) = collect_variable_defuse(var,stmt,exp);
+       if (ra != NULL) ra = input;
+       if (rb != NULL) rb = input;
+       (ra, rb, f, s)
+  case CODE.For#(s1,s2,s3): 
+       (rb,ra,found_stmt,0) = collect_variable_defuse(var, stmt, s1 :: s2 :: s3); 
+       r_b = r_a = NULL;
+       if (rb != NULL) rb = input;
+       if (ra != NULL) ra = input;
+       (ra, rb, 0, 0)
+  case CODE.Loop_r#(v,s1,s2,s3) | CODE.Loop#(v,s1,s2,s3):
+       (rb,ra,found_stmt,0) = collect_variable_defuse(var, stmt, Assign#(v,s1)::s2::s3);  
+       r_b = r_a = NULL;
+       if (rb != NULL) rb = input;
+       if (ra != NULL) ra = input;
+       (ra, rb, 0, 0)
+  case CODE.Nest#(ctrl,body):
+      (rb_1,ra_1,f1,0) = collect_variable_defuse(var, stmt, ctrl); 
+      if (f1) found_stmt=1;
+      (rb_2,ra_2,f2,s2) = collect_variable_defuse(var, stmt, body); 
+      if (f2) 
+        (rb_2,ra_2,f2,s2) = collect_variable_defuse(var, stmt, body); 
+      rb = AppendList[erase_replicate=1](rb_1, rb_2);
+      ra = AppendList[erase_replicate=1](ra_1, ra_2);
+      (rb,ra, f2, 0)
+  case var: if (found_stmt) { (NULL,input,0,0) } else { (input,NULL,0,0) }
+  <<*case CODE.BookKeeping|Else|""|NULL|CODE.Break|INT|FLOAT|STRING|CODE.Name|CODE.PtrAccess: 
+  default: (NULL,NULL,0,0)
+  }
+</xform>
+
+<xform compute_points_to_path pars=(from, to, stmt, input)
        vars=NULL res=NULL begin=NULL >
  done = 1;
  if (vars != NULL) {
@@ -484,19 +534,19 @@ switch (vars)
   case CODE.Break|CODE.BookKeeping|Else|CODE.Return|""|NULL: (vars,res,begin)
   case CODE.StmtBlock#s : compute_points_to_path(from,to,stmt,s)
   case (first second):
-     if (second == NULL) return (compute_points_to_path(from,to,stmt,first)); 
+     if (second == NULL) return (compute_points_to_path(from,to,stmt,first));
      (v2,r2,b2) = compute_points_to_path(from,to,stmt,second) ;
      switch (car(second)) {
-     case Nest#(CODE.Else, _):  
+     case Nest#(CODE.Else, _):
         (v1,r1,b1)=compute_points_to_path[res=r2](from,to,stmt,first);
         (AppendList[erase_replicate=TRUE](v1,v2), r1, ((b1==b2)? b1 : input))
      default:
         (v1,r1,b1)=compute_points_to_path[res=r2;vars=v2;begin=b2](from,to,stmt,first);
         (v1,r1, ((b1==b2)? b1 : input))
-     } 
+     }
   case CODE.Nest#(ctrl,body):
      (v2,r2,b2)=compute_points_to_path[res=NULL;begin=NULL](from, to, stmt,body);
-     if (r2 != NULL) { 
+     if (r2 != NULL) {
         if (ctrl : CODE.While) {
            (v2,r2,b2)=compute_points_to_path[vars=v2;res=NULL;begin=NULL](from, to, stmt,body);
             if (LookupList( (cur=PtrAccess#(to,fd=_)), v2)) {
@@ -504,25 +554,25 @@ switch (vars)
             }
         }
         (v2,(Nest#(ctrl,r2))::res,input)
-     } 
+     }
      else { (v2,res,begin) }
   case ExpStmt#e | DeclStmt#e:
     foreach (e :(Assign#(lhs,rhs) | TypeInfo#(_,(CLEAR lhs),VarInit#(CLEAR rhs)|(CLEAR rhs))): FALSE) {
        if (rhs : Assign#(_,nrhs=_)) rhs = nrhs;
        if (Lookup_nested_list((cur=(lhs|CODE.Alias#(PtrAccess#(lhs,_)))),vars)) {
-           vars=replace_nested_list(cur, rhs, vars); 
-           res=input::res; begin=input; 
+           vars=replace_nested_list(cur, rhs, vars);
+           res=input::res; begin=input;
        }
        else if (Lookup_nested_list(While#lhs, vars)) {
            vars = AppendList[erase_replicate=1](vars, While#rhs);
-           res=input::res; begin=input; 
+           res=input::res; begin=input;
        }
        else if (rhs != "" && Lookup_nested_list(DELAY{cur=CODE.PtrAccess#(lhs,fd=_)},vars)) {
            vars=AppendList[erase_replicate=1](vars, CODE.Alias#(PtrAccess#(rhs,fd)));
-           res=input::res; begin=input; 
+           res=input::res; begin=input;
        }
-    } 
-    { (vars, res, begin) } 
+    }
+    { (vars, res, begin) }
  }
 </xform>
 
@@ -533,7 +583,7 @@ switch (vars)
     foreach r=TypeInfo#("Unknown",n=_,init=_) \in nodes do
        if (! (init : NewAlloc)) return (n,nodes);
     enddo
- case NewAlloc: ""
+ case CODE.NewAlloc: ""
  }
  index = 0;
  foreach TypeInfo#("Unknown",i=_,_) \in nodes do
@@ -549,7 +599,7 @@ switch (vars)
  case (first rest):
       (n1,nodes,edges) = gen_ptr_node_help(first, nodes,edges);
       (n2,nodes,edges) = gen_ptr_node_help(rest, nodes, edges);
-      return (AppendList(n1,n2), nodes, edges); 
+      return (AppendList(n1,n2), nodes, edges);
  case TypeInfo#(CODE.PtrType,name=_,VarInit#(rhs=_)):
        (n1,nodes,edges) = gen_ptr_node_help(rhs, nodes, edges);
    <<* print ("rhs=" rhs); print ("{" nodes "\n" edges "}"); assert(n1 != NULL);
@@ -565,7 +615,7 @@ switch (vars)
        return (n,nodes,edges); enddo
     (n,nodes) = new_unknown_node(nodes, "");
     return (n, nodes, ("ALIAS", exp, n)::edges);
- case NewAlloc:  
+ case CODE.NewAlloc:
     (n1,nodes)=new_unknown_node(nodes,exp);
     return (n1, nodes, edges);
  case PtrAccess#(rhs1, next) | ArrayAccess#(rhs1,next) | (next=Uop#("*",rhs1)):
@@ -575,30 +625,31 @@ switch (vars)
        print ("Cannot find base node for " rhs1 "->" next " in {" nodes ":" edges "}");
        assert(0);
     }
-    foreach e=(next,n1,to) \in edges do return (to, nodes, edges); enddo 
+    foreach e=(next,n1,to) \in edges do return (to, nodes, edges); enddo
     (n2, nodes) =  new_unknown_node(nodes,"");
     return (n2,  nodes, (next, n1, n2)::edges);
   case CODE.ObjAccess#(rhs1,next):
     (n1, nodes, edges) = gen_ptr_node_help(rhs1, nodes, edges);
     if (n1 != NULL) {
-       foreach e=(next,n1,to) \in edges do return (to, nodes, edges); enddo 
+       foreach e=(next,n1,to) \in edges do return (to, nodes, edges); enddo
        (n2, nodes) =  new_unknown_node(nodes,"");
        return (n2,  nodes, (next, n1, n2)::edges);
     }
     return (n1,  nodes, edges);
-  case Uop#("&",rhs1)|CODE.CastExp#(_,_,rhs1): return gen_ptr_node_help(rhs1,nodes, edges);
+  case Uop#("&",rhs1)|CODE.CastExp#(_,rhs1): return gen_ptr_node_help(rhs1,nodes, edges);
   case Assign#(lhs, rhs):
        switch (lhs) {
-         case ID|CODE.Name: n_lhs = lhs; next = "ALIAS";
-         case PtrAccess#(p,next) | ObjAccess#(p,next): 
+         case PtrAccess#(p,next) | ObjAccess#(p,next):
              (n_lhs, nodes,edges) = gen_ptr_node_help(p, nodes, edges);
-         case ArrayAccess#(p,_): 
+         case ArrayAccess#(p,_):
              next = "ALIAS";
              (n_lhs, nodes,edges) = gen_ptr_node_help(p, nodes, edges);
+         case ID|CODE.Name: n_lhs = lhs; next = "ALIAS";
+         default:  n_lhs = lhs; next = "ALIAS";
        }
        (n_rhs,nodes, edges) = gen_ptr_node_help(rhs, nodes, edges);
        if (n_lhs != NULL) edges=delete_edges_from(n_lhs, next, edges);
-       if (n_rhs != NULL) edges = (next, n_lhs, n_rhs) :: edges; 
+       if (n_rhs != NULL) edges = (next, n_lhs, n_rhs) :: edges;
        return (n_rhs, nodes,edges);
   case Bop#("=="|"!=", lhs, rhs):
        (n_rhs,nodes, edges) = gen_ptr_node_help(rhs, nodes, edges);
@@ -606,15 +657,15 @@ switch (vars)
        if (n_lhs != NULL && n_rhs != NULL && n_lhs != n_rhs) {
           edges = ("MAY_ALIAS", n_lhs, n_rhs)::edges;
        }
-       return (NULL, nodes, edges); 
+       return (NULL, nodes, edges);
   case Bop#(":", Bop#("?",c, b1),b2):
      n1 = n2 = NULL;
-     (c1,c2) = XFORM.is_graph_compatible(c, nodes, edges); 
+     (c1,c2) = XFORM.is_graph_compatible(c, nodes, edges);
      if (c1) (n1,nodes,edges) = gen_ptr_node_help(b1,nodes,edges);
      if (c2) (n2,nodes,edges) = gen_ptr_node_help(b2,nodes,edges);
      return (AppendList[erase_replicate=1](n1, n2), nodes, edges);
-  case ""|True|False|INT|VarRef|CODE.FunctionCall|CODE.TypeInfo|CODE.INT_UL
-     |CODE.Bop#(">"|"<"|"<="|">="|"-"|"+"|"*"|"/"|"%"|"|",_,_) | CODE.Uop#("++"|"--"|"!",_): 
+  case ""|True|False|INT|VarRef|CODE.FunctionCall|CODE.TypeInfo|CODE.INT_UL|NULL
+     |CODE.Bop#(">"|"<"|"<="|">="|"-"|"+"|"*"|"/"|"%"|"|",_,_) | CODE.Uop#("++"|"--"|"!",_):
         return (NULL, nodes, edges);
  }
 </xform>
@@ -630,8 +681,8 @@ switch (vars)
 
 <xform delete_edges_from pars=(v, next, edges)>
      new_edges=NULL;
-     foreach e=(n=_,f=_,_) \in reverse(edges) s.t. !(f : v) || !(n : next) do 
-         new_edges = e :: new_edges; 
+     foreach e=(n=_,f=_,_) \in reverse(edges) s.t. !(f : v) || !(n : next) do
+         new_edges = e :: new_edges;
      enddo
      return new_edges;
 </xform>
@@ -643,17 +694,17 @@ switch (vars)
      new_edges = delete_edges_from(v, "ALIAS", edges);
      new_nodes = NULL;  <* delete isolated nodes *>
      erased_unknowns=NULL;
-     foreach cur=TypeInfo#(t=_,n=_,_) \in reverse(nodes) s.t. n != v do 
+     foreach cur=TypeInfo#(t=_,n=_,_) \in reverse(nodes) s.t. n != v do
         if (t != "Unknown" || Lookup( (e=(_, _, n)|(_,n,_)), edges))
-            new_nodes = cur :: new_nodes; 
+            new_nodes = cur :: new_nodes;
         else erased_unknowns = cur :: erased_unknowns;
      enddo
-     foreach c1=TypeInfo#("Unknown",n1=_,_) \in erased_unknowns do 
+     foreach c1=TypeInfo#("Unknown",n1=_,_) \in erased_unknowns do
         foreach c2=TypeInfo#("Unknown",n2=_,i2=_) \in new_nodes s.t. n2 > n1 do
            new_nodes = REPLACE(c2,TypeInfo#("Unknown",n1,i2),new_nodes);
            new_edges = REPLACE(n2,n1,new_edges);
            break;
-        enddo 
+        enddo
      enddo
      res = Graph#(new_nodes,new_edges)::res
   enddo
@@ -666,13 +717,13 @@ switch (vars)
   foreach Graph#(nodes=_,edges=_) \in reverse(graphs) do
      to_delete=v;
      foreach e=("ALIAS",v,n=_) \in edges do
-        to_delete = n :: to_delete;  
+        to_delete = n :: to_delete;
      enddo
      foreach n=ID|CODE.Name|INT \in to_delete do
         edges = delete_edges_from(n,_,edges);
      enddo
-     new_nodes = NULL; 
-     foreach cur=TypeInfo#(_,n=_,_) \in reverse(nodes) s.t. !Lookup(n,to_delete) do 
+     new_nodes = NULL;
+     foreach cur=TypeInfo#(_,n=_,_) \in reverse(nodes) s.t. !Lookup(n,to_delete) do
          new_nodes = cur :: new_nodes; enddo
      res = Graph#(new_nodes,edges)::res
   enddo
@@ -686,17 +737,17 @@ switch (vars)
          (n1,_,_) = gen_ptr_node_help(e1,nodes, edges);
          (n2,_,_) = gen_ptr_node_help(e2,nodes, edges);
          if (n1 != NULL && n2 != NULL) {
-             if (n1 != n2 && !Lookup( TypeInfo#("Unknown",n1,_), nodes) 
+             if (n1 != n2 && !Lookup( TypeInfo#("Unknown",n1,_), nodes)
                  && !Lookup(TypeInfo#("Unknown",n2,_),nodes))
                    r1 = 0;
             if (n1 == n2 || Lookup( e=("ALIAS",n1,n2), edges))
                  r2 = 0;
          }
          return (r1,r2);
-    case Bop#("!=",e1,e2): 
+    case Bop#("!=",e1,e2):
          (r1,r2)=is_graph_compatible(Bop#("==",e1,e2),nodes,edges);
          return (r2,r1);
-    case PtrAccess | ID | CODE.Name: 
+    case PtrAccess | ID | CODE.Name:
        is_graph_compatible(Bop#("!=",c,0), nodes, edges)
     case Uop#("!", Bop#(("=="), e1, e2)):
        is_graph_compatible(Bop#("!=",e1,e2), nodes, edges)
@@ -709,7 +760,7 @@ switch (vars)
    r1 = r2 = NULL;
    foreach cur=Graph#(nodes=_,edges=_) \in reverse(graphs) do
       (c1,c2)=is_graph_compatible(c, nodes, edges);
-      if (c1) { r1 = cur :: r1; } 
+      if (c1) { r1 = cur :: r1; }
       if (c2) { r2 = cur :: r2; }
    enddo
    return (r1, r2);
@@ -727,7 +778,7 @@ switch (vars)
   foreach cur1=Graph#(n1=_,e1=_) \in reverse(g1) do
     insert=1;
     foreach cur2=Graph#(n2=_,e2=_) \in res do
-       if (is_subset(e1,e2)) insert=0; 
+       if (is_subset(e1,e2)) insert=0;
        else if (is_subset(e2,e1)) {
           res = REPLACE(cur2, cur1, res);
           insert=0; break;
@@ -748,23 +799,23 @@ switch (vars)
   case CODE.FunctionDecl#(fun,params,_,body):
      <<*print ("processing " fun);
      new_graphs = graphs;
-     foreach t=TypeInfo \in params do 
+     foreach t=TypeInfo \in params do
         new_graphs = gen_ptr_node(t, new_graphs);
      enddo
      new_graphs = analyze_connectivity(new_graphs,body);
-     foreach t=TypeInfo#(_,name=_,_) \in params do 
+     foreach t=TypeInfo#(_,name=_,_) \in params do
         new_graphs = delete_local_variable(t, new_graphs);
      enddo
      return append_graphs(graphs, new_graphs);
   case (Nest#(If, b1) rest):
      g1 = analyze_connectivity(graphs,b1);
      res = g1;
-     for (""; rest != NULL && car(rest) : Nest#(Else,b2=_); rest = cdr(rest) ) {
+     for (""; rest != NULL && car(rest) : Nest#(CODE.Else,b2=_); rest = cdr(rest) ) {
         g2 = analyze_connectivity(graphs,b2);
         res = append_graphs(res, g2);
      }
      return analyze_connectivity(res, rest);
-  case Nest#(CODE.Loop|CODE.Loop_r, body): return analyze_connectivity(graphs,body);
+  case Nest#(CODE.Loop|CODE.Loop_r|CODE.Else, body): return analyze_connectivity(graphs,body);
   case Nest#(While#(c)|If#(c), body):
      <<* print ("selecting " c);
      (g1,g2) = select_graphs(c, graphs);
@@ -774,9 +825,9 @@ switch (vars)
      graphs = analyze_connectivity(graphs,first);
      graphs = analyze_connectivity(graphs,second);
      return graphs ;
-  case CODE.StmtBlock#(body): 
+  case CODE.StmtBlock#(body):
      res = analyze_connectivity(graphs,body);
-     foreach t=TypeInfo#(_,name=_,_) \in body do 
+     foreach t=TypeInfo#(_,name=_,_) \in body do
        res = delete_local_variable(name, res);
      enddo
      return res;
@@ -793,7 +844,7 @@ switch (vars)
   }
 </xform>
 
-<xform is_linked_by_unknown pars=(exp, graphs) > 
+<xform is_linked_by_unknown pars=(exp, graphs) >
   foreach Graph#(nodes=_,edges=_) \in graphs do
      (v,_,_) = gen_ptr_node_help(exp, nodes, edges);
      foreach e=(next=_, f=_, v)|("ALIAS",v,f=_)|("subscript",v,f=_) \in edges do
@@ -801,4 +852,360 @@ switch (vars)
      enddo
   enddo
   return 0;
-</xform> 
+</xform>
+
+<*QY: find all loop index and loop variant variables*>
+<xform CategorizeVariables pars=(input)  treat_function_as_array=0
+            index=NULL variant=NULL  arrrefs=NULL unknown=NULL  
+            output=(_index,_variant,_arrrefs,_unknown) >
+switch (input) {
+  case CODE.Pragma#(ctrl=_,body=_): return CategorizeVariables(body); 
+  case Nest#(ctrl,body):
+    switch (ctrl) {
+      case Loop#(i,_,_,_): CategorizeVariables[index=BuildList(i,index)](body)
+      case Loop_r#(i,_,_,_): CategorizeVariables[index=BuildList(i,index)](body)
+      case For#((TypeInfo#(_,i=STRING,_)|CODE.ExpStmt#(CODE.Assign#(i=STRING,_))|CODE.Assign#(i=STRING,_)),_,_): CategorizeVariables[index=BuildList(i,index)](body)
+      case CODE.While|CODE.If | CODE.Else | CODE.For: CategorizeVariables(body)
+    }
+  case CODE.NestIf#(ctrl,body,_):  CategorizeVariables(body)
+  case Bop#("+="|"-="|"*="|"/="|"|="|"&=",lhs,rhs):
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(rhs); 
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(lhs); 
+      (index,lhs::variant,arrrefs, unknown)
+  case (first second) | Bop#(_,first,second) | CODE.SwitchStmt#(first,second)|CODE.DoWhileStmt#(first,second): 
+    (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(first); 
+    CategorizeVariables(second)
+  case CODE.CondExp#(first,second,third):
+    (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(first); 
+    (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(second); 
+    CategorizeVariables(third)
+  case CODE.ObjAccess#(n=_,_): (index,n::variant,arrrefs,unknown)
+  case CODE.ArrayAccess#(n=_,_)|CODE.PtrAccess#(n=_,_): 
+      (index,n::variant,input::arrrefs,unknown)
+  case CODE.FunctionCall#(n=_,_) | CODE.ExpStmt#CODE.FunctionCall#(n=_,_) | CODE.CallStmt#(CODE.FunctionCall#(n=_,_)): 
+    if (is_array_access[treat_function_as_array=treat_function_as_array](n))  {(index, variant, input::arrrefs,unknown) }
+    else { (index,variant, arrrefs,n::unknown) }
+  case CODE.DeleteStore#lhs:
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(lhs); 
+      (index,lhs::variant,arrrefs, unknown)
+  case CODE.Assign#(lhs=_,rhs=_):
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(rhs); 
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(lhs); 
+      (index,lhs::variant,arrrefs, unknown)
+  case DeclStmt#( TypeInfo#(_,var=_,init=_)|(TypeInfo#(_,var=_,init=_) _) ):   
+        (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(init); 
+                   (index,var::variant,arrrefs,unknown)
+  case VarRef#(var=_, _) : (index,var::variant,arrrefs,unknown)
+  case Uop#("++",value=_):
+        (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(value); 
+                     (index,value::variant,arrrefs,unknown) 
+  case CODE.VALUE#(CODE.TypeCast#(CODE.UnsignedType#CODE.PtrType,CODE.Assign#(lhs=_,rhs=_))):
+        (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(rhs); 
+                       (index,lhs::variant, arrrefs, unknown)
+  case TypeCast#(UnsignedType#PtrType,Assign#(VALUE#lhs,rhs)):
+        (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(rhs); 
+        (index,lhs::variant, arrrefs,unknown)
+  case CODE.StmtBlock: 
+    foreach t=CODE.Stmt|CODE.Nest \in input do 
+      (index=_,variant=_,arrrefs=_,unknown=_) = CategorizeVariables(t); 
+    enddo
+    (index,variant,arrrefs,unknown)
+  case CODE.CaseLabel#(_,e)|CODE.Catch#(_,e)|CODE.Throw#(e)|CODE.DefaultLabel#(e) | CODE.ExpStmt#(e) | CODE.WriteStmt#(_,e=_)|CODE.CastExp#(t=_,e=_)|CODE.Return#(e=_)|CODE.VarInit#(e=_)|CODE.ConstructorInit#(e=_)|CODE.Uop#(_,e=_)|CODE.ExpList#(e=_):
+        CategorizeVariables(e)
+  case CODE.NewAlloc|CODE.ScopedName|CODE.ArrayInit|CODE.EmptyStmt|ID|CODE.INT_0x|CODE.Macro|CODE.Char|CODE.String|CODE.FunctionDecl|INT|CODE.Bool|FLOAT|CODE.DOUBLE|STRING|Name|CODE.Continue| CODE.Break | NULL | "" | CODE.GotoStmt: (index,variant,arrrefs,unknown)
+  case CODE.VALUE | CODE.Uop#("*",_): 
+          DEBUG{"VALUE?UOP:" input};
+          (index,variant, input::arrrefs, input::unknown)
+}
+</xform>
+
+<*Returns if an array ref is Read, Written or Both*>
+<xform categorize_uses pars=(arr_ref, pattern) cp=2 mod_vars="" read_vars="" >
+  arr_ref_map = MAP{};
+  if (mod_vars=="" && read_vars=="") 
+    (mod_vars,read_vars) = global_modread(pattern);
+  lhs = NULL;
+  for(p = mod_vars; p != NULL; p = cdr(p)) {
+    lhs = car(p);
+    if (arr_ref == lhs) {
+      arr_ref_map[lhs] = BuildList("W", arr_ref_map[lhs]);
+    }
+  }
+  foreach cur=ArrayAccess|ID|CODE.Name|Uop#("*",_) \in read_vars do
+    if (arr_ref == cur) {
+      arr_ref_map[cur] = BuildList("R", arr_ref_map[cur]);
+    }
+  enddo
+  state = ""; copy = ""; simdop = ""; scalar = "scalar";
+  if (arr_ref : ArrayAccess#(CLEAR variable,_)|Uop#("*",CLEAR variable)) { 
+    copy = "copy"; 
+    simdop = "vec"; 
+    foreach TypeInfo#(_, variable, _) \in pattern do scalar = ""; enddo
+  }
+  if (Lookup("R", arr_ref_map[arr_ref])) {
+    state = "R";
+    if (Lookup("W", arr_ref_map[arr_ref])) {
+      state = "RW";
+      simdop = "reduce";
+      <*Given an attribute to enable copy operation for read/write arrays*>
+      if (2 > cp) copy = "";
+    }
+  }
+  else if (Lookup("W", arr_ref_map[arr_ref])) state = "W";
+  else state = "";
+  diag = "";
+  foreach Nest#(Loop#(CLEAR i, _, _, _), _) \in pattern s.t. FALSE do
+    if (Count(i, arr_ref) == 2)
+      diag = "diag";
+  enddo
+  RETURN (state, copy, simdop, diag, scalar); 
+</xform>
+
+<* check each array subscript is single constant or a linear function of 
+a single surrouding loop
+i.e., a * i + b, where a, b are loop invariant constant 
+if invariant, return 0; if projection, return (loop level, offset); else, return -1
+*>
+<xform IsLoopProjection pars=(ivars, variants, exp)>
+  switch (exp) {
+  case INT: 0
+  case cur=STRING|ID: 
+        level = LookupList(cur,ivars);
+        if (level > 0) { (level, 0) }
+        else if (LookupList(cur,variants)) { -1} <<*violating constraints
+        else { 0 }
+  case Bop#("+"|"-",a,b) : 
+        l1 = IsLoopProjection(ivars,variants,a);
+        if (l1 < 0)   RETURN (-1);
+        l2 = IsLoopProjection(ivars, variants, b); 
+        if (l2 < 0)   RETURN (-1);
+        if(l1 == 0) { l1 = l2; l2 = 0; c = b; b = a; a = c; <*swap a,b*> } 
+        if(l2 == 0) { 
+           switch (l1) {
+            case 0 : 0
+            case (level=_,offset=_) : (level, offset+b)
+            case ((level=_,offset=_) rest=_): (level,offset+b) :: rest
+           } 
+        }
+        else { AppendList(l1, l2) }
+  case Bop#("*",a,b) :
+        l1 = IsLoopProjection(ivars,variants,a);
+        if (l1<0) RETURN (-1);
+        l2 =  IsLoopProjection(ivars, variants, b);
+        if (l2<0) RETURN (-1);
+        if(l1 == 0) {l2}
+        else if(l2 == 0) {l1}
+        else {-1}
+  case Uop#("-",a): <*****add Uop#("-",1)*>
+          l3 = IsLoopProjection(ivars,variants,a);
+          switch (l3) {
+            case 0 : 0
+            case -1 : -1
+            case (level=_,offset=_) :  -1  <* doesn't allow negative coeff?*>
+            default: 
+                if (Lookup(a,variants)) { -1 } <<*violating constraints
+                else { 0 }
+           }
+  case CODE.CastExp#(_,opd=_): IsLoopProjection(ivars,variants,opd)
+  <<* default: {-1}
+}
+</xform>
+
+<xform RecognizePatternHelp pars=(input) level=0>
+  switch (input) {
+  case Nest#(ctrl=Loop#(i=_,_,_,_)|Loop_r#(i=_,_,_,_), body=_):
+    p1 = RecognizePatternHelp(body);
+    return ("SingleLoop",i, input)::p1;  
+  case Nest#(ctrl=CODE.For#(init=_,test=_,incr=_), body=_):
+    r = RebuildLoop(init,test,incr);
+    p1 = RecognizePatternHelp(body);
+    if (r : CODE.Loop#(i=_,_,_,_)|CODE.Loop_r#(i=_,_,_,_))  {
+      return ("SingleLoop",i,input)::p1;  
+    }
+    else return ("IrregularLoop",ctrl)::p1;
+  case CODE.Nest#(CODE.If#ctrl, body=_)|CODE.SwitchStmt#(ctrl=_, body=_)|CODE.NestIf#(ctrl=_,body=_,rest=_):
+    p1 = RecognizePatternHelp(body);
+    p2 = RecognizePatternHelp(ctrl);
+    return AppendList[erase_replicate=1](p1, AppendList[erase_replicate=1](p2, ("HAS_IF",ctrl)));
+  case CODE.CondExp#(c, e1, e2):
+    p1 = RecognizePatternHelp(c);
+    p2 = RecognizePatternHelp(e1);
+    p3 = RecognizePatternHelp(e2);
+    return AppendList[erase_replicate=1](p1,AppendList[erase_replicate=1](p2,p3));
+  case CODE.Nest#(CODE.While#(ctrl), body=_) | CODE.DoWhileStmt#(body,ctrl):
+    p1 = RecognizePatternHelp(body);
+    p2 = RecognizePatternHelp(ctrl);
+    return AppendList[erase_replicate=1](p1,("IrregularLoop",ctrl));
+  case CODE.Pragma#(ctrl=_,n=_): 
+    return AppendList[erase_replicate=1](RecognizePatternHelp(n), ("HAS_PRAGMA",ctrl));
+  case CODE.OMP_nest#(ctrl=_,n=_): 
+    return AppendList[erase_replicate=1](RecognizePatternHelp(n), ("HAS_OMP",ctrl));
+  case CODE.StmtBlock:
+    res = NULL;
+    foreach t=CODE.Nest|CODE.Stmt \in input do 
+      p1 = RecognizePatternHelp(t);
+      res = AppendList[erase_replicate=1](res,p1);
+    enddo
+    return res;
+  case Uop#(_, body) : RecognizePatternHelp(body)
+  case (first=_ rest=_) | CODE.Assign#(first=_,rest=_) | CODE.Bop#(_,first=_,rest=_):
+    p1 = RecognizePatternHelp(first);
+    p2 = RecognizePatternHelp(rest);
+    return AppendList[erase_replicate=1](p1,p2);
+  case CODE.VALUE#(n=_)|CODE.Uop#("*",n=_)|CODE.PtrAccess#(n=_,_): 
+    return AppendList[erase_replicate=1](RecognizePatternHelp(n), ("HAS_PTR",n));
+  case CODE.If#(opd)|CODE.Uop#(_,opd)|CODE.Tuple#(opd)|CODE.ObjAccess#(opd,_) | CODE.CastExp#(_,opd) | CODE.CaseLabel#(_,opd)|CODE.Catch#(_,opd)|CODE.Throw#(opd)|CODE.DefaultLabel#(opd)|CODE.VarInit#opd | CODE.ArrayInit#opd|CODE.ExpBlock#opd: 
+    return RecognizePatternHelp(opd);
+  case CODE.TryBlock#s|CODE.ConstructorInit#s|CODE.CallStmt#s|CODE.ExpStmt#s|CODE.Nest#(CODE.Else,s)|CODE.Return#s|CODE.DeclStmt#s|CODE.ExpList#s: return RecognizePatternHelp(s);
+  case CODE.GotoStmt|CODE.Break|CODE.Continue: RETURN ("HAS_GOTO",input);
+  case CODE.ArrayAccess#(n=_,sub=_): 
+    return AppendList[erase_replicate=1](RecognizePatternHelp(n), ("HAS_ARRAY",n));
+  case CODE.TypeInfo#(_,_,n) | CODE.FunctionDecl#(_,n,_,CODE.EmptyStmt): 
+      return AppendList[erase_replicate=1](RecognizePatternHelp(n),"HAS_LOCAL");
+  case CODE.DeleteStore | CODE.DeleteStmt: return "HAS_DELETE";
+  case CODE.NewAlloc | CODE.Allocate: return "HAS_ALLOCATE";
+  case CODE.WriteStmt: return "HAS_IO";
+  case CODE.FunctionCall#(f, args): 
+    if (is_array_access(f)) {
+       return AppendList[erase_replicate=1](RecognizePatternHelp(f), ("HAS_ARRAY",f));
+    }
+    else 
+    return AppendList[erase_replicate=1](RecognizePatternHelp(f), AppendList[erase_replicate=1](RecognizePatternHelp(args), ("HAS_FCALL",f)));
+  case CODE.DOUBLE|CODE.VarRef|CODE.Bool|CODE.FloatType|CODE.FLOAT_ext|FLOAT|CODE.PtrType|CODE.Else|CODE.IntType|CODE.IntType1|CODE.String|CODE.SizeOf|STRING|CODE.ScopedName|""|CODE.EmptyStmt|CODE.Char|CODE.Macro|NULL|CODE.EXPO|INT|CODE.INT_0x|CODE.Name|ID|CODE.TypeName|CODE.True|CODE.False: return NULL;
+}
+</xform>
+
+<xform RecognizePatterns pars=(input) >
+ r = RecognizePatternHelp(input);
+ if (r == "" || r == NULL) return input;
+ if (!Lookup( ("SingleLoop"|"IrregularLoop"), r)) { return input};
+ if (car(r) : ("SingleLoop",_,_)) {
+   is_timeLoop = 1; fcalls = NULL;
+   for (p = cdr(r); is_timeLoop && p != NULL; p = cdr(p)) {
+     switch (car(p)) {
+      case ("HAS_FCALL", f=_): fcalls = AppendList[erase_replicate=1](fcalls,f=>STRING);
+      case ("HAS_PRAGMA",_)|("SingleLoop",_,_) | ("HAS_GOTO",CODE.Break) | "HAS_LOCAL" : ""
+      case "IrregularLoop"|("HAS_GOTO"|"HAS_IF"|"HAS_PTR"|"HAS_ARRAY",_):is_timeloop = 0; break;
+      case "HAS_IO": is_timeloop=0; break;
+      } 
+   }
+   if (is_timeLoop && fcalls != NULL) return Pattern#("TIME_LOOP", fcalls, input); 
+ }
+ loops = NULL;
+ foreach c = ("SingleLoop",_,n=_) \in r do
+   loops = AppendList(loops,n);
+ enddo
+ (ivars=_, variants=_,arrrefs=_,unknown=_) = CategorizeVariables[treat_function_as_array=1](input);
+ if (Lookup(("IrregularLoop",l=_), r)) {
+     RETURN Pattern#("IrregularLoop", l, input);
+ }
+ if (arrrefs : NULL) {
+    if (unknown != "" && unknown != NULL) 
+      { return Pattern#("HAS_UNKNOWN", unknown, input);}
+    else { return Pattern#("SCALAR_LOOP", NULL, input); }
+ }
+ level = LEN(ivars);
+ <* check each array is accessed with a single subscript which is a single constant or a linear function of a single surrouding loop i.e., a * i + b, where a, b are loop invariant constant *>
+ loopmap = MAP(STRING,((INT)...));  is_MM=TRUE; single_dim=TRUE; arrays=NULL;
+ for (p = arrrefs; p != NULL; p = cdr(p)) {
+      sub = NULL;
+      for (cur = arr = car(p);
+           cur : ArrayAccess#(arr=_,sub=_)|FunctionCall#(Bop#(".",arr=_,"()"),sub=_);
+           cur = arr) {"" }
+       if (arr : (arrname=STRING)) { arr = arrname; } 
+       if (loopmap[arr] == "") arrays= AppendList(arrays,arr);
+        dimlist = NULL;
+        for (p_sub = sub; p_sub != NULL; p_sub=cdr(p_sub)) {
+          l = IsLoopProjection(ivars, variants, car(p_sub));
+          for (p1 = l; p1 != NULL; p1 = cdr(p1)) {
+            if (car(p1) : (_,_)) {
+             dimlist = AppendList(dimlist,(SelectList[base=1]((car p1)[0],ivars)));
+            }
+            else { is_MM=0; break; }
+          }
+          if (!is_MM) { break; }
+        } 
+        if (dimlist != NULL) {
+          
+           r = loopmap[arr]; if (r == "") r = NULL;
+           loopmap[arr] = AppendList[erase_replicate=1](r,dimlist);
+           if (single_dim == TRUE) { single_dim = dimlist; }
+           else if (!(single_dim==FALSE) && ! (single_dim==dimlist)) 
+              single_dim = FALSE;
+        }
+  }
+   if (is_MM) {
+       if (single_dim != FALSE)
+          res = Pattern#("Stencil_pat", (single_dim,arrays,loops), input);
+       else res = Pattern#("MM_pat", loopmap,input);
+   }
+   else res = Pattern#(r, "", input);
+  if (unknown != "" && unknown != NULL) {
+     return Pattern#("HAS_UNKNOWN", unknown, res);
+ }
+  return res;
+</xform>
+
+<define PATTERN_ID 0 />
+
+<xform CollectPatterns pars=(input, pat_name) >
+   res = NULL; 
+   foreach fun=CODE.FunctionDecl#(fname=STRING,_,_,fbody=_) \in input do
+      print ("processing " fname); prev="";
+      if (fbody : CODE.EmptyStmt|"") continue;
+      enter_block(fun); enter_block(fbody); count = 0; old_id = GLOBAL.PATTERN_ID;
+      foreach p = CODE.Pragma | CODE.Nest \in fbody do
+           <<*if (prev != "") continue;
+           <<*if (!(p : CODE.Pragma#(_,prev=_))) prev = "";
+DEBUG[2]{
+           r = RecognizePatterns(p);
+};
+           if (r : Pattern#(pat_name,_,_)) { 
+               GLOBAL.PATTERN_ID = GLOBAL.PATTERN_ID+1;
+               res = (GLOBAL.PATTERN_ID, fname, r) :: res; 
+           }
+           count = count + 1;
+      enddo 
+      if (count == 1 && old_id + 1 == GLOBAL.PATTERN_ID) res = (GLOBAL.PATTERN_ID, fname, ("SINGLE_PATTERN_FUNCTION", fun)) :: res; 
+   enddo
+   return res;
+</xform>
+
+<xform collect_variable_defs pars=(var, stmt, input) >
+  (r1,r2,_,_) = collect_variable_defuse[dir="def"](var,stmt,input);
+  r1
+</xform>
+<xform collect_variable_uses pars=(var, stmt, input) >
+  (r1,r2,_,_) = collect_variable_defuse[dir="use"]( var, stmt,input);
+  r2
+</xform>
+
+<xform PropagateFunctionCall  pars=(exp, call, def)  >
+  FunctionCall#(_, args) = call;
+  FunctionDecl#(_, params, _, _) = def;
+  res = exp; p2=args; 
+  foreach t=CODE.TypeInfo#(_,cur1=_,_) \in params do
+     cur2 = car(p2); p2 = cdr(p2);
+     res = REPLACE(cur1, cur2, res); 
+  enddo
+  res
+</xform>
+
+<xform  symbolic_evaluation pars=(exp, loc, input)>
+ switch (exp) {
+  case ID|STRING|CODE.Name|CODE.ScopedName: 
+        r  = collect_variable_defs(exp=>STRING, loc, input);
+        if (r == NULL) { exp }
+        else {
+          res = NULL;
+         for (p = r; p != NULL; p = cdr(p)) {
+           cur = car(p);
+           Assign#(_,rhs)|TypeInfo#(_,_,rhs) = cur;
+           res = AppendList(res, symbolic_evaluation(rhs, cur, input));
+         }
+          (cdr(res) == NULL)? car(res) : res
+        }   
+  case (first second) : (symbolic_evaluation(first,loc,input)) :: (symbolic_evaluation(second,loc,input)::NULL)
+  case CODE.VarInit#e : symbolic_evaluation(e,loc,input)
+ }
+</xform>

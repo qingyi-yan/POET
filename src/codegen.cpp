@@ -39,6 +39,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 extern bool debug_parse();
 extern bool print_trace();
+extern bool debug_unparse();
 
 
 extern "C" POETCode* make_sourceVector(POETCode *v1, POETCode* v2);
@@ -47,7 +48,7 @@ class PrintASTInfo : public POETCodeVisitor
 {
 public:
  PrintASTInfo(std::ostream& _out) : out(_out), col(0),line(0) {}
- void apply (POETCode* output)
+ POETCode* apply (POETCode* output)
  {
   while (output != 0) {
      POETList* outputList = dynamic_cast<POETList*>(output);
@@ -61,12 +62,12 @@ public:
         }
         else {
            POETCode* res = eval_AST(output);
-           if (res != output) apply(res);
-           else res->visit(this);
+           res->visit(this);
         }
         output = 0;
     }
   }
+  return 0;
  }
 
 private: 
@@ -214,18 +215,24 @@ class CodeGenVisitor : public CollectInfoVisitor
      }
   virtual void visitUnknown(POETCode_ext* e)
     {
-      POETAstInterface::unparse(e, out, start_pos);
+      if (debug_unparse())
+std::cerr<<"Trying to unparse " << e->toString() << "\n";
+      POETAstInterface::unparse(e->get_content(), out, start_pos);
     }
   virtual void visitString(POETString* s) 
      {  output(s); }
   virtual void visitIconst(POETIconst* s) 
      {  
+      if (debug_unparse())
+std::cerr<<"unparsing " << s->toString() << "\n";
           std:: stringstream tmp;
           tmp << s->get_val(); 
           output(ASTFactory::inst()->new_string(tmp.str()));
      }
   virtual void visitList(POETList* l) 
     {
+      if (debug_unparse())
+std::cerr<<"Trying to unparse " << l->toString() << "\n";
        POETCode* cur = l->get_first();
        apply_list_restr(cur);
        if (l->get_rest() != 0) {
@@ -236,6 +243,8 @@ class CodeGenVisitor : public CollectInfoVisitor
     }
   virtual void visitTuple(POETTuple* v)
     {
+      if (debug_unparse())
+std::cerr<<"Trying to unparse " << v->toString() << "\n";
          POETCode* _listsep = listsep;
          CodeVar* _listelem = listelem;
          listsep = 0; listelem=0;
@@ -251,6 +260,7 @@ class CodeGenVisitor : public CollectInfoVisitor
   virtual void visitCodeVar(CodeVar* v) 
    {
      try {
+ if (debug_unparse()) std::cerr<<"Trying to unparse " << v->toString() << "\n";
        POETCode* _listsep = listsep;
        CodeVar* _listelem = listelem;
        POETCode* result = v->invoke_output(v->get_args());
@@ -276,7 +286,7 @@ class CodeGenVisitor : public CollectInfoVisitor
          listsep = 0; listelem=0;
          f = e.get_code();
          if (f == 0) { 
-               if (parse==0) { CODE_SYNTAX_UNDEFINED(v->toString()); }
+               if (parse==0) { CODE_SYNTAX_UNDEFINED(e.get_name()->toString()); }
                else f = v->get_args(); 
          }
          else {
@@ -371,6 +381,7 @@ class CodeGenVisitor : public CollectInfoVisitor
    }
   virtual void visitLocalVar(LocalVar* var) 
     {
+    if (debug_unparse()) std::cerr<<"Trying to unparse " << var->toString() << "\n";
        LvarSymbolTable::Entry e = var->get_entry();
        if (e.get_entry_type() == LVAR_TRACE && print_trace()) {
             CodeVar *code = dynamic_cast<CodeVar*>(e.get_code());

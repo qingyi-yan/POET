@@ -195,6 +195,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+rose_srcdir = @rose_srcdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -212,6 +213,7 @@ in =
 out = 
 arrref = 
 comp = diff
+f95 = 0
 files = IdentityTranslator.pt StringTranslator.pt C2C.pt C2F.pt F2C.pt Parse.pt Parse_2.pt CFG.pt BNFexp.code opt_all.pt opt_copy.pt opt_block.pt opt_fusion.pt opt_unroll.pt opt_uj.pt opt_permute.pt Transformation.pt Transformation_syntax.code compiler_1.pt compiler_input_1.code compiler_2.pt compiler_input_2.code compiler_input_3.code compiler_input_4.code compiler_3.pt compiler_4.pt compiler_5.pt compiler_6.pt
 EXTRA_DIST = $(files) dgemm_orig.c dgemm.f.save dgemm_test.C poet_dgemm_test.C.save poet_dgemm_test_2.C.save poet_dgemm_test_3.C.save poet_dgemm_test_5.C.save poet_dgemm_test_6.C.save parse.out av1.input exp.input mgrid.f poet_mgrid.f.save cfg.out Transformation.out.save tomcatv.C poet_tomcatv.C.save poet_tomcatv_2.C.save chfac.f chfac.c.save chfac.c.macro compiler_output_2.save compiler_output_3.save compiler_output_4.save compiler_output_5.save compiler_output_6.save compiler.input
 test_opt = 0
@@ -220,12 +222,12 @@ to =
 file = 
 dir = to
 op = diff
-LOCAL_DIFFROSE = if test -n "$(rosedir)"; then \
+LOCAL_DIFFROSE = if test -n "$(rose_srcdir)"; then \
             for f in $(DIST_SOURCES) $(EXTRA_DIST); do \
                  ff=$${f/__ROSE/}; \
                  if [[ $$ff == "*__*" ]]; then continue; else \
                      if [[ $(dir) == to ]]; then  \
-                       command="$(op) $(srcdir)/$$f $(rosedir)/$$ff"; \
+                       command="$(op) $(src_srcdir)/$$f $(rosedir)/$$ff"; \
                      else \
                        command="$(op) $(rosedir)/$$ff $(srcdir)/$$f"; \
                      fi; \
@@ -503,7 +505,7 @@ C2F:
 	$(pcg) $(debug) -pinfile=$(in) -poutfile=$(out) $(srcdir)/C2F.pt
 
 F2C:
-	$(pcg) $(debug) -pinfile=$(in) -poutfile=$(out) -parrref=$(arrref) $(srcdir)/F2C.pt
+	$(pcg) $(debug) -pf95=$(f95) -pinfile=$(in) -poutfile=$(out) -parrref=$(arrref) $(srcdir)/F2C.pt
 
 analysis:
 	$(pcg) $(debug) -pinfile="$(srcdir)/dgemm_orig.c" -pinputLang="Cfront.code" -poutfile=$(out) $(srcdir)/CFG.pt

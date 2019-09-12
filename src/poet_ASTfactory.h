@@ -161,10 +161,10 @@ class ASTFactory {
   TypeNotMap notMap;
   TupleFactory tupleMaker;
 
-  static POETString* emptyString, *linebreak;
-  static POETNull *emptylist;
-  static POETType* intType, *stringType, *floatType, *lvarAny, *idType;
-  static POETIconst* zero, *one;
+  POETString* emptyString, *linebreak;
+  POETNull *emptylist;
+  POETType* intType, *stringType, *floatType, *lvarAny, *idType;
+  POETIconst* zero, *one;
 
   static ASTFactory* _inst;
 
@@ -180,18 +180,30 @@ class ASTFactory {
      return m;
    }
  public:
+  ASTFactory() {
+    one = new POETIconst(1);
+    zero = new POETIconst(0);
+    emptyString = new POETString("");
+    linebreak = new POETString("\n");
+    emptylist = new POETNull();
+    intType = new POETType(TYPE_INT);
+    stringType = new POETType(TYPE_STRING);
+    floatType = new POETType(TYPE_FLOAT);
+    idType = new POETType(TYPE_ID);
+    lvarAny = new POETType(TYPE_ANY);
+  }
   static ASTFactory* inst() {
      if (_inst == 0)
         _inst = new ASTFactory();
      return _inst;
   }
-  static POETString* new_empty_string() { return emptyString; }
-  static POETNull* new_empty_list() { return emptylist; }
-  static POETString* new_linebreak() { return linebreak; }
-  static POETIconst* new_zero() { return zero; }
-  static POETIconst* new_one() { return one; }
-  static POETType* make_any()  { return lvarAny; }
-  static POETType* new_type(POETTypeEnum t) 
+  POETString* new_empty_string() { return emptyString; }
+  POETNull* new_empty_list() { return emptylist; }
+  POETString* new_linebreak() { return linebreak; }
+  POETIconst* new_zero() { return zero; }
+  POETIconst* new_one() { return one; }
+  POETType* make_any()  { return lvarAny; }
+  POETType* new_type(POETTypeEnum t) 
       { switch(t) 
         { case TYPE_INT: return intType;  
           case TYPE_ANY: return lvarAny;
@@ -338,11 +350,11 @@ class ASTFactory {
     POETBop* new_MAP(POETCode* arg1, POETCode* arg2)
      { return MAPMaker.new_item(arg1,arg2); }
 };
-#define EMPTY ASTFactory::new_empty_string()
-#define ZERO ASTFactory::new_zero()
-#define ONE ASTFactory::new_one()
-#define EMPTY_LIST ASTFactory::new_empty_list()
-#define LINE_BREAK ASTFactory::new_linebreak()
+#define EMPTY ASTFactory::inst()->new_empty_string()
+#define ZERO ASTFactory::inst()->new_zero()
+#define ONE ASTFactory::inst()->new_one()
+#define EMPTY_LIST ASTFactory::inst()->new_empty_list()
+#define LINE_BREAK ASTFactory::inst()->new_linebreak()
 #define ANY  POETProgram::make_any()
 #define TRUE ASTFactory::inst()->new_iconst(1)
 #define ICONST(v) ASTFactory::inst()->new_iconst(v)
@@ -352,6 +364,8 @@ class ASTFactory {
 #define TUPLE4(v1,v2,v3,v4)  POETProgram::make_tuple4(v1,v2,v3,v4)
 #define CODE_VAR(name)  POETProgram::make_codeRef(STRING(name))
 #define CODE_REF(v1,v2) ASTFactory::inst()->new_codeRef(v1->get_entry(),v2)
+#define CODE_REF_WITH_ATTR(v1,v2,attr) ASTFactory::inst()->build_codeRef(v1->get_entry(),v2,attr)
 #define CODE_ACC(name,v2) CODE_REF(CODE_VAR(name), v2)
+#define CODE_ACC_WITH_ATTR(name,v2,attr) CODE_REF_WITH_ATTR(CODE_VAR(name), v2,attr)
 #define LIST(head,tail) POETProgram::make_list(head,tail)
 #endif

@@ -66,9 +66,9 @@
 switch (outer)
 {
   case inner: L_map
-  case NULL|""|ExpStmt|UnrolledFromIvar: NULL
+  case NULL|""|DeclStmt|ExpStmt|UnrolledFromIvar: NULL
   case Nest#(ctrl,body): append_surround_ENV(body,inner,append_ENV(ctrl, L_map))
-  case (first second): 
+  case (first second) | StmtList#(first second): 
       map1 = append_surround_ENV(first,inner,L_map);
       if (map1 == NULL) { append_surround_ENV(second,inner,L_map) }
       else { map1 }
@@ -283,7 +283,7 @@ switch (input) {
    (res1 == NULL)? res2 : res1::res2
  case StmtList#cur : StmtList#(CleanupBoundCheck(cur))
  case UnrolledFromIvar#(i,ur,cur): UnrolledFromIvar#(i,ur,CleanupBoundCheck(cur))
- case CODE.AllocateStore|CODE.DeleteStore|CODE.ExpStmt|""|NULL: input
+ case CODE.DeclStmt|CODE.AllocateStore|CODE.DeleteStore|CODE.ExpStmt|""|NULL: input
  }
 </xform>
 
@@ -522,7 +522,7 @@ switch (input) {
 	  <***********************************************>
 
       if ((bloop_tag=cur[Loop.tag]) == "") RETURN ("",bnest);
-     pattern = (split_dir > 0)? (BlockLoopSplitStart#(bloop_tag,_,CLEAR split)|StripmineTileStart#(bloop_tag,_,CLEAR split)) : (BlockLoopSplitStop#(bloop_tag,_,CLEAR split));
+     pattern = (split_dir > 0)? DELAY{(BlockLoopSplitStart#(bloop_tag,_,split=_)|StripmineTileStart#(bloop_tag,_,split=_))} : DELAY{(BlockLoopSplitStop#(bloop_tag,_,CLEAR split))};
      if (!Lookup_r(DELAY{f=pattern},bnest)) RETURN ("",bnest); 
      split_last=split;
      if (!Lookup(DELAY{f=pattern},bnest)) RETURN ("",bnest); 

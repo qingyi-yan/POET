@@ -16,8 +16,8 @@ void jacobi7_4(const int nx,const int ny,int nz,const double alpha,double* A0,co
    fac = 6.0/(A0[0]*A0[0]);
    double* l0;double* lnext;
    int ___i;
-   t_workgroup = (struct t_WorkGroup_Type*)malloc(-1+(nz-1)*sizeof(struct t_WorkGroup_Type));
-   for (___i=0; ___i<-1+(nz-1); ___i+=1) 
+   t_workgroup = (struct t_WorkGroup_Type*)malloc(-1+(nz-1)*sizeof (struct t_WorkGroup_Type));
+   for (___i=0; ___i<-1+(nz-1); ___i+=1)
      {
         struct t_WorkGroup_Type* cur=t_workgroup+___i;
         pthread_mutex_init(&cur->mutex,NULL);
@@ -56,21 +56,21 @@ void jacobi7_4(const int nx,const int ny,int nz,const double alpha,double* A0,co
    t_params.nz = (int)nz;
    t_params.ny = (int)ny;
    t_params.nx = (int)nx;
-   pthread_t* thread_id=(pthread_t*)malloc(sizeof(pthread_t)*2);
+   pthread_t* thread_id=(pthread_t*)malloc(sizeof (pthread_t)*2);
    unsigned worksize=-1+(nz-1)/2+1;
-   for (___i=0; ___i<2; ___i+=1) 
+   for (___i=0; ___i<2; ___i+=1)
      {
-        struct t_WorkBlock_Type* cur=(struct t_WorkBlock_Type*)malloc(sizeof(struct t_WorkBlock_Type));
+        struct t_WorkBlock_Type* cur=(struct t_WorkBlock_Type*)malloc(sizeof (struct t_WorkBlock_Type));
         cur->params = &t_params;
         cur->begin = ___i*worksize;
         cur->end = cur->begin+worksize;
         pthread_create(&thread_id[___i],NULL,t_pipeline,(void*)cur);
      }
-   for (___i=0; ___i<2; ___i+=1) 
+   for (___i=0; ___i<2; ___i+=1)
      {
         pthread_join(thread_id[___i],NULL);
      }
-   for (___i=0; ___i<-1+(nz-1); ___i+=1) 
+   for (___i=0; ___i<-1+(nz-1); ___i+=1)
      {
         struct t_WorkGroup_Type* cur=t_workgroup+___i;
         pthread_mutex_destroy(&cur->mutex);
@@ -119,40 +119,40 @@ void* t_pipeline(void* input) {
    int k;
    int j;
    int i;
-   for (t=0; t<timesteps; t+=1) 
+   for (t=0; t<timesteps; t+=1)
      {
-        for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1) 
+        for (k=1+___BEGIN; k<min(1+___END,nz-1); k+=1)
           {
-             if (k<-1+(nz-1))  
+             if (k<-1+(nz-1)) 
                {
                   struct t_WorkGroup_Type* cur=t_workgroup+1+k;
                   pthread_mutex_lock(&cur->mutex);
-                  while (cur->ready<-1+t)  
+                  while (cur->ready<-1+t)
                     {
                        pthread_cond_wait(&cur->cond,&cur->mutex);
                     }
                   pthread_mutex_unlock(&cur->mutex);
                }
-             if (k>=2)  
+             if (k>=2) 
                {
                   struct t_WorkGroup_Type* cur=t_workgroup-1+k;
                   pthread_mutex_lock(&cur->mutex);
-                  while (cur->ready<-1+t)  
+                  while (cur->ready<-1+t)
                     {
                        pthread_cond_wait(&cur->cond,&cur->mutex);
                     }
                   pthread_mutex_unlock(&cur->mutex);
                }
-             for (j=1; j<ny-1; j+=1) 
+             for (j=1; j<ny-1; j+=1)
                {
-                  for (i=1; i<nx-1; i+=1) 
+                  for (i=1; i<nx-1; i+=1)
                     {
-                       if (t%2==0)  
+                       if (t%2==0) 
                          {
                             l0 = A0;
                             lnext = Anext;
                          }
-                       else  
+                       else 
                          {
                             lnext = A0;
                             l0 = Anext;

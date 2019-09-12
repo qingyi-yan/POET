@@ -1,4 +1,4 @@
-
+#include <immintrin.h>
 #if defined(INS_256BIT)
 /* Register definition */
 #define Y(r)        y##r
@@ -115,6 +115,7 @@
 #define vec_splat(mem,reg)      gen_vece_mr(vbroadcastsd,mem,reg)
 #define vec_add_rr(mem,reg)     gen_vece_rr(vaddpd,mem,reg)
 #define vec_mul_rr(mem,reg)     gen_vece_rr(vmulpd,mem,reg)
+#define vec_div_rr(mem,reg)     gen_vece_rr(vdivpd,mem,reg)
 #define vec_sub_rr(mem,reg)     gen_vece_rr(vsubpd,mem,reg)
 
 #define vec_add_rr3(reg1,reg2,reg3)     gen_vece_rr3(vaddpd,reg1,reg2,reg3)
@@ -246,6 +247,6 @@
                           ::)
 #else
 
+//#include </home/hhill2/POET/trunk/include/SSE3Dnow.h>
 #include <SSE3Dnow.h>
-
 #endif

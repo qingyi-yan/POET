@@ -11,7 +11,7 @@
   if (iorig != "" && iorig != i) { 
         iref = 0; ivars = NULL; i = "";
         istart=NULL; isize=NULL;
-        foreach_r (nest : (cur1=Loop#(CLEAR i1,CLEAR start1,CLEAR stop1,CLEAR dist1)) : FALSE) {
+        foreach_r (nest : (cur1=Loop#(CLEAR i1,CLEAR start1,CLEAR stop1,CLEAR dist1)) : TRUE) {
             if ((i1==iorig) || cur1[Loop.origivar] == iorig)
             { <* support for multi-level blocking *>
               i = i1; <<* to remember the previous loop and avoid multiple counting of the same loop
@@ -88,7 +88,7 @@ switch (extra_refs) {
                 }
                 for ( ""; p1 != NULL; p1 = cdr(p1)) 
                    res= (car(p1), car(ivars2), coeff) :: res; 
-        }
+              }
            }
            if (coeff==1) BREAK;
         } 
@@ -264,9 +264,11 @@ switch (loop) {
               
               i1 = car(cdr(pivar)); i2=car(pivar); 
               bvar_copy= CopyIvarName#(prefix "_" BlockIvarName(i1)) :: bvar_copy;
-              foreach (input : Loop#(i2,_,_,CLEAR step1) : FALSE) {BREAK; }
-              blockdims = BlockDim[next=blockdims]#(i1, i2, step1);
-              bvars = i2 :: bvars;
+              foreach (input : Loop#(i2,_,_,CLEAR step1) : TRUE) {
+               blockdims = BlockDim[next=blockdims]#(i1, i2, step1);
+               bvars = i2 :: bvars;
+               BREAK; 
+             }
            }
            AppendDecl[trace=trace_decl](IntegerType,bvar_copy);
            AppendVar[trace=trace_ivars](bvar_copy);
@@ -303,7 +305,7 @@ switch (loop) {
     (cploop,cpbuf,cpsrc,buf_size) = 
         CopyHelp[unroll=scalar;trace_vars=trace_vars](dim, buf, aref, 0);
     if (scalar) { 
-       lhs=BuildName(buf cpbuf);
+       lhs=Name#(BuildName(buf cpbuf));
        init = ""; 
        cpnest = BuildNest(cploop,lhs);
        cpbuf=NULL;
@@ -378,8 +380,8 @@ switch (loop) {
   if (scalar) {
     for (p = dim; p != NULL; p = cdr(p)) {
       ctrl = car(p);
-      foreach (res : Nest#(CLEAR ctrl2,CLEAR body) : TRUE) {
-        ctrl2 = REBUILD(ctrl2);
+      foreach (res : Nest#(CLEAR _ctrl2,CLEAR body) : TRUE) {
+        ctrl2 = REBUILD(_ctrl2);
         if (ctrl : ctrl2) { res = body; break; }
       }
     } 
@@ -436,7 +438,7 @@ switch (loop) {
    if (prefix == "") {
       if (Lookup(arr_ref_type#(DELAY{arr},_),aref)) {
         foreach (aref : arr_ref_type#(arr,_) : TRUE) {
-          if (arr : Uop#("*",CLEAR arr1)) arr = arr1;
+          if (arr : Uop#("*",CLEAR arr1) | ArrayAccess#(arr1=_,_)) arr = arr1;
           if (ArrayIndex[arr] != "") {
             prefix = CopyBufName#arr::ArrayIndex[arr];
             ArrayIndex[arr] = ArrayIndex[arr] + 1;
@@ -507,9 +509,9 @@ switch (loop) {
            v2=cdr(v2)) {bv2=car(v2); }
       cur = "";
       foreach cur=StripmineTileStart#(_,bv2,_) \in input do 
+          if (cur != "") input=REPLACE(cur, bv2, input); 
           break; 
       enddo
-      if (cur != "") input=REPLACE(cur, bv2, input); 
    }
 
    if (!Lookup(DELAY{arr_ref_type#(_,CLEAR sub)|Bop#("+",_,CLEAR sub)|Bop#("+",CLEAR sub,_)}, aref)) 
@@ -529,12 +531,12 @@ switch (loop) {
             if (align_loc == 0) {
               allocbuf = AllocateStore[init0=(triangular!="")]#(arr, data_type, size); 
               AppendDecl[trace=trace_decl](PtrType#data_type, arr);
-              deletebuf=DeleteStore#(arr, size);
+              deletebuf=DeleteStore[size=size]#(arr);
             }
             else {
                arr_alloc=Name#(arr "_alloc");
                allocbuf=AllocateStoreWithAlign[init0=(triangular!="")]#(arr, data_type, size, arr_alloc, align_loc);
-               deletebuf=DeleteStore#(arr_alloc, size);
+               deletebuf=DeleteStore[size=size]#(arr_alloc);
                AppendDecl[trace=trace_decl](PtrType#data_type, (arr_alloc arr));
                AppendVar[trace=trace_vars](arr_alloc); 
             }
@@ -562,18 +564,6 @@ switch (loop) {
    initbuf = (dir==1)? cpres : (dir==3)? cpres[0] : "";
    savebuf = (dir==2)? cpres : (dir==3)? cpres[1] : "";
 
-   <* Wenwen: check if the scalar replacement was performed really *>
-<*
-   if (scalar == 1) {
-     if (initbuf != "") {
-       initbuf = CheckCopyRepl(initbuf, did_repl, 1);
-     }
-     if (savebuf != "") {
-       savebuf = CheckCopyRepl(savebuf, did_repl, 0);
-     }
-   }
-*>
-  
    if (init_loc == input) {
        res = initbuf::res;
        init_loc = "";
@@ -649,7 +639,6 @@ switch (loop) {
            trace=trace; trace_mod=trace_mod; trace_vars=trace_vars] 
            (aref, dim, input);
       enddo
-      if (aref == arr) print("ERROR: Cannot find an array reference for " aref);
    }
   else {
      CopyRepl[scalar=1;init_loc=init_loc;save_loc=save_loc; init=init; save=save;
@@ -661,7 +650,7 @@ switch (loop) {
 
 <xform  AppendLoopBody pars=(ivar, step, app, input) >
  repl="";
- foreach_r (input : Nest#(Loop#(CLEAR ivar,_,_,CLEAR istep,_), CLEAR body) : FALSE ) {
+ foreach_r (input : Nest#(Loop#(CLEAR ivar,_,_,CLEAR istep,_), CLEAR body) : TRUE ) {
      cur = (step =="")? app : REPLACE(step,istep,app);
      repl = BuildList( (body, BuildList(body,cur)), repl);
  }

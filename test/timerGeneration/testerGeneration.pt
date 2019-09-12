@@ -15,7 +15,7 @@ include testerGeneration.incl
 	valueIncr="";
 
 	switch(init) {
-		case INT: value=init;
+		case INT|FLOAT: value=init;
 		case CODE.Random: value=CODE.TesterRandomVal;
 		case Increment#(begin,incr): value=begin; valueIncr=incr;
 		default: ERROR("Init not handled:" init);

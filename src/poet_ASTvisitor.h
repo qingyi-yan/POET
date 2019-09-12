@@ -35,25 +35,36 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 class CollectInfoVisitor : public POETCodeVisitor, public EvaluatePOET
 {
   POETCodeVisitor *next_op;
+  bool backward;
  public:
   virtual void visitList(POETList* l) 
      { 
-         l->get_first()->visit(next_op) ; 
-         if (l->get_rest() != 0)
-               l->get_rest()->visit(next_op); 
+        if (l->get_rest() == 0) {l->get_first()->visit(this); }
+        else if (!backward) 
+             { l->get_first()->visit(this); l->get_rest()->visit(this) ; }
+        else
+             { l->get_rest()->visit(this); l->get_first()->visit(this) ; }
      }
   virtual void visitTuple( POETTuple* v) 
      {
+       if (!backward) {
           for (unsigned i = 0; i < v->size(); ++i)
               v->get_entry(i)->visit(next_op);
+       }
+       else if (v->size() > 0) {
+          for (int i = v->size()-1; i >= 0; --i) 
+             v->get_entry(i)->visit(next_op);
+       }
      } 
   virtual void visitCodeVar(CodeVar* v) 
      { 
        if (v->get_args() != 0)
           v->get_args()->visit(next_op) ; 
-       if (v->get_attr() != 0)
-          v->get_attr()->visit(next_op) ; 
      }
+  virtual void visitUnknown(POETCode_ext* ext)
+    {
+       POETAstInterface::visitAstChildren(ext->get_content(), next_op, backward); 
+    }
   virtual void visitLocalVar(LocalVar* v) { 
           LvarSymbolTable::Entry e = v->get_entry();
           POETCode* r = e.get_code(); 
@@ -63,7 +74,7 @@ class CollectInfoVisitor : public POETCodeVisitor, public EvaluatePOET
           }
           if (r != v) {
              e.set_code(0); 
-             try { r->visit(next_op); } 
+             try { r->visit(this); } 
              catch (POETOperator *c) { e.set_code(r); throw c; }
              catch (POETCode *c) { e.set_code(r); throw c; }
              e.set_code(r);
@@ -82,31 +93,11 @@ class CollectInfoVisitor : public POETCodeVisitor, public EvaluatePOET
     }
   virtual void visitTupleAccess(TupleAccess* v) 
     {  if (v->get_tuple() != 0) v->get_tuple()->visit(next_op); }
-  virtual void visitUnknown(POETCode_ext* ext)
-    {  POETCode* c = ext->get_children();
-       if (c != 0) c->visit(next_op); }
  public:
-  CollectInfoVisitor(POETCodeVisitor* _op=0) : next_op(_op) 
+  CollectInfoVisitor(POETCodeVisitor* _op=0, bool back=false) : backward(back), next_op(_op) 
        { if (next_op==0) next_op = this;}
-  void apply(POETCode* code, POETCodeVisitor* _op=0) { code->visit(this); }
 };
 
-
-class BackwardCollectInfoVisitor : public CollectInfoVisitor
-{
- public:
-  virtual void visitList(POETList* l) 
-     { 
-         if (l->get_rest() != 0)
-             l->get_rest()->visit(this); 
-         l->get_first()->visit(this) ; 
-     }
-  virtual void visitTuple( POETTuple* v) 
-     {
-          for (int i = v->size()-1; i >= 0; --i) 
-             v->get_entry(i)->visit(this);
-     } 
-};
 
 
 class ReplInfoVisitor : public EvaluatePOET, public POETCodeVisitor
@@ -166,23 +157,17 @@ class ReplInfoVisitor : public EvaluatePOET, public POETCodeVisitor
   virtual void visitCodeVar( CodeVar* v) 
      { 
        POETCode *nargs = (v->get_args() == 0)? 0 : apply(v->get_args());
-       POETCode* nattr = (v->get_attr() == 0)? (POETCode*)0 : apply(v->get_attr());
-       if (nargs != v->get_args() || nattr != v->get_attr()) 
-           res = ASTFactory::inst()->build_codeRef(v->get_entry(), nargs, nattr);
+       if (nargs != v->get_args()) // || nattr != v->get_attr()) 
+           res = ASTFactory::inst()->build_codeRef(v->get_entry(), nargs, v->get_attr());
        else res = v;
      }
   virtual void visitUnknown(POETCode_ext* ext)
     { 
-      POETCode* children = ext->get_children();
-      if (children != 0) {
-           POETCode* new_children = apply(children);
-           if (new_children != children)
-              res = POETAstInterface::ReplaceChildren(ext, new_children);
-           else res = ext;
-      }
-      else res = ext;
+       POETCode* res1 = POETAstInterface::visitAstChildren(ext->get_content(),this, false);
+       if (res1 != 0) res = res1;
+       else res = ext;
     }
-  POETCode* apply(POETCode* code) 
+  virtual POETCode* apply(POETCode* code) 
      { res = code; code->visit(this); return res; }
 };
 
@@ -217,4 +202,33 @@ inline void ReplInfoVisitor:: visitLocalVar(LocalVar* v) {
           }
         }
 
+class MatchASTVisitor :  public ReplInfoVisitor
+{
+ protected:
+  POETCode* r1;
+  LocalVar* lvar;
+  MatchOption config;
+  POETCode* any;
+  ASTFactory* fac;
+
+  virtual void visitIconst(POETIconst* v);
+  virtual void visitString(POETString* v) ;
+  bool matchCodeVar(POETCode *_r1, CodeVar* v2, POETCode* args);
+  virtual void visitUnknown (POETCode_ext* e); 
+  virtual void visitCodeVar(CodeVar* v2); 
+  virtual void visitLocalVar(LocalVar* v2);
+  virtual void visitXformVar( XformVar* v) ;
+  virtual void visitTuple( POETTuple* r2);
+  virtual void visitType( POETType* t);
+  virtual void visitList(POETList* v2);
+  virtual void visitAssign(POETAssign* assign); 
+  virtual void visitOperator(POETOperator* op);
+  virtual void defaultVisit(POETCode* f) ;
+ public:
+  MatchASTVisitor(MatchOption _config) : config(_config)
+   { fac = ASTFactory::inst(); any = fac->make_any(); lvar = 0; r1 = 0; }
+  void setup(POETCode* _r1, POETCode* _r2) ;
+  bool apply(POETCode* _r1, POETCode* _r2); 
+  POETCode* get_result() { return res; }
+};
 #endif
