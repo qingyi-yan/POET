@@ -1,0 +1,202 @@
+#define max(a,b) (((a) < (b))? (b) : (a))
+#define min(a,b) (((a) < (b))? (a) : (b))
+int min2(int a,int b) {
+   return a<b?a:b;
+}
+double dabs(double a) {
+   return a<0?-a:a;
+}
+#include "arrayAccess.h"
+void dgetrf(int m,int n,double* a,int* p) {
+   double tmp;
+   double tmp1;
+   int j;
+   int i;
+   int k;
+   for (k=0; k<min(-1+m,-1+n); k+=1)
+     {
+        p[k] = k;
+     }
+   int j_bk;
+   int k_bk;
+   double _a_1_scalar_0_0;
+   int _p_2_scalar_0;
+   double _a_3_scalar_0_0;
+   for (k_bk=0; k_bk<min(-16+m,-16+n); k_bk+=16)
+     {
+        if ((j_bk=k_bk)<n) 
+          {
+             for (k=0; k<16; k+=2)
+               {
+                  _p_2_scalar_0 = p[k_bk+k];
+                  if ((j=k_bk+k)<min(16+k_bk,n)) 
+                    {
+                       tmp = dabs(arr_ref(a,k_bk+k,k_bk+k));
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            if (dabs(arr_ref(a,i,k_bk+k))>tmp) 
+                              {
+                                 _p_2_scalar_0 = i;
+                                 tmp = dabs(arr_ref(a,i,k_bk+k));
+                              }
+                         }
+                       tmp1 = arr_ref(a,k_bk+k,k_bk+k);
+                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                       arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            arr_ref(a,i,k_bk+k) = arr_ref(a,i,k_bk+k)/arr_ref(a,k_bk+k,k_bk+k);
+                         }
+                    }
+                  if ((j=1+(k_bk+k))<min(16+k_bk,n)) 
+                    {
+                       tmp1 = arr_ref(a,k_bk+k,j);
+                       arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                       arr_ref(a,_p_2_scalar_0,j) = tmp1;
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+k)*arr_ref(a,k_bk+k,j);
+                         }
+                       tmp = dabs(arr_ref(a,k_bk+(1+k),k_bk+(1+k)));
+                       for (i=1+(k_bk+(1+k)); i<m; i+=1)
+                         {
+                            if (dabs(arr_ref(a,i,k_bk+(1+k)))>tmp) 
+                              {
+                                 p[k_bk+(1+k)] = i;
+                                 tmp = dabs(arr_ref(a,i,k_bk+(1+k)));
+                              }
+                         }
+                       tmp1 = arr_ref(a,k_bk+(1+k),k_bk+(1+k));
+                       arr_ref(a,k_bk+(1+k),k_bk+(1+k)) = arr_ref(a,p[k_bk+(1+k)],k_bk+(1+k));
+                       arr_ref(a,p[k_bk+(1+k)],k_bk+(1+k)) = tmp1;
+                       for (i=1+(k_bk+(1+k)); i<m; i+=1)
+                         {
+                            arr_ref(a,i,k_bk+(1+k)) = arr_ref(a,i,k_bk+(1+k))/arr_ref(a,k_bk+(1+k),k_bk+(1+k));
+                         }
+                    }
+                  for (j=2+(k_bk+k); j<min(16+k_bk,n); j+=1)
+                    {
+                       /*Loop Bound*/if (j>=1+(k_bk+k)) 
+                         {
+                            tmp1 = arr_ref(a,k_bk+k,j);
+                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                            arr_ref(a,_p_2_scalar_0,j) = tmp1;
+                         }
+                       /*Loop Bound*/if (j>=1+(k_bk+k)) 
+                         {
+                            for (i=1+(k_bk+k); i<m; i+=1)
+                              {
+                                 arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+k)*arr_ref(a,k_bk+k,j);
+                              }
+                         }
+                       /*Loop Bound*/if (j>=k_bk+(1+k)) 
+                         {
+                            /*Loop Bound*/if (j>=1+(k_bk+(1+k))) 
+                              {
+                                 tmp1 = arr_ref(a,k_bk+(1+k),j);
+                                 arr_ref(a,k_bk+(1+k),j) = arr_ref(a,p[k_bk+(1+k)],j);
+                                 arr_ref(a,p[k_bk+(1+k)],j) = tmp1;
+                              }
+                            /*Loop Bound*/if (j>=1+(k_bk+(1+k))) 
+                              {
+                                 for (i=1+(k_bk+(1+k)); i<m; i+=1)
+                                   {
+                                      arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+(1+k))*arr_ref(a,k_bk+(1+k),j);
+                                   }
+                              }
+                         }
+                    }
+                  p[k_bk+k] = _p_2_scalar_0;
+               }
+          }
+        for (j_bk=16+k_bk; j_bk<n; j_bk+=16)
+          {
+             for (k=0; k<16; k+=2)
+               {
+                  _p_2_scalar_0 = p[k_bk+k];
+                  for (j=j_bk; j<min(16+j_bk,n); j+=1)
+                    {
+                       tmp1 = arr_ref(a,k_bk+k,j);
+                       arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                       arr_ref(a,_p_2_scalar_0,j) = tmp1;
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+k)*arr_ref(a,k_bk+k,j);
+                         }
+                       tmp1 = arr_ref(a,k_bk+(1+k),j);
+                       arr_ref(a,k_bk+(1+k),j) = arr_ref(a,p[k_bk+(1+k)],j);
+                       arr_ref(a,p[k_bk+(1+k)],j) = tmp1;
+                       for (i=1+(k_bk+(1+k)); i<m; i+=1)
+                         {
+                            arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+(1+k))*arr_ref(a,k_bk+(1+k),j);
+                         }
+                    }
+                  p[k_bk+k] = _p_2_scalar_0;
+               }
+          }
+     }
+   if (k_bk<min(-1+m,-1+n)) 
+     {
+        if ((j_bk=k_bk)<n) 
+          {
+             for (k=0; k<min(-k_bk+(-1+m),-k_bk+(-1+n)); k+=1)
+               {
+                  _p_2_scalar_0 = p[k_bk+k];
+                  if ((j=k_bk+k)<min(16+k_bk,n)) 
+                    {
+                       tmp = dabs(arr_ref(a,k_bk+k,k_bk+k));
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            if (dabs(arr_ref(a,i,k_bk+k))>tmp) 
+                              {
+                                 _p_2_scalar_0 = i;
+                                 tmp = dabs(arr_ref(a,i,k_bk+k));
+                              }
+                         }
+                       tmp1 = arr_ref(a,k_bk+k,k_bk+k);
+                       arr_ref(a,k_bk+k,k_bk+k) = arr_ref(a,_p_2_scalar_0,k_bk+k);
+                       arr_ref(a,_p_2_scalar_0,k_bk+k) = tmp1;
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            arr_ref(a,i,k_bk+k) = arr_ref(a,i,k_bk+k)/arr_ref(a,k_bk+k,k_bk+k);
+                         }
+                    }
+                  for (j=1+(k_bk+k); j<min(16+k_bk,n); j+=1)
+                    {
+                       /*Loop Bound*/if (j>=1+(k_bk+k)) 
+                         {
+                            tmp1 = arr_ref(a,k_bk+k,j);
+                            arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                            arr_ref(a,_p_2_scalar_0,j) = tmp1;
+                         }
+                       /*Loop Bound*/if (j>=1+(k_bk+k)) 
+                         {
+                            for (i=1+(k_bk+k); i<m; i+=1)
+                              {
+                                 arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+k)*arr_ref(a,k_bk+k,j);
+                              }
+                         }
+                    }
+                  p[k_bk+k] = _p_2_scalar_0;
+               }
+          }
+        for (j_bk=16+k_bk; j_bk<n; j_bk+=16)
+          {
+             for (k=0; k<min(-k_bk+(-1+m),-k_bk+(-1+n)); k+=1)
+               {
+                  _p_2_scalar_0 = p[k_bk+k];
+                  for (j=j_bk; j<min(16+j_bk,n); j+=1)
+                    {
+                       tmp1 = arr_ref(a,k_bk+k,j);
+                       arr_ref(a,k_bk+k,j) = arr_ref(a,_p_2_scalar_0,j);
+                       arr_ref(a,_p_2_scalar_0,j) = tmp1;
+                       for (i=1+(k_bk+k); i<m; i+=1)
+                         {
+                            arr_ref(a,i,j) = arr_ref(a,i,j)-arr_ref(a,i,k_bk+k)*arr_ref(a,k_bk+k,j);
+                         }
+                    }
+                  p[k_bk+k] = _p_2_scalar_0;
+               }
+          }
+     }
+}
