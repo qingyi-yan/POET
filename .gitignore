@@ -1,3 +1,7 @@
 **/*.so
 **/*.o
 src/pcg
+**/*Makefile
+**/*Makefile.in
+configure
+aclocal.m4
