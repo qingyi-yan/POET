@@ -1,0 +1,476 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+#include <unordered_map>
+
+#include <string>
+
+#define SLEEP_NANOSEC   0
+struct timespec req;
+
+template <typename T>
+class Stack
+  {
+    struct Stack_synobj{
+      int version_number;
+      struct Stack_synobj* prev_obj;
+      std::atomic<struct Stack_synobj*> next_obj;
+
+      size_t index;
+      struct ModifyLog
+      {
+        std::atomic<T*>* m_data;
+        T*  m_data_old;
+        T   m_data_new;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      std::atomic<std::vector<struct ModifyLog> *> old_modlog;
+      std::queue<T*> * free_wrapper;
+
+      Stack_synobj() : modlog(0) {
+        ;
+        version_number = -1;
+        old_modlog = new std::vector<struct ModifyLog>;
+        free_wrapper = new std::queue<T*>;
+      }
+      void insert_mod(std::atomic<T*>* m_data, T* m_data_old, T m_data_new)
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin(); p != cur->end(); p++) {
+            if (p->m_data == m_data) {
+                p->m_data_new = m_data_new;
+                return;
+            }
+        }
+        struct ModifyLog tmp;
+        tmp.m_data = m_data;
+        tmp.m_data_new = m_data_new;
+        tmp.m_data_old = m_data_old;
+        cur->push_back(tmp);
+      }
+      void reclaim_wrapper ()
+      {
+        std::vector<struct ModifyLog> *old_logs = old_modlog.load();
+        if (old_logs == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = old_logs->begin(); p != old_logs->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          if (tmp.m_data_old != NULL) {
+            free_wrapper->push(tmp.m_data_old);
+          }
+        }
+      }
+      void apply_mod (std::queue<T*> *private_wrappers)
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        bool last_succ = true;
+        T* new_val;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          // std::atomic<T*>* tmp_atomic = reinterpret_cast<std::atomic<T*>*>(tmp.m_data);
+          std::atomic<T*>* tmp_atomic = tmp.m_data;
+          if (last_succ) {
+            if (private_wrappers->empty()) {
+              new_val = new T;
+            } else {
+              new_val = private_wrappers->front();
+              private_wrappers->pop();
+            }
+          }
+          *new_val = tmp.m_data_new;
+          if (std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_data_old, new_val)) {
+            last_succ = true;
+          } else {
+            last_succ = false;
+          }
+        }
+        if (!last_succ) private_wrappers->push(new_val);
+        if(modlog.compare_exchange_weak(cur, 0)) {
+            old_modlog = cur;
+        }
+      }
+      inline T read_wrapper(std::atomic<T*> &param)
+      {
+          std::vector<struct ModifyLog> * cur = modlog.load();
+          if (cur != 0) {
+          for (typename std::vector<struct ModifyLog>::iterator p=cur->begin();
+               p != cur->end(); p++) {
+              if (p->m_data == &param) {
+                  return p->m_data_new;
+              }
+            }
+          }
+          T* tmp = param.load();
+          return (tmp?(*tmp):0);
+      }
+      inline T& write_wrapper(std::atomic<T*> &param)
+      {
+          if (!param.load()) {
+              param = new T (0);
+          }
+          return *(param.load());
+      }
+      Stack_synobj& operator =(Stack_synobj& that)
+      {
+        that.apply_mod(free_wrapper);
+          index=that.index;
+          this->version_number = that.version_number + 1;
+          this->prev_obj = &that;
+          this->next_obj = 0;
+
+        if (modlog.load()!=0) {
+          modlog.load()->clear();
+        } else {
+          old_modlog.load()->clear();
+          modlog = old_modlog.load();
+          old_modlog = 0;
+        }
+        return *this;
+      }
+    };
+    std::atomic <struct Stack_synobj*> state;
+
+    std::atomic<int> thread_count;
+    std::queue<struct Stack_synobj *> *synobj_lists[1000];
+    struct Stack_synobj *read_obj[1000];
+    std::atomic<pthread_t> synobj_list_ids[1000];
+    std::atomic<int> reach_version_numbers[1000];
+    std::atomic<int> op_types[1000];
+    std::vector<std::pair<void*, T>> *log_addr_records[1000];
+
+    int local_idx_array[1000];
+
+    inline T check_conflict(std::vector<std::pair<void *, T>> *log_addr_record, std::atomic<T*> &param, bool &no_conflict, std::atomic<int> &reach_version_number, struct Stack_synobj * &oldstate){
+        no_conflict = true;
+        bool need_update_version = false;
+        int cur_reach_version_number = reach_version_number.load();
+        T *tmp = param.load();
+        T res = (tmp?(*tmp):0);
+        T oldval;
+        int i = 0;
+        std::vector<struct Stack_synobj::ModifyLog> * old_logs;
+        struct Stack_synobj* cur_obj = state.load();
+        if (oldstate != cur_obj) {
+            int new_reach_version_number = cur_obj->version_number;
+            while (oldstate->version_number < new_reach_version_number) {
+                while(oldstate->next_obj.load() == NULL) i++;
+                oldstate = oldstate->next_obj.load();
+                old_logs = oldstate->modlog.load();
+                while (old_logs==0) old_logs = oldstate->old_modlog.load();
+                for (typename std::vector<struct Stack_synobj::ModifyLog>::iterator p=old_logs->begin(); p != old_logs->end(); p++) {
+                    oldval = ((p->m_data_old)?(*(p->m_data_old)):0);
+                    log_addr_record->push_back(std::make_pair((void *)(p->m_data), oldval));
+                }
+            }
+            reach_version_number = new_reach_version_number;
+        }
+
+        for (typename std::vector<std::pair<void *, T>>::iterator p = log_addr_record->begin(); p!= log_addr_record->end(); p++) {
+            if (p->first == (void *)(&param)) {
+                return p->second;
+            }
+        }
+
+        return res;
+    }
+
+    inline bool is_synobj_free(struct Stack_synobj *target_synobj) {
+        bool res = true;
+        int cur_thread_count = thread_count.load();
+        for (int i = 0; i < cur_thread_count; i++) {
+            if (op_types[i].load() == 0) {
+                if (target_synobj->version_number>=reach_version_numbers[i].load()) {
+                    res = false;
+                }
+            } else {
+                if(target_synobj->version_number==reach_version_numbers[i].load()){
+                    res = false;
+                }
+            }
+            if (res == false) break;
+        }
+        return res;
+    }
+    inline int find_synobj_list_id() {
+        pthread_t mytid = pthread_self();
+        pthread_t null_tid = 0;
+        int synobj_list_id = -1;
+        int local_idx = -1;
+        std::queue<struct Stack_synobj *> *synobj_list;
+        std::vector<std::pair<void *, T>> *log_addr_record;
+        int mytid_mod = mytid%1000;
+        for (int i = mytid_mod; i != (mytid_mod - 1 + 1000)%1000; i = (i + 1)%1000) {
+            if (synobj_list_ids[i] == mytid) {
+                synobj_list_id = i;
+                break;
+            }
+        }
+        if (synobj_list_id == -1) {
+            synobj_list = new std::queue<struct Stack_synobj *>;
+            log_addr_record = new std::vector<std::pair<void *, T>>;
+            struct Stack_synobj *new_synobj = new struct Stack_synobj();
+            synobj_list->push(new_synobj);
+            for (int i = mytid_mod; i != (mytid_mod - 1 + 1000); i = (i+1)%1000) {
+                null_tid = 0;
+                if (synobj_list_ids[i].compare_exchange_strong(null_tid, mytid)) {
+                    local_idx = thread_count.fetch_add(1);
+                    synobj_list_id = i;
+                    synobj_lists[i] = synobj_list;
+                    log_addr_records[i] = log_addr_record;
+                    local_idx_array[i] = local_idx;
+                    read_obj[i] = new struct Stack_synobj();
+                    break;
+                }
+            }
+            if (synobj_list_id == -1) {
+                printf("Failed to allocate synobj list\n");
+            }
+        }
+        return synobj_list_id;
+    }
+    public:
+    public:
+    Stack (int capacity) : capacity_(capacity) {
+       struct Stack_synobj* state_tmp=new Stack_synobj ();
+       state_tmp->index = 0;
+       data = new std::atomic<T*> [capacity_];
+       std::memset(data,0,capacity_*sizeof(std::atomic<T*>));
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           reach_version_numbers[i] = 0;
+           op_types[i] = -1;
+
+           local_idx_array[i] = 0;
+       }
+        req.tv_sec = 0;
+        req.tv_nsec = SLEEP_NANOSEC;
+    }
+    ;
+    bool push(T v) ;
+    bool pop(T& v) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    bool find(const T& v);
+    void toString() {
+        return;
+    }
+    unsigned size() {
+       struct Stack_synobj* __res;
+       int __ret__10=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__10 = __res->index;
+         break;
+        } catch(...){}
+       }
+       return __ret__10;
+    }
+    private:
+    std::atomic<T*>* data;
+    const size_t capacity_;
+    ;
+    ;
+  };
+template <typename T>
+bool Stack<T>::push(T item) {
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__1=-1;
+   int synobj_list_id = find_synobj_list_id();
+   std::queue<struct Stack_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+   int local_idx = local_idx_array[synobj_list_id];
+   op_types[local_idx] = 1;
+
+   newstate = synobj_list->front();
+   if (is_synobj_free(newstate)) {
+       synobj_list->pop();
+   } else {
+       newstate = new struct Stack_synobj();
+   }
+   newstate->reclaim_wrapper();
+   while (true)
+   {
+    try{
+         oldstate = state.load();
+         reach_version_numbers[local_idx] = oldstate->version_number;
+         if (oldstate != state.load()) goto retry;
+
+     *newstate = *oldstate;
+     T data_index_copy=0;
+    /*
+     if (newstate->index>=capacity_)
+       {
+          __ret__1 = false;
+       }
+     if (__ret__1!=false)
+       {
+          int index=newstate->index++;
+          data_index_copy = item;
+          newstate->insert_mod(&(data[index]),data[index],data_index_copy);
+          __ret__1 = true;
+       }
+    */
+     if (newstate->index<capacity_)
+       {
+          int index=newstate->index++;
+          data_index_copy = item;
+          newstate->insert_mod(&(data[index]),data[index],data_index_copy);
+          __ret__1 = true;
+       } else {
+          __ret__1 = false;
+        }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      oldstate->next_obj = newstate;
+      newstate->apply_mod(newstate->free_wrapper);
+      reach_version_numbers[local_idx] = newstate->version_number;
+      op_types[local_idx] = -1;
+      synobj_list->push(newstate);
+      break;
+     }
+    } catch(...){}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+   }
+   return __ret__1;
+}
+template <class T>
+bool Stack<T>::pop(T& result) {
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__2=-1;
+   int synobj_list_id = find_synobj_list_id();
+   std::queue<struct Stack_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+   int local_idx = local_idx_array[synobj_list_id];
+   op_types[local_idx] = 1;
+
+   newstate = synobj_list->front();
+   if (is_synobj_free(newstate)) {
+       synobj_list->pop();
+   } else {
+       newstate = new struct Stack_synobj();
+   }
+   newstate->reclaim_wrapper();
+   while (true)
+   {
+    try{
+         oldstate = state.load();
+         reach_version_numbers[local_idx] = oldstate->version_number;
+         if (oldstate != state.load()) goto retry;
+
+     *newstate = *oldstate;
+    /*
+     if (newstate->index <= 0)
+       {
+          __ret__2 = false;
+       }
+     if (__ret__2!=false)
+       {
+          newstate->index --;
+          result = newstate->read_wrapper(data[newstate->index]);
+          if (state.load()!=oldstate) goto retry;
+          __ret__2 = true;
+       }
+    */
+     if (newstate->index > 0)
+       {
+          newstate->index --;
+          result = newstate->read_wrapper(data[newstate->index]);
+          if (state.load()!=oldstate) goto retry;
+          __ret__2 = true;
+       }
+        else {
+          __ret__2 = false;
+        }
+
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      oldstate->next_obj = newstate;
+      newstate->apply_mod(newstate->free_wrapper);
+      reach_version_numbers[local_idx] = newstate->version_number;
+      op_types[local_idx] = -1;
+      synobj_list->push(newstate);
+      break;
+     }
+    } catch(...){}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+   }
+   return __ret__2;
+}
+template<class T>
+bool Stack<T>::find(const T& v) {
+       struct Stack_synobj* oldstate;
+       struct Stack_synobj* newstate;
+       bool res;
+       bool no_conflict;
+       T e;
+
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct Stack_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       std::vector<std::pair<void *, T>> *log_addr_record = log_addr_records[synobj_list_id];
+       op_types[local_idx] = 0;
+
+        /*
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct Stack_synobj();
+       }
+       newstate->reclaim_wrapper();
+        */
+       newstate = read_obj[synobj_list_id];
+
+       while (true)
+       {
+        try{
+         oldstate = state.load();
+         reach_version_numbers[local_idx] = oldstate->version_number;
+         if (oldstate != state.load()) goto retry;
+
+        res = true;
+        log_addr_record->clear();
+         *newstate = *oldstate;
+         if (newstate->index <= 0) {
+            res = false;
+         }
+         if (res != false) {
+            int i;
+            for (i = 0; i < newstate->index; i++) {
+                e = check_conflict(log_addr_record, data[i], no_conflict, reach_version_numbers[local_idx], oldstate);
+                if (!no_conflict) goto retry;
+                if (e == v) break;
+            }
+            res = (i == newstate->index);
+         }
+         break;
+        } catch(...) {}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+       }
+       // synobj_list->push(newstate);
+       op_types[local_idx] = -1;
+       return res;
+}
+
+
+template <class T>
+bool Stack<T>::isFull() {
+   return true;
+}
+template <class T>
+bool Stack<T>::isEmpty() {
+   return true;
+}

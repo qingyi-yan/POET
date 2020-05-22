@@ -1,0 +1,448 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#ifndef SINGLY_LINKED_LIST_H
+#define SINGLY_LINKED_LIST_H
+template <class T>
+class SinglyLinkedListWrap  
+  ;
+template <class T>
+class SinglyLinkedEntryWrap  
+  {
+    T o;
+    SinglyLinkedEntryWrap<T>* next;
+    public:
+    SinglyLinkedEntryWrap (const T& _o) : o(_o),next(0) {
+       
+    }
+    ~SinglyLinkedEntryWrap() {
+       
+    }
+    T& GetEntry() {
+       return o;
+    }
+    friend class SinglyLinkedListWrap<T>;
+  };
+template <class T>
+class SinglyLinkedListWrap  
+  {
+    ;;
+    ;
+    struct SinglyLinkedListWrap_synobj{
+      unsigned count;SinglyLinkedEntryWrap<T>* end;SinglyLinkedEntryWrap<T>* head;
+      ;void insert_mod(SinglyLinkedEntryWrap<T>*** m_end, SinglyLinkedEntryWrap<T>** m_end_old, SinglyLinkedEntryWrap<T>* m_end_new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_end = m_end;
+        tmp.m_end_new = m_end_new;
+        tmp.m_end_old = m_end_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      void insert_mod(SinglyLinkedEntryWrap<T>*** m_end, SinglyLinkedEntryWrap<T>** m_end_old, SinglyLinkedEntryWrap<T>* m_end_new, std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*>*private_table)
+      {
+        struct ModifyLog tmp;
+        tmp.m_end = m_end;
+        tmp.m_end_new = m_end_new;
+        tmp.m_end_old = m_end_old;
+        (*private_table)[m_end] = m_end_new;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      ;
+      inline SinglyLinkedEntryWrap<T>* read_wrapper(SinglyLinkedEntryWrap<T>** &param, std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*>* private_table)
+      {
+          typename std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*>::iterator res = private_table->find(&param);
+          if (res != private_table->end()) return res->second;
+          return (param?(*param):0);
+      }
+      inline SinglyLinkedEntryWrap<T>* read_wrapper(SinglyLinkedEntryWrap<T>** param)
+      {
+          return (param?(*param):0);
+      }
+      inline SinglyLinkedEntryWrap<T>*& write_wrapper(SinglyLinkedEntryWrap<T>** &param)
+      {
+          if (!param) {
+              param = new SinglyLinkedEntryWrap<T>* (0);
+          }
+          return *param;
+      }
+      ;
+    };
+    std::atomic <struct SinglyLinkedListWrap_synobj*> state;
+    inline SinglyLinkedEntryWrap<T>* read_wrapper(SinglyLinkedEntryWrap<T>** &param, std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*>* private_table)
+    {
+        typename std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*>::iterator res = private_table->find(&param);
+        if (res != private_table->end()) return res->second;
+        return (param?(*param):0);
+    }
+    inline SinglyLinkedEntryWrap<T>* read_wrapper(SinglyLinkedEntryWrap<T>** param)
+    {
+        return (param?(*param):0);
+    }
+    inline SinglyLinkedEntryWrap<T>*& write_wrapper(SinglyLinkedEntryWrap<T>** &param)
+    {
+        if (!param) {
+            param = new SinglyLinkedEntryWrap<T>* (0);
+        }
+        return *param;
+    }
+    ;
+    public:
+    public:
+    SinglyLinkedListWrap ()  {
+       struct SinglyLinkedListWrap_synobj* state_tmp=new SinglyLinkedListWrap_synobj ();
+       write_wrapper(state_tmp->head) = 0;
+       write_wrapper(state_tmp->end) = 0;
+       state_tmp->count = 0;
+       
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    public:
+    SinglyLinkedListWrap (const SinglyLinkedListWrap<T>& that)  {
+       struct SinglyLinkedListWrap_synobj* state_tmp=new SinglyLinkedListWrap_synobj ();
+       write_wrapper(state_tmp->head) = write_wrapper(state_tmp->end) = 0;
+       state_tmp->count = 0;
+       *this+=that;
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ~SinglyLinkedListWrap() {
+       DeleteAll();
+    }
+    void Reverse() {
+       struct SinglyLinkedListWrap_synobj* oldstate;
+       struct SinglyLinkedListWrap_synobj* newstate;
+       int __ret__3=0;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct SinglyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct SinglyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         SinglyLinkedEntryWrap<T>* tmp_copy=0;
+         SinglyLinkedEntryWrap<T>* newstate_head_copy=0;
+         SinglyLinkedEntryWrap<T>* tmp_next_copy=0;
+         SinglyLinkedEntryWrap<T>* tmp1_copy=0;
+         if (newstate->count==0)
+           {
+              __ret__3 = 1;
+           }
+         if (__ret__3!=1)
+           {
+              newstate_head_copy = new SinglyLinkedEntryWrap<T> (*newstate->head);
+              SinglyLinkedEntryWrap<T>* tmp=read_wrapper(newstate->head, &private_table);
+              tmp_copy = newstate_head_copy;
+              tmp_next_copy = new SinglyLinkedEntryWrap<T> (*tmp->next);
+              if(!tmp) throw "NullPtrExcpt";
+              SinglyLinkedEntryWrap<T>* tmp1=read_wrapper(tmp->next, &private_table);
+              tmp1_copy = tmp_next_copy;
+              while (tmp!=read_wrapper(newstate->end, &private_table))
+                {
+                   
+                   SinglyLinkedEntryWrap<T>* tmp2=tmp_copy;
+                   
+                   tmp = tmp1;
+                   tmp_copy = tmp1_copy;
+                   tmp_next_copy = new SinglyLinkedEntryWrap<T> (*tmp->next);
+                   tmp1 = read_wrapper(tmp->next, &private_table);
+                   tmp1_copy = tmp_next_copy;
+                   if(!tmp_copy) throw "NullPtrExcpt";
+                   write_wrapper(tmp_copy->next) = tmp2;
+                }
+              if(!newstate_head_copy) throw "NullPtrExcpt";
+              write_wrapper(newstate_head_copy->next) = 0;
+              write_wrapper(newstate->end) = newstate_head_copy;
+              
+              write_wrapper(newstate->head) = tmp_copy;
+           }
+         ;
+        } catch(...){}
+       }
+       return ;
+    }
+    SinglyLinkedEntryWrap<T>* AppendLast(const T& o) {
+       struct SinglyLinkedListWrap_synobj* oldstate;
+       struct SinglyLinkedListWrap_synobj* newstate;
+       SinglyLinkedEntryWrap<T>* e=new SinglyLinkedEntryWrap<T> (o);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct SinglyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct SinglyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         SinglyLinkedEntryWrap<T>* newstate_end_next_copy=0;
+         ++newstate->count;
+         if (read_wrapper(newstate->end, &private_table)==0)
+           {
+              write_wrapper(newstate->head) = write_wrapper(newstate->end) = e;
+           }
+         else 
+           {
+              newstate_end_next_copy = e;
+              SinglyLinkedEntryWrap<T>* tmp_pointer_0=read_wrapper(newstate->end, &private_table);
+              if(!tmp_pointer_0) throw "NullPtrExcpt";
+              newstate->insert_mod(&(tmp_pointer_0->next),tmp_pointer_0->next,newstate_end_next_copy,&private_table);
+              write_wrapper(newstate->end) = e;
+           }
+         ;
+        } catch(...){}
+       }
+       return e;
+    }
+    SinglyLinkedEntryWrap<T>* PushFirst(const T& o) {
+       struct SinglyLinkedListWrap_synobj* oldstate;
+       struct SinglyLinkedListWrap_synobj* newstate;
+       SinglyLinkedEntryWrap<T>* e=new SinglyLinkedEntryWrap<T> (o);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct SinglyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct SinglyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         ++newstate->count;
+         if (read_wrapper(newstate->head, &private_table)==0)
+           {
+              write_wrapper(newstate->head) = write_wrapper(newstate->end) = e;
+           }
+         else 
+           {
+              if(!e) throw "NullPtrExcpt";
+              write_wrapper(e->next) = read_wrapper(newstate->head, &private_table);
+              write_wrapper(newstate->head) = e;
+           }
+         ;
+        } catch(...){}
+       }
+       return e;
+    }
+    void PopFirst() {
+       struct SinglyLinkedListWrap_synobj* oldstate;
+       struct SinglyLinkedListWrap_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct SinglyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct SinglyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         if (newstate->count>0)
+           {
+              --newstate->count;
+              SinglyLinkedEntryWrap<T>* e=read_wrapper(newstate->head, &private_table);
+              if (read_wrapper(newstate->head, &private_table)==read_wrapper(newstate->end, &private_table))
+                {
+                   write_wrapper(newstate->head) = write_wrapper(newstate->end) = 0;
+                }
+              else 
+                {
+                   SinglyLinkedEntryWrap<T>* tmp_pointer_1=read_wrapper(newstate->head, &private_table);
+                   if(!tmp_pointer_1) throw "NullPtrExcpt";
+                   write_wrapper(newstate->head) = read_wrapper(tmp_pointer_1->next, &private_table);
+                }
+              
+           }
+         ;
+        } catch(...){}
+       }
+    }
+    void DeleteAll() {
+       struct SinglyLinkedListWrap_synobj* oldstate;
+       struct SinglyLinkedListWrap_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct SinglyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct SinglyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<SinglyLinkedEntryWrap<T>***,SinglyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         while (read_wrapper(newstate->head, &private_table)!=0)
+           {
+              if (newstate->count>0)
+                {
+                   --newstate->count;
+                   SinglyLinkedEntryWrap<T>* e=read_wrapper(newstate->head, &private_table);
+                   if (read_wrapper(newstate->head, &private_table)==read_wrapper(newstate->end, &private_table))
+                     {
+                        write_wrapper(newstate->head) = write_wrapper(newstate->end) = 0;
+                     }
+                   else 
+                     {
+                        SinglyLinkedEntryWrap<T>* tmp_pointer_2=read_wrapper(newstate->head, &private_table);
+                        if(!tmp_pointer_2) throw "NullPtrExcpt";
+                        write_wrapper(newstate->head) = read_wrapper(tmp_pointer_2->next, &private_table);
+                     }
+                   
+                }
+           }
+         ;
+        } catch(...){}
+       }
+    }
+    unsigned size() const{
+       struct SinglyLinkedListWrap_synobj* __res;
+       unsigned __ret__9=(unsigned)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__9 = __res->count;
+         break;
+        } catch(...){}
+       }
+       return __ret__9;
+    }
+    
+    
+    SinglyLinkedEntryWrap<T>* Next(SinglyLinkedEntryWrap<T>* cur) const{
+       return cur->next;
+    }
+    class Iterator  
+      {
+        const SinglyLinkedListWrap<T>* list;
+        SinglyLinkedEntryWrap<T>* cur;
+        public:
+        public:
+        Iterator (const SinglyLinkedListWrap<T>& l) : list(&l) {
+           cur = l.First();
+        }
+        public:
+        Iterator (const Iterator& that) : list(that.list),cur(that.cur) {
+           
+        }
+        Iterator& operator =(const Iterator& that) {
+           list = that.list;
+           cur = that.cur;
+        }
+        public:
+        Iterator () : list(0),cur(0) {
+           
+        }
+        T& Current() const{
+           return (cur->GetEntry)();
+        }
+        T& operator *() const{
+           return Current();
+        }
+        bool ReachEnd() const{
+           return cur==0;
+        }
+        void Reset() {
+           if (list!=0)
+             {
+                cur = (list->First)();
+             }
+        }
+        void Advance() {
+           if (cur!=0)
+             {
+                cur = (list->Next)(cur);
+             }
+        }
+        void operator ++() {
+           Advance();
+        }
+        void operator ++(int) {
+           Advance();
+        }
+      };
+  };
+#endif

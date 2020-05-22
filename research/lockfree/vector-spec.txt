@@ -1,0 +1,140 @@
+
+<*** extension: 
+1. categorization of variables:
+   . shared variables: shared by multiple threads. Need to be accessed with protection/synchronization using special operators
+   . atomic variables: used to synchronize shared variables. Need to be accessed with special atomic operations supported by hardware/library
+   . private variables: local to each thread. No synchronization necessary in accessing them.
+    ***>
+
+<iFSM WriteOp pars=(T) init=obsolete>
+  <variable location type=ref(atomic(T)) init=0 />
+  <variable old_value type=T init=0 />
+  <variable new_value type=T init=0 />
+
+  <action set_oper pars=(loc:ref(atomic(T)), nv : T) 
+                 impl=(location=loc, old_value=val(loc), new_value=nv) />
+
+  <state pending cond=(old_value==val(location) />
+  <state obsolete cond=(old_value!=val(location) />
+
+  <event write pars=() from=(pending) to=(obsolete) impl=(val(location)=new_value)/>
+</iFSM>
+
+<iFSM ContainerState pars=(T) init=no_pending>
+  <variable pendingOp type=atomic(bool) init=false />
+  <variable msize type=int init=0/>
+  <variable oper type=fsm(WriteOp,T) />
+  <variable next type=ref(fsm(ContainerState,T)) init=null/>
+
+  <action set_state pars=(pmsize:int, isPending:bool) 
+                    impl=(msize=pmsize, pendingOp=isPending) />
+  <action set_state pars=(oldstate: ref(fsm(ContainerState,T)), isPending:bool,size_delta : int)
+                    impl=(msize=old_state.msize + size_delta, pendingOp=isPending) />
+  <action get_write_op return=oper />
+  <action clear_state impl=(delete oper) />
+
+  <state op_pending cond=(pendingOp) imply=(oper.state==pending) />
+  <state op_obsolete cond=(!pendingOp) imply=(oper.state==obsolete) />
+
+  <event complete_state from=(op_pending) to=(op_obsolete) impl=(oper.write(); pendingOp=false)/>
+</iFSM>
+
+<iFSM LockfreeVector pars=(T)>
+  <variable CState type=atomic(fsm(ContainerState,T)) />
+  <variable vmem type=fsm(Storage, T) />
+
+  <state has_pending cond=(CState.state==op_pending) />
+  <state no_pending cond=(CState.state=op_obsolete) />
+
+  <event push_back pars=(nv: T)  >
+    <variable old_state type=ref(fsm(ContainerState,T)) init=null />
+    <variable new_state type=ref(fsm(ContainerState,T)) init=(new fsm(ContainerState,T)) />
+    <variable wop type=ref(fsm(WriteOp,T)) init=new_state.get_write_op() />
+    <variable newsize type=int  init = 0 />
+
+    <state old_state_equals_state cond=(old_state==CState) />
+    <state old_state_has_pending cond=(old_state.state==op_pending)/> 
+    <state old_state_no_pending cond=(old_state.state==no_pending)/> 
+    <state new_state_is_set cond=(new_state.state=is_Pending) imply=(wop.state==pending)/>
+    <state new_state_equals_state cond=(new_state==CState) />
+    <state new_state_has_pending cond=(new_state.state==op_pending)/> 
+    <state new_state_no_pending cond=(new_state.state==no_pending)/> 
+
+    <transition from=() to=(new_state_equals_state) impl=loop >
+       <transition from=() to=(old_state_equals_state) impl=(old_state=CState) />
+       <transition from=(old_state_has_pending) to=(old_state_no_pending) impl=(old_state.complete_state()) />
+       <transition from=(old_state_no_pending) to=(new_state_is_set) 
+                impl=(alloc_bucket_if_needed(vmem.bucket_number(old_state.msize)),
+                      wop.set_oper(vmem.at(old_state.msize),nv), new_state.set_state(old_state, true, 1)) />
+       <transition from=(old_state_equals_state) to=(new_state_equals_state) impl=(CState=new_state) />
+     </transition>
+    <transition from=(new_state_has_pending) to=(new_state_no_pending) impl=(new_state.complete_state()) />
+    <action return=new_state.msize />
+   </event>
+
+  <event pop_back pars=() return=res>
+    <variable old_state type=ref(fsm(ContainerState,T)) init=null />
+    <variable new_state type=ref(fsm(ContainerState,T)) init=(new fsm(ContainerState,T)) />
+    <variable res type=ref(T) init=null/>
+
+    <state old_state_equals_state cond=(old_state==CState) />
+    <state old_state_has_pending cond=(old_state.state==op_pending)/> 
+    <state old_state_no_pending cond=(old_state.state==no_pending)/> 
+    <state new_state_is_set cond=(new_state.state=is_Pending) imply=(res==val(new_state.msize))/>
+    <state new_state_equals_state cond=(new_state==CState) />
+
+    <transition from=() to=(new_state_equals_state) impl=loop >
+       <transition from=() to=(old_state_equals_state) impl=(old_state=CState) />
+       <transition from=(old_state_has_pending) to=(old_state_no_pending) impl=(old_state.complete_state()) />
+       <transition from=(old_state_no_pending) to=(new_state_is_set) 
+                impl=(new_state.set_state(old_state, false, -1),  res=val(new_state.msize)) />
+       <transition from=(old_state_equals_state) to=(new_state_equals_state) impl=(CState=new_state) />
+     </transition>
+   </event>
+  <event write_i pars=(pos : int, e: T) impl=(val(At(pos)) = e)>
+  <event read_i pars=(pos: int) return=(val(At(pos)))/>
+</iFSM>
+
+<scenario Two-threads1 />  
+   <variable vector type=(LockfreeVector) init=(vorig) />
+   <thread index=1 impl=(vector.push(x))/>
+   <thread index=2 return=(vector.pop()) />
+
+   <linearization cond=(thread(1).new_state_equals_state() => thread(2).begin)  
+               imply=(vector==vorig && thread(2).return==x) />
+   <linearization cond=(thread(1).new_state_equals_state() << thread(2).begin)  
+               imply=(vector.size==vorig.size+1 && vector.element[size-1]==x && thread(2).return==emptyException()) />
+</event>
+
+<scenario Two-threads2 />  
+   <variable vector type=(LockfreeVector) init=(vorig) />
+   <thread index=1 impl=(vector.push(x))/>
+   <thread index=2 return=(vector.push(y)) />
+
+   <linearization cond=(thread(1).new_state_equals_state() => thread(2).begin)  
+               imply=(vector.size==vorig.size+2 && vector.element[size-2]==x && vector.element[size-2]==y) />
+   <linearization cond=(thread(1).new_state_equals_state() << thread(2).begin)  
+               imply=(vector.size==vorig.size+2 && vector.element[size-2]==y && vector.element[size-2]==x) />
+</event>
+
+<scenario Two-threads3 />  
+   <variable vector type=(LockfreeVector) init=(vorig) />
+   <thread index=1 impl=(vector.push(x))/>
+   <thread index=2 return=(vector.write(y, 1))/>
+
+   <linearization cond=(thread(1).old_state_equals_state() => thread(2).begin)  
+               imply=(vector.size==vorig.size+1 && vector.element[size-1]==y) />
+   <linearization cond=(thread(1).old_state_equals_state() << thread(2).begin)  
+               imply=(vector.size==vorig.size+1 && vector.element[size-1]==x) />
+</event>
+
+<scenario Two-threads4 />  
+   <variable vector type=(LockfreeVector) init=(vorig) />
+   <thread index=1 impl=(vector.push(x))/>
+   <thread index=2 return=(vector.read(1))/>
+
+   <linearization cond=(thread(1).new_state_equals_state() => thread(2).begin)  
+               imply=(vector.size==vorig.size+1 && vector.element[size-1]==x && thread(2).return==x) />
+   <linearization cond=(thread(1).new_state_equals_state() << thread(2).begin)  
+               imply=(vector.size==vorig.size+1 && vector.element[size-1]==x && thread(2).return==NULL) />
+</event>

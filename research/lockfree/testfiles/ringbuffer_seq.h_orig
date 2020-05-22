@@ -1,0 +1,86 @@
+#include <string>
+
+template <typename T>
+class RingBuffer {
+ public:
+  RingBuffer(int capacity) : capacity_(capacity) {
+    head = 0;
+    tail = 0;
+    data = new T[capacity_];
+  };
+
+  bool push(T v);
+  bool pop(T& v);
+  // bool find(T &t);
+  bool isFull();
+  bool isEmpty();
+/*
+  std::string toString() {
+    return "Capacity: " + std::to_string(capacity_) + "\n" + "Index: " +
+           std::to_string(tail - head);
+  };
+*/
+  unsigned size() { return tail - head; }
+
+ private:
+  T* data;
+  const size_t capacity_;
+  size_t head;
+  size_t tail;
+};
+
+
+
+template <typename T>
+bool RingBuffer<T>::push(T item) {
+  bool ret;
+  if (tail - head >= capacity_) {
+    ret = false;
+  } else {
+    int index = tail;
+    tail = tail + 1;
+    data[index % capacity_] = item;
+    ret = true;
+  }
+  return ret;
+}
+
+template <class T>
+bool RingBuffer<T>::pop(T& result) {
+  bool ret;
+  if (tail <= head) {
+    ret = false;
+  } else {
+    result = data[head % capacity_];
+    head = head + 1;
+    ret = true;
+  }
+  return ret;
+}
+
+/*
+template <class T>
+bool RingBuffer<T>::find(T& v) {
+  bool res;
+  if (tail <= head) {
+    res =  false;
+  } else {
+    int i;
+    for (i = head; i< tail; i++) {
+      if (data[i % capacity_] == v) break;
+    }
+    res = (i != tail);
+  }
+  return res;
+}
+*/
+
+template <class T>
+bool RingBuffer<T>::isFull() {
+  // return (tail - head >= capacity_);
+}
+
+template <class T>
+bool RingBuffer<T>::isEmpty() {
+  // return (tail <= head);
+}

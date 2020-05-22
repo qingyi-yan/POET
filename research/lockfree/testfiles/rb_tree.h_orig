@@ -1,0 +1,313 @@
+
+#include <string>
+#include <climits>
+
+template <class T, class D>
+class rb_node {
+public:
+    T key;
+    D data;
+    typedef std::pair<T, D> V;
+    bool isRed;
+    rb_node<T,D> *parent;
+    rb_node<T,D> *left;
+    rb_node<T,D> *right;
+};
+
+template <class T, class D>
+class rb_tree {
+    rb_node<T,D> *root;
+    rb_node<T,D> *nil;
+public:
+    typedef std::pair<T,D> V;
+    rb_tree() {
+        nil = new rb_node<T,D>;
+        nil->left = nil->right = nil->parent = nil;
+        nil->isRed = false;
+        nil->key = INT_MIN;
+
+        root = new rb_node<T,D>;
+        root->parent = root->left = root->right = nil;
+        root->key = INT_MAX;
+        root->isRed = false;
+    }
+
+    void left_rotate (rb_node<T,D> *x) {
+        rb_node<T,D> *y;
+        y = x->right;
+        x->right = y->left;
+
+        if (y->left != nil) y->left->parent=x;
+        y->parent=x->parent;
+
+        if( x == x->parent->left) {
+            x->parent->left=y;
+        } else {
+            x->parent->right=y;
+        }
+        y->left=x;
+        x->parent=y;
+    }
+
+    void right_rotate(rb_node<T,D> *y) {
+        rb_node<T,D> *x;
+
+        x=y->left;
+        y->left=x->right;
+
+        if (nil != x->right)  x->right->parent=y;
+        x->parent=y->parent;
+        if( y == y->parent->left) {
+            y->parent->left=x;
+        } else {
+            y->parent->right=x;
+        }
+        x->right=y;
+        y->parent=x;
+    }
+
+    std::pair<bool, rb_node<T,D>* > insert_help(rb_node<T,D> *z) {
+        rb_node<T,D> *x;
+        rb_node<T,D> *y;
+
+        z->left=z->right=nil;
+        y=root;
+        x=root->left;
+        while( x != nil) {
+            y=x;
+            if (x->key == z->key) {
+                delete z;
+                return std::make_pair(false, x);
+            } else if ( x->key > z->key) {
+                x=x->left;
+            } else {
+                x=x->right;
+            }
+        }
+        z->parent=y;
+        if ( (y == root) ||
+            (y->key > z->key) ) {
+            y->left=z;
+        } else {
+            y->right=z;
+        }
+        return std::make_pair(true, z);
+    }
+
+    std::pair<bool, rb_node<T,D> *> insert(V value) {
+        T key = value.first;
+        D data = value.second;
+        rb_node<T,D> * y;
+        rb_node<T,D> * x;
+        rb_node<T,D> * newNode;
+
+        x = new rb_node<T,D>;
+        x->key = key;
+        x->data = data;
+        std::pair<bool, rb_node<T,D> *> res = insert_help(x);
+        if (res.first == false) return res;
+        newNode = x;
+        x->isRed=true;
+        while(x->parent->isRed) {
+            if (x->parent == x->parent->parent->left) {
+                y=x->parent->parent->right;
+                if (y->isRed) {
+	                x->parent->isRed=false;
+	                y->isRed=false;
+	                x->parent->parent->isRed=true;
+	                x=x->parent->parent;
+                } else {
+	                if (x == x->parent->right) {
+	                    x=x->parent;
+	                    left_rotate(x);
+	                }
+	                x->parent->isRed=false;
+	                x->parent->parent->isRed=true;
+	                right_rotate(x->parent->parent);
+                }
+            } else {
+                y=x->parent->parent->left;
+                if (y->isRed) {
+	                x->parent->isRed=false;
+	                y->isRed=false;
+	                x->parent->parent->isRed=true;
+	                x=x->parent->parent;
+                } else {
+	                if (x == x->parent->left) {
+	                    x=x->parent;
+	                    right_rotate(x);
+	                }
+	                x->parent->isRed=false;
+	                x->parent->parent->isRed=true;
+	                left_rotate(x->parent->parent);
+                }
+            }
+        }
+        root->left->isRed=false;
+        return(std::make_pair(true, newNode));
+    }
+
+    rb_node<T,D> * get_successor(rb_node<T,D> * x) {
+        rb_node<T,D> *y;
+
+        if (nil != (y = x->right)) {
+            while(y->left != nil) {
+                y=y->left;
+            }
+            return(y);
+        } else {
+            y=x->parent;
+            while(x == y->right) {
+                x=y;
+                y=y->parent;
+            }
+            if (y == root) return(nil);
+            return(y);
+        }
+    }
+
+
+    rb_node<T,D> * get_predecessor(rb_node<T,D> * x) {
+        rb_node<T,D>* y;
+
+        if (nil != (y = x->left)) {
+            while(y->right != nil) {
+                y=y->right;
+            }
+            return(y);
+        } else {
+            y=x->parent;
+            while(x == y->left) {
+                if (y == root) return(nil);
+                x=y;
+                y=y->parent;
+            }
+            return(y);
+        }
+    }
+
+    void delete_tree (rb_node<T,D>* curr) {
+        if (curr == nil) return;
+        delete_tree (curr->left);
+        delete_tree (curr->right);
+        delete curr;
+    }
+
+    ~rb_tree() {
+        delete_tree(root);
+        delete nil;
+    }
+
+    void delete_fixup(rb_node<T,D> * x) {
+        rb_node<T,D> * w;
+        rb_node<T,D> * rootLeft = root->left;
+
+        while( (!x->isRed) && (rootLeft != x)) {
+            if (x == x->parent->left) {
+                w=x->parent->right;
+                if (w->isRed) {
+	                w->isRed=false;
+	                x->parent->isRed=true;
+	                left_rotate(x->parent);
+	                w=x->parent->right;
+                }
+                if ( (!w->right->isRed) && (!w->left->isRed) ) {
+	                w->isRed=true;
+	                x=x->parent;
+                } else {
+	                if (!w->right->isRed) {
+	                    w->left->isRed=false;
+	                    w->isRed=true;
+	                    right_rotate(w);
+	                    w=x->parent->right;
+	                }
+	                w->isRed=x->parent->isRed;
+	                x->parent->isRed=false;
+	                w->right->isRed=false;
+	                left_rotate(x->parent);
+	                x=rootLeft;
+                }
+            } else {
+                w=x->parent->left;
+                if (w->isRed) {
+	                w->isRed=false;
+	                x->parent->isRed=true;
+	                right_rotate(x->parent);
+	                w=x->parent->left;
+                }
+                if ( (!w->right->isRed) && (!w->left->isRed) ) {
+	                w->isRed=true;
+	                x=x->parent;
+                } else {
+	                if (!w->left->isRed) {
+	                    w->right->isRed=false;
+	                    w->isRed=true;
+	                    left_rotate(w);
+	                    w=x->parent->left;
+	                }
+	                w->isRed=x->parent->isRed;
+	                x->parent->isRed=false;
+	                w->left->isRed=false;
+	                right_rotate(x->parent);
+	                x=rootLeft;
+                }
+            }
+        }
+        x->isRed = false;
+    }
+
+    T delete_node(rb_node<T,D> * z){
+        rb_node<T,D> *y;
+        rb_node<T,D> * x;
+        T returnkey = z->key;
+
+        y= ((z->left == nil) || (z->right == nil)) ? z : get_successor(z);
+        x= (y->left == nil) ? y->right : y->left;
+        if (root == (x->parent = y->parent)) {
+            root->left=x;
+        } else {
+            if (y == y->parent->left) {
+                y->parent->left=x;
+            } else {
+                y->parent->right=x;
+            }
+        }
+        if (y != z) {
+            y->left=z->left;
+            y->right=z->right;
+            y->parent=z->parent;
+            z->left->parent=z->right->parent=y;
+            if (z == z->parent->left) {
+                z->parent->left=y;
+            } else {
+                z->parent->right=y;
+            }
+            if (!(y->isRed)) {
+                y->isRed = z->isRed;
+                delete_fixup(x);
+            } else
+                y->isRed = z->isRed;
+            delete z;
+        } else {
+            if (!(y->isRed)) delete_fixup(x);
+            delete y;
+        }
+        return returnkey;
+    }
+
+    rb_node<T,D> * find_node(T key) {
+        rb_node<T,D> *x;
+        x=root->left;
+        while( x != nil) {
+            if (x->key == key) {
+                return x;
+            } else if ( x->key > key) {
+                x=x->left;
+            } else {
+                x=x->right;
+            }
+        }
+        return x;
+    }
+
+};

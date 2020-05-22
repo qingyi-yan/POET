@@ -1,0 +1,568 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+#include <unordered_map>
+
+#include <string>
+#define SLEEP_NANOSEC   80000
+
+#define GC_MAX_THREADS          1000
+#define GC_RINGBUFFER_SIZE      10000000
+
+
+struct timespec req;
+
+template <typename T>
+class Stack
+  {
+    std::atomic<int> elem_count[700000];
+
+    struct garbage_collector;
+
+    struct Stack_synobj{
+      garbage_collector *parent_gc;
+      int version_number;
+
+      size_t index;
+      struct ModifyLog
+      {
+        T** m_data;
+        T*  m_data_old;
+        T   m_data_new;
+      };
+
+        struct ModifyLogVector {
+            int version_number;
+            std::vector<struct ModifyLog> * logvec;
+            ModifyLogVector () {
+                version_number = -1;
+                logvec = new std::vector<struct ModifyLog>;
+            }
+
+            void reclaim_wrapper (std::queue<T*> *free_wrapper)
+            {
+              for (typename std::vector<struct ModifyLog>::iterator p = logvec->begin(); p != logvec->end(); p++) {
+                struct ModifyLog tmp = (*p);
+                if (tmp.m_data_old != NULL) {
+                  free_wrapper->push(tmp.m_data_old);
+                }
+              }
+            }
+        };
+
+      std::atomic<struct ModifyLogVector *> modlog;
+      struct ModifyLogVector * modlog_holder;
+
+      Stack_synobj(garbage_collector *p_gc) : modlog(0) {
+        ;
+        parent_gc = p_gc;
+        version_number = -1;
+      }
+      void insert_mod(T** m_data, T* m_data_old, T m_data_new)
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load()->logvec;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin(); p != cur->end(); p++) {
+            if (p->m_data == m_data) {
+                p->m_data_new = m_data_new;
+                return;
+            }
+        }
+        struct ModifyLog tmp;
+        tmp.m_data = m_data;
+        tmp.m_data_new = m_data_new;
+        tmp.m_data_old = m_data_old;
+        cur->push_back(tmp);
+      }
+
+      void apply_mod ()
+      {
+        ModifyLogVector *cur_modlog = modlog.load();
+        if (cur_modlog == 0) return;
+        int gc_idx = parent_gc->get_gc_idx();
+        std::queue<T*> *private_wrappers = parent_gc->wrapper_to_reuse[gc_idx];
+        parent_gc->conflict_array->push_obj(cur_modlog);
+        std::vector<struct ModifyLog> * cur = cur_modlog->logvec;
+        bool last_succ = true;
+        T* new_val;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          std::atomic<T*>* tmp_atomic = reinterpret_cast<std::atomic<T*>*>(tmp.m_data);
+          if (last_succ) {
+            if (private_wrappers->empty()) {
+              new_val = new T;
+            } else {
+              new_val = private_wrappers->front();
+              private_wrappers->pop();
+            }
+          }
+          *new_val = tmp.m_data_new;
+          if (std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_data_old, new_val)) {
+            last_succ = true;
+          } else {
+            last_succ = false;
+          }
+        }
+        if (!last_succ) private_wrappers->push(new_val);
+        if (modlog.compare_exchange_weak(cur_modlog, 0)) {
+            modlog_holder = cur_modlog;
+        }
+      }
+
+
+      Stack_synobj& operator =(Stack_synobj& that)
+      {
+        that.apply_mod();
+          index=that.index;
+          this->version_number = that.version_number + 1;
+          this->modlog.load()->version_number = this->version_number;
+          this->modlog.load()->logvec->clear();
+        return *this;
+      }
+    };
+
+    struct garbage_collector {
+        pthread_key_t gc_idx_key;
+        std::atomic<int> thread_count;
+
+        template <class U> struct gc_ringbuffer{
+            std::atomic<void *> rb[GC_RINGBUFFER_SIZE];
+
+            void push_obj (void *item) {
+                int push_idx = ((U)item)->version_number;
+                push_idx = push_idx % GC_RINGBUFFER_SIZE;
+                rb[push_idx] = item;
+            }
+
+            U pop_obj () {
+                return 0;
+            }
+
+            gc_ringbuffer() {
+                for (int i = 0; i < GC_RINGBUFFER_SIZE; i++) {
+                    rb[i] = 0;
+                }
+            }
+        };
+
+        typedef typename Stack_synobj::ModifyLogVector modlogvec_type;
+        gc_ringbuffer<modlogvec_type *> *conflict_array;
+
+        std::queue<struct Stack_synobj *> *obj_to_reuse[GC_MAX_THREADS];
+        std::queue<modlogvec_type *> *vec_to_reuse[GC_MAX_THREADS];
+        std::queue<T*> * wrapper_to_reuse[GC_MAX_THREADS];
+
+        struct Stack_synobj *read_obj[GC_MAX_THREADS];
+
+        std::atomic<int> activity_array[GC_MAX_THREADS];
+
+        inline bool is_synobj_free(struct Stack_synobj *target_synobj) {
+            bool res = true;
+            int cur_thread_count = thread_count.load();
+            for (int i = 0; i < cur_thread_count; i++) {
+                if(target_synobj->version_number==activity_array[i].load()){
+                    res = false;
+                    break;
+                }
+            }
+            return res;
+        }
+
+        inline bool is_modlogvec_free(modlogvec_type *target_modlogvec) {
+            bool res = true;
+            int cur_thread_count = thread_count.load();
+            for (int i = 0; i < cur_thread_count; i++) {
+                if(target_modlogvec->version_number==activity_array[i].load()){
+                    res = false;
+                    break;
+                }
+            }
+            return res;
+        }
+
+        modlogvec_type *allocate_modlogvec(int gc_idx) {
+            modlogvec_type *res_vec;
+
+            if (!(vec_to_reuse[gc_idx]->empty())) {
+                res_vec = vec_to_reuse[gc_idx]->front();
+                if (is_modlogvec_free(res_vec)) {
+                    res_vec->reclaim_wrapper(wrapper_to_reuse[gc_idx]);
+                    vec_to_reuse[gc_idx]->pop();
+                    return res_vec;
+                }
+            }
+
+            res_vec = new modlogvec_type();
+            return res_vec;
+        }
+
+        Stack_synobj *allocate_synobj(int gc_idx) {
+            Stack_synobj *res_obj;
+
+            if (!(obj_to_reuse[gc_idx]->empty())) {
+                res_obj = obj_to_reuse[gc_idx]->front();
+                if (is_synobj_free(res_obj)) {
+                    obj_to_reuse[gc_idx]->pop();
+                    res_obj->modlog = allocate_modlogvec(gc_idx);
+                    res_obj->modlog_holder = res_obj->modlog.load();
+                    return res_obj;
+                }
+            }
+
+            res_obj = new struct Stack_synobj(this);
+            res_obj->modlog = allocate_modlogvec(gc_idx);
+            res_obj->modlog_holder = res_obj->modlog.load();
+            return res_obj;
+        }
+
+        void register_synobj(Stack_synobj *item) {
+            int gc_idx = get_gc_idx();
+            activity_array[gc_idx] = item->version_number;
+            obj_to_reuse[gc_idx]->push(item);
+            vec_to_reuse[gc_idx]->push(item->modlog_holder);
+        }
+
+        garbage_collector () {
+            thread_count = 0;
+            pthread_key_create(&gc_idx_key, NULL);
+            conflict_array = new gc_ringbuffer<modlogvec_type*>();
+
+            for (int i = 0; i < GC_MAX_THREADS; i++) {
+                activity_array[i] = 0;
+                obj_to_reuse[i] = 0;
+                vec_to_reuse[i] = 0;
+                read_obj[i] = 0;
+            }
+        }
+
+        int get_gc_idx () {
+            int* gc_idx = (int *) pthread_getspecific(gc_idx_key);
+            if (gc_idx == NULL) {
+                int local_idx = thread_count.fetch_add(1);
+                gc_idx = new int;
+                *gc_idx = local_idx;
+                pthread_setspecific(gc_idx_key, gc_idx);
+
+                struct Stack_synobj *new_synobj = new struct Stack_synobj(this);
+                read_obj[local_idx] = new struct Stack_synobj(this);
+                obj_to_reuse[local_idx] = new std::queue<struct Stack_synobj*>;
+                vec_to_reuse[local_idx] = new std::queue<modlogvec_type *>;
+                wrapper_to_reuse[local_idx] = new std::queue<T*>;
+            }
+
+            return (*gc_idx);
+        }
+    };
+
+    garbage_collector* gc;
+
+    std::atomic <struct Stack_synobj*> state;
+
+    inline int get_gc_idx() {
+        int gc_idx = gc->get_gc_idx();
+        return gc_idx;
+    }
+
+    inline Stack_synobj *allocate_synobj() {
+        int gc_idx = gc->get_gc_idx();
+        return gc->allocate_synobj(gc_idx);
+    }
+
+    inline Stack_synobj *get_read_synobj() {
+        int gc_idx = gc->get_gc_idx();
+        return gc->read_obj[gc_idx];
+    }
+
+    inline Stack_synobj * load_current_state() {
+        Stack_synobj *oldstate = state.load();
+        gc->activity_array[gc->get_gc_idx()] = oldstate->version_number;
+        if (oldstate != state.load()) oldstate = 0;
+        return oldstate;
+    }
+
+    inline void register_synobj(Stack_synobj *obj) {
+        gc->register_synobj(obj);
+    }
+
+      inline T& write_wrapper(T* &param)
+      {
+          if (!param) {
+              int gc_idx = gc->get_gc_idx();
+              std::queue<T*> *free_wrapper = gc->wrapper_to_reuse[gc_idx];
+              T *new_wrapper = 0;
+              if (!(free_wrapper->empty())) {
+                new_wrapper = free_wrapper->front();
+                free_wrapper->pop();
+                *new_wrapper = 0;
+              } else {
+                new_wrapper = new T (0);
+              }
+              param = new_wrapper;
+          }
+          return *(param);
+      }
+
+      inline bool check_conflict(Stack_synobj *oldstate, Stack_synobj *newstate, T* &param, T &res)
+      {
+          typename Stack_synobj::ModifyLogVector *cur_modlog = newstate->modlog.load();
+          if (cur_modlog != 0) {
+          std::vector<typename Stack_synobj::ModifyLog> * cur = cur_modlog->logvec;
+          for (typename std::vector<typename Stack_synobj::ModifyLog>::iterator p=cur->begin();
+               p != cur->end(); p++) {
+              if (p->m_data == &param) {
+                  res = p->m_data_new;
+                  return (oldstate == state.load());
+              }
+            }
+          }
+          T* tmp = param;
+          res = (tmp?(*tmp):0);
+          return (oldstate == state.load());
+      }
+
+      inline bool check_conflict(Stack_synobj *oldstate, T* &param, T &res)
+      {
+          T* tmp = param;
+          res = (tmp?(*tmp):0);
+
+          int old_version_number = oldstate->version_number;
+          int cur_version_number = state.load()->version_number;
+
+          for (int i = old_version_number + 1; i <= cur_version_number; i++) {
+            typename Stack_synobj::ModifyLogVector *modlogvec = (typename Stack_synobj::ModifyLogVector*) gc->conflict_array->rb[i%GC_RINGBUFFER_SIZE].load();
+            if (modlogvec == 0) {
+                printf("check_conflict error 1\n");
+                exit(0);
+            }
+            if (modlogvec->version_number != i) {
+                printf("check_conflict error 2\n");
+                exit(0);
+            }
+            std::vector<typename Stack_synobj::ModifyLog> * old_logs = modlogvec->logvec;
+            for (typename std::vector<typename Stack_synobj::ModifyLog>::iterator p=old_logs->begin(); p != old_logs->end(); p++) {
+              if (p->m_data == &param) {
+                  res = (p->m_data_old ? (*(p->m_data_old)):0);
+                  return true;
+              }
+            }
+          }
+
+          return true;
+      }
+
+    public:
+    public:
+    Stack (int capacity) : capacity_(capacity) {
+       gc = new garbage_collector();
+
+       struct Stack_synobj* state_tmp=new Stack_synobj (gc);
+       state_tmp->modlog = new typename Stack_synobj::ModifyLogVector ();
+       state_tmp->modlog_holder = state_tmp->modlog.load();
+       state_tmp->index = 0;
+       data = new T* [capacity_];
+       std::memset(data,0,capacity_*sizeof(std::atomic<T*>));
+       state = state_tmp;
+
+        req.tv_sec = 0;
+        req.tv_nsec = SLEEP_NANOSEC;
+
+        state_tmp->version_number = 0;
+        state_tmp->modlog.load()->version_number = 0;
+
+        gc->conflict_array->push_obj(state_tmp->modlog.load());
+
+        for (int i = 0; i < 700000; i++) {
+            elem_count[i] = 0;
+        }
+    }
+
+    ~Stack() {
+        // return;
+        int cur_index = state.load()->index;
+
+        for (int i = 0; i < cur_index; i++) {
+            if (data[i]== 0) printf("error\n");
+            elem_count[*(data[i])] --;
+        }
+
+        for (int i = 0; i < 700000; i++) {
+            if (elem_count[i].load()!=0) {
+                printf("elem_count[%d] != 0 (%d)\n", i, elem_count[i].load());
+            }
+        }
+
+        printf("check done %d\n", cur_index);
+
+        int obj_num = 0;
+        for (int i = 0; i < GC_MAX_THREADS; i++) {
+            if (gc->obj_to_reuse[i]!=0) {
+                obj_num += gc->obj_to_reuse[i]->size();
+            }
+        }
+
+        int vec_num = 0;
+        for (int i = 0; i < GC_MAX_THREADS; i++) {
+            if (gc->vec_to_reuse[i]!=0) {
+                vec_num += gc->vec_to_reuse[i]->size();
+            }
+        }
+        printf("%d, %d\n", obj_num, vec_num);
+    }
+    ;
+    bool push(T v) ;
+    bool pop(T& v) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    bool find(const T& v);
+    void toString() {
+        return;
+    }
+    unsigned size() {
+       struct Stack_synobj* __res;
+       int __ret__10=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__10 = __res->index;
+         break;
+        } catch(...){}
+       }
+       return __ret__10;
+    }
+    private:
+    T** data;
+    const size_t capacity_;
+    ;
+    ;
+  };
+template <typename T>
+bool Stack<T>::push(T item) {
+
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__1=-1;
+
+   newstate = allocate_synobj();
+
+   while (true)
+   {
+    try{
+     oldstate = load_current_state();
+     if (!oldstate) goto retry;
+
+     *newstate = *oldstate;
+     T data_index_copy=0;
+     if (newstate->index<capacity_)
+       {
+          int index=newstate->index++;
+          data_index_copy = item;
+          newstate->insert_mod(&(data[index]),data[index],data_index_copy);
+          __ret__1 = true;
+       } else {
+          __ret__1 = false;
+        }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      if (__ret__1 == true) {
+        elem_count[item] ++;
+      }
+      newstate->apply_mod();
+      register_synobj(newstate);
+      break;
+     }
+    } catch(...){}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+   }
+   return __ret__1;
+}
+template <class T>
+bool Stack<T>::pop(T& result) {
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__2=-1;
+
+    newstate = allocate_synobj();
+
+   while (true)
+   {
+    try{
+     oldstate = load_current_state();
+     if (!oldstate) goto retry;
+
+     *newstate = *oldstate;
+     if (newstate->index > 0)
+       {
+          newstate->index --;
+          if (!check_conflict(oldstate, newstate, data[newstate->index], result)) goto retry;
+          __ret__2 = true;
+       }
+        else {
+          __ret__2 = false;
+        }
+
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      if (__ret__2 == true) {
+        elem_count[result] --;
+      }
+      newstate->apply_mod();
+      register_synobj(newstate);
+      break;
+     }
+    } catch(...){}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+   }
+   return __ret__2;
+}
+template<class T>
+bool Stack<T>::find(const T& v) {
+       struct Stack_synobj* oldstate;
+       struct Stack_synobj* newstate;
+       bool res;
+       T e;
+
+       newstate = get_read_synobj();
+
+       while (true)
+       {
+        try{
+         oldstate = load_current_state();
+         if (!oldstate) goto retry;
+
+        res = true;
+         *newstate = *oldstate;
+         if (newstate->index <= 0) {
+            res = false;
+         }
+         if (res != false) {
+            int i;
+            for (i = 0; i < newstate->index; i++) {
+                if(!check_conflict(oldstate, data[i], e)) goto retry;
+                if (e == v) break;
+            }
+            res = (i == newstate->index);
+         }
+         break;
+        } catch(...) {}
+retry:
+        struct timespec rem;
+        nanosleep(&req, &rem);
+       }
+       return res;
+}
+
+
+template <class T>
+bool Stack<T>::isFull() {
+   return true;
+}
+template <class T>
+bool Stack<T>::isEmpty() {
+   return true;
+}

@@ -1,0 +1,290 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#ifndef SINGLY_LINKED_LIST_H
+#define SINGLY_LINKED_LIST_H
+template <class T>
+class SinglyLinkedListWrap  
+  ;
+template <class T>
+class SinglyLinkedEntryWrap  
+  {
+    T o;
+    SinglyLinkedEntryWrap<T>* next;
+    public:
+    SinglyLinkedEntryWrap (const T& _o) : o(_o),next(0) {
+       
+    }
+    ~SinglyLinkedEntryWrap() {
+       
+    }
+    T& GetEntry() {
+       return o;
+    }
+    friend class SinglyLinkedListWrap<T>;
+    private:
+    mutable TATAS lock1;
+  };
+template <class T>
+class SinglyLinkedListWrap  
+  {
+    mutable TATAS lockcount;
+    mutable TATAS lockend;
+    mutable TATAS lockhead;
+    SinglyLinkedEntryWrap<T>* head;SinglyLinkedEntryWrap<T>* end;
+    unsigned count;
+    void operator =(const SinglyLinkedListWrap<T>& that) {
+       
+    }
+    public:
+    public:
+    SinglyLinkedListWrap () : head(0),end(0),count(0) {
+       
+    }
+    public:
+    SinglyLinkedListWrap (const SinglyLinkedListWrap<T>& that)  {
+       head = 0;
+       end = 0;
+       count = 0;
+       *this+=that;
+    }
+    ~SinglyLinkedListWrap() {
+       DeleteAll();
+    }
+    void operator +=(const SinglyLinkedListWrap<T>& that) {
+       for (Iterator iter(that) ; !iter.ReachEnd(); iter++)
+         {
+            T& c=iter.Current();
+            {
+               count = count+1;
+               SinglyLinkedEntryWrap<T>* e=new SinglyLinkedEntryWrap<T> (c);
+               if (end==0) 
+                 {
+                    head = e;
+                    end = e;
+                 }
+               else 
+                 {
+                    end->next = e;
+                    end = e;
+                 }
+               
+            }
+         }
+    }
+    void Reverse() {
+       
+       int __ret__3;
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_count(lockcount);
+         AcquireLock acq_end(lockend);
+         AcquireLock acq_head(lockhead);
+         if (head != 0)  acq_1.lock(head->lock1);
+         AcquireLock acq_tmp;
+         __ret__3 = 0;
+         if (count==0) 
+           {
+              __ret__3 = 1;
+           }
+         if (__ret__3!=1) 
+           {
+              SinglyLinkedEntryWrap<T>* tmp=head;
+              SinglyLinkedEntryWrap<T>* tmp1=tmp->next;
+              while (tmp!=end)
+                {
+                   SinglyLinkedEntryWrap<T>* tmp2=tmp;
+                   tmp = tmp1;
+                   if (tmp1!=0)
+                      acq_tmp.lock(tmp1->lock1);
+                   tmp1 = tmp->next;
+                   tmp->next = tmp2;
+                }
+              head->next = 0;
+              end = head;
+              head = tmp;
+           }
+       }
+       return ;
+    }
+    SinglyLinkedEntryWrap<T>* AppendLast(const T& o) {
+       
+       SinglyLinkedEntryWrap<T>* e=new SinglyLinkedEntryWrap<T> (o);
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_count(lockcount);
+         AcquireLock acq_end(lockend);
+         AcquireLock acq_head(lockhead);
+         if (end != 0)  acq_1.lock(end->lock1);
+         count = count+1;
+         if (end==0) 
+           {
+              head = e;
+              end = e;
+           }
+         else 
+           {
+              end->next = e;
+              end = e;
+           }
+       }
+       return e;
+    }
+    SinglyLinkedEntryWrap<T>* PushFirst(const T& o) {
+       
+       SinglyLinkedEntryWrap<T>* e=new SinglyLinkedEntryWrap<T> (o);
+       {
+         AcquireLock acq_count(lockcount);
+         AcquireLock acq_end(lockend);
+         AcquireLock acq_head(lockhead);
+         count = count+1;
+         if (head==0) 
+           {
+              head = e;
+           }
+         end = e;
+         else 
+           {
+              e->next = head;
+              head = e;
+           }
+       }
+       return e;
+    }
+    void PopFirst() {
+       
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_count(lockcount);
+         AcquireLock acq_end(lockend);
+         AcquireLock acq_head(lockhead);
+         if (head != 0)  acq_1.lock(head->lock1);
+         if (count>0) 
+           {
+              count = count-1;
+              SinglyLinkedEntryWrap<T>* e=head;
+              if (head==end) 
+                {
+                   head = 0;
+                   end = 0;
+                }
+              else 
+                {
+                   head = head->next;
+                }
+              
+           }
+       }
+    }
+    bool Find(const T& o) {
+       
+       bool res;
+       SinglyLinkedEntryWrap<T>* e;
+       {
+         AcquireLock acq_head(lockhead);
+         e = head;
+         while (e!=0&&e->o!=o)
+           {
+              e = e->next;
+           }
+         res = e!=0;
+       }
+    }
+    void DeleteAll() {
+       
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_count(lockcount);
+         AcquireLock acq_end(lockend);
+         AcquireLock acq_head(lockhead);
+         if (head != 0)  acq_1.lock(head->lock1);
+         while (head!=0)
+           {
+              if (count>0) 
+                {
+                   count = count-1;
+                   SinglyLinkedEntryWrap<T>* e=head;
+                   if (head==end) 
+                     {
+                        head = 0;
+                        end = 0;
+                     }
+                   else 
+                     {
+                        head = head->next;
+                     }
+                   
+                }
+           }
+       }
+    }
+    unsigned size() const{
+       
+       unsigned __ret__11;
+       {
+         AcquireLock acq_count(lockcount);
+         __ret__11 = count;
+       }
+       return __ret__11;
+    }
+    
+    
+    SinglyLinkedEntryWrap<T>* Next(SinglyLinkedEntryWrap<T>* cur) const{
+       return cur->next;
+    }
+    class Iterator  
+      {
+        const SinglyLinkedListWrap<T>* list;
+        SinglyLinkedEntryWrap<T>* cur;
+        public:
+        public:
+        Iterator (const SinglyLinkedListWrap<T>& l) : list(&l) {
+           cur = l.First();
+        }
+        public:
+        Iterator (const Iterator& that) : list(that.list),cur(that.cur) {
+           
+        }
+        Iterator& operator =(const Iterator& that) {
+           list = that.list;
+           cur = that.cur;
+        }
+        public:
+        Iterator () : list(0),cur(0) {
+           
+        }
+        T& Current() const{
+           return (cur->GetEntry)();
+        }
+        T& operator *() const{
+           return Current();
+        }
+        bool ReachEnd() const{
+           return cur==0;
+        }
+        void Reset() {
+           if (list!=0) 
+             {
+                cur = (list->First)();
+             }
+        }
+        void Advance() {
+           if (cur!=0) 
+             {
+                cur = (list->Next)(cur);
+             }
+        }
+        void operator ++() {
+           Advance();
+        }
+        void operator ++(int) {
+           Advance();
+        }
+      };
+    Iterator GetIterator() const{
+       return Iterator(*this);
+    }
+  };
+#endif

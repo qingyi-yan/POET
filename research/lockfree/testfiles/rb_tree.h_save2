@@ -1,0 +1,271 @@
+#include "TATAS.h"
+#include <vector>
+
+#include <string>
+#include <climits>
+template <class T,class D>
+class rb_node  
+  {
+    public:
+    T key;
+    D data;
+    typedef std::pair<T,D> V;
+    bool isRed;
+    rb_node<T,D>* parent;
+    rb_node<T,D>* left;
+    rb_node<T,D>* right;
+  };
+template <class T,class D>
+class rb_tree  
+  {
+    rb_node<T,D>* root;
+    rb_node<T,D>* nil;
+    public:
+    typedef std::pair<T,D> V;
+    public:
+    rb_tree ()  {
+       nil = new rb_node<T,D> ();
+       nil->left = nil->right = nil->parent = nil;
+       nil->isRed = false;
+       nil->key = INT_MIN;
+       root = new rb_node<T,D> ();
+       root->parent = root->left = root->right = nil;
+       root->key = INT_MAX;
+       root->isRed = false;
+    }
+    std::pair<bool,rb_node<TD>*> insert(V value) {
+       
+       std::pair<bool,rb_node<TD>*> __ret__13(-1,(rb_node<TD>*)(-1));
+       T key=value.first;
+       D data=value.second;
+       rb_node<T,D>* y;
+       rb_node<T,D>* x;
+       rb_node<T,D>* newNode;
+       x = new rb_node<T,D> ();
+       x->key = key;
+       x->data = data;
+       std::pair<bool,rb_node<TD>*> res(-1,(rb_node<TD>*)(-1));
+       rb_node<T,D>* _b26_z=x;
+       rb_node<T,D>* _b26_x;
+       rb_node<T,D>* _b26_y;
+       if (res.first==false)  
+         {
+            __ret__13 = res;
+         }
+       {
+         AcquireLock acq_1(lock1);
+         _b26_z->left = _b26_z->right = nil;
+         _b26_y = root;
+         _b26_x = root->left;
+         while (_b26_x!=nil&&res==(-1,(rb_node<TD>*)(-1)))  
+           {
+              _b26_y = _b26_x;
+              if (_b26_x->key==_b26_z->key)  
+                {
+                   
+                   res = std::make_pair(false,_b26_x);
+                }
+              else if (_b26_x->key>_b26_z->key)  
+                {
+                   _b26_x = _b26_x->left;
+                }
+              else  
+                {
+                   _b26_x = _b26_x->right;
+                }
+           }
+         if (res!=std::make_pair(false,_b26_x))  
+           {
+              _b26_z->parent = _b26_y;
+              if (_b26_y==root||_b26_y->key>_b26_z->key)  
+                {
+                   _b26_y->left = _b26_z;
+                }
+              else  
+                {
+                   _b26_y->right = _b26_z;
+                }
+              res = std::make_pair(true,_b26_z);
+           }
+         if (__ret__13!=res)  
+           {
+              newNode = x;
+              x->isRed = true;
+              while (x->parent->isRed)  
+                {
+                   if (x->parent==x->parent->parent->left)  
+                     {
+                        y = x->parent->parent->right;
+                        if (y->isRed)  
+                          {
+                             x->parent->isRed = false;
+                             y->isRed = false;
+                             x->parent->parent->isRed = true;
+                             x = x->parent->parent;
+                          }
+                        else  
+                          {
+                             if (x==x->parent->right)  
+                               {
+                                  x = x->parent;
+                                  {
+                                     rb_node<T,D>* y;
+                                     y = x->right;
+                                     x->right = y->left;
+                                     if (y->left!=nil)  
+                                       {
+                                          y->left->parent = x;
+                                       }
+                                     y->parent = x->parent;
+                                     if (x==x->parent->left)  
+                                       {
+                                          x->parent->left = y;
+                                       }
+                                     else  
+                                       {
+                                          x->parent->right = y;
+                                       }
+                                     y->left = x;
+                                     x->parent = y;
+                                  }
+                               }
+                             x->parent->isRed = false;
+                             x->parent->parent->isRed = true;
+                             {
+                                rb_node<T,D>* y=x->parent->parent;
+                                rb_node<T,D>* x;
+                                x = y->left;
+                                y->left = x->right;
+                                if (nil!=x->right)  
+                                  {
+                                     x->right->parent = y;
+                                  }
+                                x->parent = y->parent;
+                                if (y==y->parent->left)  
+                                  {
+                                     y->parent->left = x;
+                                  }
+                                else  
+                                  {
+                                     y->parent->right = x;
+                                  }
+                                x->right = y;
+                                y->parent = x;
+                             }
+                          }
+                     }
+                   else  
+                     {
+                        y = x->parent->parent->left;
+                        if (y->isRed)  
+                          {
+                             x->parent->isRed = false;
+                             y->isRed = false;
+                             x->parent->parent->isRed = true;
+                             x = x->parent->parent;
+                          }
+                        else  
+                          {
+                             if (x==x->parent->left)  
+                               {
+                                  x = x->parent;
+                                  {
+                                     rb_node<T,D>* y=x;
+                                     rb_node<T,D>* x;
+                                     x = y->left;
+                                     y->left = x->right;
+                                     if (nil!=x->right)  
+                                       {
+                                          x->right->parent = y;
+                                       }
+                                     x->parent = y->parent;
+                                     if (y==y->parent->left)  
+                                       {
+                                          y->parent->left = x;
+                                       }
+                                     else  
+                                       {
+                                          y->parent->right = x;
+                                       }
+                                     x->right = y;
+                                     y->parent = x;
+                                  }
+                               }
+                             x->parent->isRed = false;
+                             x->parent->parent->isRed = true;
+                             {
+                                rb_node<T,D>* x=x->parent->parent;
+                                rb_node<T,D>* y;
+                                y = x->right;
+                                x->right = y->left;
+                                if (y->left!=nil)  
+                                  {
+                                     y->left->parent = x;
+                                  }
+                                y->parent = x->parent;
+                                if (x==x->parent->left)  
+                                  {
+                                     x->parent->left = y;
+                                  }
+                                else  
+                                  {
+                                     x->parent->right = y;
+                                  }
+                                y->left = x;
+                                x->parent = y;
+                             }
+                          }
+                     }
+                }
+              root->left->isRed = false;
+              __ret__13 = std::make_pair(true,newNode);
+           }
+       }
+       return __ret__13;
+    }
+    ~rb_tree() {
+       delete_tree(root);
+       delete nil;
+    }
+    rb_node<T,D>* find_node(T key) {
+       
+       rb_node<T,D>* __ret__14=(rb_node<T,D>*)(-1);
+       rb_node<T,D>* x;
+       {
+         AcquireLock acq_1(lock1);
+         x = root->left;
+         return __ret__14;
+         while (x!=nil&&__ret__14==(rb_node<T,D>*)(-1))  
+           {
+              if (x->key==key)  
+                {
+                   __ret__14 = x;
+                }
+              else if (x->key>key)  
+                {
+                   x = x->left;
+                }
+              else  
+                {
+                   x = x->right;
+                }
+           }
+         if (__ret__14!=x)  
+           {
+              __ret__14 = x;
+           }
+       }
+    }
+    private:
+    void delete_tree(rb_node<T,D>* curr) {
+       if (curr==nil)  
+         {
+            return ;
+         }
+       delete_tree(curr->left);
+       delete_tree(curr->right);
+       delete curr;
+    }
+    private:
+    mutable TATAS lock1;
+  };

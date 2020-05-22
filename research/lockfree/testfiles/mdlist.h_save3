@@ -1,0 +1,306 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#ifndef MDLIST_H
+#define MDLIST_H
+#include <cstdint>
+#include <string>
+class MDList  
+  {
+    mutable TATAS lockm_head;
+    static const uint32_t DIMENSION=16;
+    struct Node{
+      Node* m_child[DIMENSION];
+      uint8_t m_coord[DIMENSION];
+      uint32_t m_key;
+    };
+    public:
+    public:
+    MDList ()  ;
+    ~MDList() ;
+    void Insert(uint32_t key) ;
+    bool Delete(uint32_t key) ;
+    bool Find(uint32_t key) ;
+    private:
+    template <int D>
+    void KeyToCoord(uint32_t key,uint8_t coord[]) ;
+    void LocatePred(uint8_t coord[],Node*& pred,Node*& curr,uint32_t& dim,uint32_t& pred_dim) ;
+    void FillNewNode(Node* new_node,Node* pred,Node* curr,uint32_t dim,uint32_t pred_dim) ;
+    void FinishInserting(Node* n,Node* curr,uint32_t dim,uint32_t pred_dim) ;
+    void Traverse(Node* n,Node* parent,int dim,std::string& prefix) ;
+    private:
+    Node* m_head;
+  };
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+#include <immintrin.h>
+#define CLR_ADPINV(_p)    ((Node *)(((uintptr_t)(_p)) & ~1))
+#define IS_ADPINV(_p)     (((uintptr_t)(_p)) & 1)
+template <int D>
+void MDList::KeyToCoord(uint32_t key,uint8_t coord[]) {
+   const static uint32_t basis[32]= { 0xffffffff,0x10000,0x800,0x100,0x80,0x40,0x20,0x10,0xC,0xA,0x8,0x7,0x6,0x5,0x5,0x4,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x2 };
+   uint32_t quotient=key;
+   int i=D-1;
+   while (i>=0)
+     {
+        coord[i] = quotient%basis[D-1];
+        quotient = quotient/basis[D-1];
+        i--;
+     }
+}
+MDList::MDList ()  {
+   m_head = new Node ();
+   memset(m_head,0,sizeof (Node));
+}
+MDList :: ~MDList() {
+   
+}
+void MDList::Insert(uint32_t key) {
+   
+   int __ret__9;
+   Node* new_node=new Node ();
+   const static uint32_t _b10_basis[32]= { 0xffffffff,0x10000,0x800,0x100,0x80,0x40,0x20,0x10,0xC,0xA,0x8,0x7,0x6,0x5,0x5,0x4,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x2 };
+   uint32_t _b10_quotient;
+   int _b10_i=0;
+   Node* pred=(Node*)(-1);
+   Node* curr=(Node*)(-1);
+   uint32_t dim;
+   uint32_t pred_dim;
+   {
+     AcquireLock acq_m_head(lockm_head);
+     __ret__9 = 0;
+     new_node->m_key = key;
+     _b10_quotient = key;
+     _b10_i = DIMENSION-1;
+     while (_b10_i>=0)
+       {
+          new_node->m_coord[i] = _b10_quotient%_b10_basis[DIMENSION-1];
+          _b10_quotient = _b10_quotient/_b10_basis[DIMENSION-1];
+          _b10_i--;
+       }
+     pred = NULL;
+     curr = m_head;
+     dim = 0;
+     pred_dim = 0;
+     while (dim<DIMENSION)
+       {
+          while (curr&&new_node->m_coord[dim]>curr->m_coord[dim])
+            {
+               pred_dim = dim;
+               pred = curr;
+               curr = curr->m_child[dim];
+            }
+          if (curr==NULL||new_node->m_coord[dim]<curr->m_coord[dim]) 
+            {
+               break;
+            }
+          else 
+            {
+               ++dim;
+            }
+       }
+     if (dim==DIMENSION) 
+       {
+          __ret__9 = 1;
+       }
+     if (__ret__9!=1) 
+       {
+          {
+             for (uint32_t i=0; i<pred_dim; ++i)
+               {
+                  new_node->m_child[i] = 0;
+               }
+             memset(new_node->m_child+pred_dim,0,sizeof (Node*)*(DIMENSION-pred_dim));
+             if (dim<DIMENSION) 
+               {
+                  new_node->m_child[dim] = curr;
+               }
+          }
+          pred->m_child[pred_dim] = new_node;
+          {
+             for (uint32_t i=pred_dim; i<dim; ++i)
+               {
+                  Node* child=curr->m_child[i];
+                  curr->m_child[i] = 0;
+                  new_node->m_child[i] = child;
+               }
+          }
+       }
+   }
+   return ;
+}
+void MDList::LocatePred(uint8_t coord[],Node*& pred,Node*& curr,uint32_t& dim,uint32_t& pred_dim) {
+   while (dim<DIMENSION)
+     {
+        while (curr&&coord[dim]>curr->m_coord[dim])
+          {
+             pred_dim = dim;
+             pred = curr;
+             curr = curr->m_child[dim];
+          }
+        if (curr==NULL||coord[dim]<curr->m_coord[dim]) 
+          {
+             break;
+          }
+        else 
+          {
+             ++dim;
+          }
+     }
+}
+void MDList::FillNewNode(Node* new_node,Node* pred,Node* curr,uint32_t dim,uint32_t pred_dim) {
+   for (uint32_t i=0; i<pred_dim; ++i)
+     {
+        new_node->m_child[i] = 0;
+     }
+   memset(new_node->m_child+pred_dim,0,sizeof (Node*)*(DIMENSION-pred_dim));
+   if (dim<DIMENSION) 
+     {
+        new_node->m_child[dim] = curr;
+     }
+}
+void MDList::FinishInserting(Node* n,Node* curr,uint32_t dim,uint32_t pred_dim) {
+   for (uint32_t i=pred_dim; i<dim; ++i)
+     {
+        Node* child=curr->m_child[i];
+        curr->m_child[i] = 0;
+        n->m_child[i] = child;
+     }
+}
+bool MDList::Delete(uint32_t key) {
+   
+   int __ret__10;
+   uint8_t coord[DIMENSION];
+   const static uint32_t _b14_basis[32]= { 0xffffffff,0x10000,0x800,0x100,0x80,0x40,0x20,0x10,0xC,0xA,0x8,0x7,0x6,0x5,0x5,0x4,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x2 };
+   uint32_t _b14_quotient;
+   int _b14_i=0;
+   Node* pred=(Node*)(-1);
+   Node* curr=(Node*)(-1);
+   uint32_t dim;
+   uint32_t pred_dim;
+   Node* nextChild=(Node*)(-1);
+   uint32_t child_dim;
+   {
+     AcquireLock acq_m_head(lockm_head);
+     __ret__10 = -1;
+     _b14_quotient = key;
+     _b14_i = DIMENSION-1;
+     while (_b14_i>=0)
+       {
+          coord[i] = _b14_quotient%_b14_basis[DIMENSION-1];
+          _b14_quotient = _b14_quotient/_b14_basis[DIMENSION-1];
+          _b14_i--;
+       }
+     pred = NULL;
+     curr = m_head;
+     dim = 0;
+     pred_dim = 0;
+     while (dim<DIMENSION)
+       {
+          while (curr&&coord[dim]>curr->m_coord[dim])
+            {
+               pred_dim = dim;
+               pred = curr;
+               curr = curr->m_child[dim];
+            }
+          if (curr==NULL||coord[dim]<curr->m_coord[dim]) 
+            {
+               break;
+            }
+          else 
+            {
+               ++dim;
+            }
+       }
+     nextChild = NULL;
+     child_dim = 0;
+     if (dim==DIMENSION) 
+       {
+          int i=DIMENSION-1;
+          while (i>=0)
+            {
+               if (curr->m_child[i]!=NULL) 
+                 {
+                    nextChild = curr->m_child[i];
+                    child_dim = i;
+                    break;
+                 }
+               i--;
+            }
+          pred->m_child[pred_dim] = nextChild;
+          if (nextChild!=NULL) 
+            {
+               for (uint32_t i=pred_dim; i<child_dim; i++)
+                 {
+                    nextChild->m_child[i] = curr->m_child[i];
+                 }
+            }
+          __ret__10 = true;
+       }
+     else 
+       {
+          __ret__10 = false;
+       }
+   }
+   return __ret__10;
+}
+bool MDList::Find(uint32_t key) {
+   
+   uint8_t coord[DIMENSION];
+   const static uint32_t _b18_basis[32]= { 0xffffffff,0x10000,0x800,0x100,0x80,0x40,0x20,0x10,0xC,0xA,0x8,0x7,0x6,0x5,0x5,0x4,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x2 };
+   uint32_t _b18_quotient;
+   int _b18_i=0;
+   Node* pred=(Node*)(-1);
+   Node* curr=(Node*)(-1);
+   uint32_t dim;
+   uint32_t pred_dim;
+   {
+     AcquireLock acq_m_head(lockm_head);
+     _b18_quotient = key;
+     _b18_i = DIMENSION-1;
+     while (_b18_i>=0)
+       {
+          coord[i] = _b18_quotient%_b18_basis[DIMENSION-1];
+          _b18_quotient = _b18_quotient/_b18_basis[DIMENSION-1];
+          _b18_i--;
+       }
+     pred = NULL;
+     curr = m_head;
+     dim = 0;
+     pred_dim = 0;
+     while (dim<DIMENSION)
+       {
+          while (curr&&coord[dim]>curr->m_coord[dim])
+            {
+               pred_dim = dim;
+               pred = curr;
+               curr = curr->m_child[dim];
+            }
+          if (curr==NULL||coord[dim]<curr->m_coord[dim]) 
+            {
+               break;
+            }
+          else 
+            {
+               ++dim;
+            }
+       }
+   }
+   return dim==DIMENSION;
+}
+void MDList::Traverse(Node* n,Node* parent,int dim,std::string& prefix) {
+   int i=DIMENSION-1;
+   while (i>=dim)
+     {
+        Node* child=n->m_child[i];
+        if (child!=NULL) 
+          {
+             Traverse(child,n,i,prefix);
+          }
+        i--;
+     }
+}
+#endif 

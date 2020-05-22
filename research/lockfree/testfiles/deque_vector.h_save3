@@ -1,0 +1,261 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <stdio.h>
+#include <iostream>
+#include <cstring>
+template <class T>
+class deque  
+  {
+    mutable TATAS locklist_base;
+    mutable TATAS lockcurr_max_size;
+    mutable TATAS lockcounter;
+    public:
+    std::size_t counter;
+    std::size_t curr_max_size;
+    T* list_base;
+    typedef T value_type;
+    typedef T& reference;
+    typedef T* iterator;
+    typedef std::size_t size_type;
+    public:
+    deque ()  {
+       counter = 0;
+       curr_max_size = 4-1;
+       list_base = new T [4];
+    }
+    ~deque() {
+       delete list_base;
+    }
+    iterator begin() {
+       
+       iterator it=(T*)(-1);
+       while(true)
+       {
+        try {
+         {
+           AcquireLock acq_list_base(locklist_base);
+           it = list_base;
+         }
+         break;
+        } catch(...){}
+       }
+       return it;
+    }
+    iterator end() {
+       
+       iterator it=(T*)(-1);
+       while(true)
+       {
+        try {
+         {
+           AcquireLock acq_list_base(locklist_base);
+           AcquireLock acq_counter(lockcounter);
+           it = list_base+counter;
+         }
+         break;
+        } catch(...){}
+       }
+       return it;
+    }
+    std::size_t size() {
+       
+       std::size_t __ret__5=0;
+       while(true)
+       {
+        try {
+         {
+           AcquireLock acq_counter(lockcounter);
+           __ret__5 = counter;
+         }
+         break;
+        } catch(...){}
+       }
+       return __ret__5;
+    }
+    bool empty() {
+       
+       bool __ret__8=-1;
+       while(true)
+       {
+        try {
+         {
+           AcquireLock acq_counter(lockcounter);
+           __ret__8 = counter<1;
+         }
+         break;
+        } catch(...){}
+       }
+       return __ret__8;
+    }
+    reference operator [](std::size_t n) {
+       
+       T __ret__11;
+       while(true)
+       {
+        try {
+         {
+           
+           __ret__11 = list_base[n];
+         }
+         break;
+        } catch(...){}
+       }
+       return __ret__11;
+    }
+    reference front() {
+       
+       T __ret__14;
+       while(true)
+       {
+        try {
+         {
+           
+           __ret__14 = list_base[0];
+         }
+         break;
+        } catch(...){}
+       }
+       return __ret__14;
+    }
+    reference back() {
+       
+       T __ret__17;
+       while(true)
+       {
+        try {
+         {
+           AcquireLock acq_counter(lockcounter);
+           __ret__17 = list_base[counter-1];
+         }
+         break;
+        } catch(...){}
+       }
+       return __ret__17;
+    }
+    void push_front(T x) {
+       
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_list_base(locklist_base);
+         AcquireLock acq_curr_max_size(lockcurr_max_size);
+         AcquireLock acq_counter(lockcounter);
+         if (list_base != 0)  acq_1.lock(list_base->lock1);
+         if (counter==curr_max_size) 
+           {
+              std::size_t new_vector_size=curr_max_size+1<<1;
+              T* new_base=new T [new_vector_size];
+              std::memcpy(new_base+1,list_base,counter*sizeof(T));
+              
+              list_base = new_base;
+              list_base[0] = x;
+              curr_max_size = new_vector_size-1;
+           }
+         else 
+           {
+              std::memmove(list_base+1,list_base,counter*sizeof(T));
+              list_base[0] = x;
+           }
+         counter++;
+       }
+    }
+    void push_back(T x) {
+       
+       {
+         AcquireLock acq_list_base(locklist_base);
+         AcquireLock acq_curr_max_size(lockcurr_max_size);
+         AcquireLock acq_counter(lockcounter);
+         if (counter==curr_max_size) 
+           {
+              std::size_t new_vector_size=curr_max_size+1<<1;
+              T* new_base=new T [new_vector_size];
+              std::memcpy(new_base,list_base,counter*sizeof(T));
+              
+              list_base = new_base;
+              list_base[counter] = x;
+              curr_max_size = new_vector_size-1;
+           }
+         else 
+           {
+              list_base[counter] = x;
+           }
+         counter++;
+       }
+    }
+    void pop_front() {
+       
+       {
+         AcquireLock acq_list_base(locklist_base);
+         AcquireLock acq_counter(lockcounter);
+         if (counter>0) 
+           {
+              std::memcpy(list_base,list_base+1,(counter-1)*sizeof(T));
+              counter--;
+           }
+       }
+    }
+    T pop_back() {
+       
+       T r;
+       T __ret__22;
+       {
+         AcquireLock acq_counter(lockcounter);
+         r = list_base[counter-1];
+         __ret__22 = r;
+         counter--;
+       }
+       return __ret__22;
+    }
+    iterator insert(iterator pos,T x) {
+       
+       std::size_t pos_distance=0;
+       iterator it=(T*)(-1);
+       {
+         AcquireLock acq_list_base(locklist_base);
+         AcquireLock acq_curr_max_size(lockcurr_max_size);
+         AcquireLock acq_counter(lockcounter);
+         pos_distance = pos-list_base;
+         it = list_base+pos_distance;
+         if (counter==curr_max_size) 
+           {
+              std::size_t new_vector_size=curr_max_size+1<<1;
+              T* new_list_base=new T [new_vector_size];
+              if (pos_distance>0) 
+                {
+                   std::memcpy(new_list_base,list_base,pos_distance*sizeof(T));
+                }
+              new_list_base[pos_distance] = x;
+              std::memcpy(new_list_base+pos_distance+1,list_base+pos_distance,(counter-pos_distance)*sizeof(T));
+              
+              list_base = new_list_base;
+              curr_max_size = new_vector_size-1;
+              counter++;
+           }
+         else 
+           {
+              std::memmove(list_base+pos_distance+1,list_base+pos_distance,(counter-pos_distance)*sizeof(T));
+              list_base[pos_distance] = x;
+              counter++;
+           }
+       }
+       return it;
+    }
+    iterator erase(iterator pos) {
+       
+       std::size_t pos_distance=0;
+       T* __ret__25=(T*)(-1);
+       {
+         AcquireLock acq_1;
+         AcquireLock acq_list_base(locklist_base);
+         AcquireLock acq_counter(lockcounter);
+         if (list_base != 0)  acq_1.lock(list_base->lock1);
+         pos_distance = pos-list_base;
+         __ret__25 = &list_base[pos_distance];
+         std::memmove(list_base+pos_distance,list_base+pos_distance+1,(counter-pos_distance-1)*sizeof(T));
+         counter--;
+       }
+       return __ret__25;
+    }
+  };
