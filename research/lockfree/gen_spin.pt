@@ -1,0 +1,8 @@
+<code Program/>
+
+<parameter in type=STRING default="" message="input file name" />
+<parameter out type=STRING default="" message="output file name" />
+
+
+<input from=in to=inputCode syntax="syn_fsm.code"/>
+<output to=out syntax="fsm_spin.code" from=(Program#inputCode)/>

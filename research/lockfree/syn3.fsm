@@ -1,0 +1,12 @@
+SYN syn3 (s : State[i--j]) {
+  modify (op1,s[i1--j1]) {
+    lock(s[i1--j1]) : linearization(modify) {
+      invoke(op1,s[i1--j1]);
+    };
+  }
+  read (op2,s[i2--j2]) {
+    lock(s[i2--j2]) : linearization(read) {
+      invoke(op2,s[i2--j2]);
+    };
+  }
+}

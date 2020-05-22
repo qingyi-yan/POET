@@ -1,0 +1,312 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <string>
+template <typename T>
+class Stack  
+  {
+    struct Stack_synobj{
+      size_t idx_;
+      struct ModifyLog
+      {
+        T* m_array_;
+        T  m_array__old;
+        T  m_array__new;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      std::vector<struct ModifyLog> * old_modlog;
+      
+      Stack_synobj() : modlog(0) {
+        old_modlog = new std::vector<struct ModifyLog>;
+      }
+      void insert_mod(T* m_array_, T m_array__old, T m_array__new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_array_ = m_array_;
+        tmp.m_array__new = m_array__new;
+        tmp.m_array__old = m_array__old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      void reclaim_wrapper () {}
+      void apply_mod ()
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          std::atomic<T>* tmp_atomic = reinterpret_cast<std::atomic<T>*>(tmp.m_array_);
+          std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_array__old, tmp.m_array__new);
+        }
+        if(modlog.compare_exchange_weak(cur, 0)) {
+            old_modlog = cur;
+        }
+      }
+      
+      Stack_synobj& operator =(Stack_synobj& that)
+      {
+        that.apply_mod();
+          idx_=that.idx_;
+        if (modlog.load()!=0) {
+          modlog.load()->clear();
+        } else {
+          old_modlog->clear();
+          modlog = old_modlog;
+          old_modlog = 0;
+        }
+        return *this;
+      }
+    };
+    std::atomic <struct Stack_synobj*> state;
+    ;
+    std::atomic<int> thread_count;
+    std::queue<struct Stack_synobj *> *synobj_lists[1000];
+    std::atomic<pthread_t> synobj_list_ids[1000];
+    std::atomic<struct Stack_synobj *> occupied_synobj_array[1000];
+    int local_idx_array[1000];
+    inline bool is_synobj_free(struct Stack_synobj *target_synobj) {
+        bool res = true;
+        int cur_thread_count = thread_count.load();
+        for (int i = 0; i < cur_thread_count; i++) {
+            if (target_synobj == occupied_synobj_array[i].load()) {
+                res = false;
+                break;
+            }
+        }
+        return res;
+    }
+    inline int find_synobj_list_id() {
+        pthread_t mytid = pthread_self();
+        pthread_t null_tid = 0;
+        int synobj_list_id = -1;
+        int local_idx = -1;
+        std::queue<struct Stack_synobj *> *synobj_list;
+        int mytid_mod = mytid%1000;
+        for (int i = mytid_mod; i != (mytid_mod - 1 + 1000)%1000; i = (i + 1)%1000) {
+            if (synobj_list_ids[i] == mytid) {
+                synobj_list_id = i;
+                break;
+            }
+        }
+        if (synobj_list_id == -1) {
+            synobj_list = new std::queue<struct Stack_synobj *>;
+            struct Stack_synobj *new_synobj = new struct Stack_synobj();
+            synobj_list->push(new_synobj);
+            for (int i = mytid_mod; i != (mytid_mod - 1 + 1000); i = (i+1)%1000) {
+                null_tid = 0;
+                if (synobj_list_ids[i].compare_exchange_strong(null_tid, mytid)) {
+                    local_idx = thread_count.fetch_add(1);
+                    synobj_list_id = i;
+                    synobj_lists[i] = synobj_list;
+                    local_idx_array[i] = local_idx;
+                    break;
+                }
+            }
+            if (synobj_list_id == -1) {
+                printf("Failed to allocate synobj list\n");
+            }
+        }
+        return synobj_list_id;
+    }
+    public:
+    public:
+    Stack (int capacity) : capacity_(capacity) {
+       struct Stack_synobj* state_tmp=new Stack_synobj ();
+       state_tmp->idx_ = 0;
+       array_ = new T [capacity_];
+       for (int i=0; i<capacity_; i+=1)
+         {
+            array_[i] = 0;
+         }
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ;
+    bool push(T t) ;
+    bool pop(T& t) ;
+    bool peek(T& t) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    std::string toString() {
+       struct Stack_synobj* __res;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         return "Capacity: "+std::to_string(capacity_)+"\n"+"Index: "+std::to_string(__res->idx_);
+         break;
+        } catch(...){}
+       }
+    }
+    unsigned size() {
+       struct Stack_synobj* __res;
+       size_t __ret__11=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__11 = __res->idx_;
+         break;
+        } catch(...){}
+       }
+       return __ret__11;
+    }
+    private:
+    const size_t capacity_;
+    ;
+    T* array_;
+  };
+template <typename T>
+bool Stack<T>::push(T t) {
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__1=-1;
+   int synobj_list_id = find_synobj_list_id();
+   std::queue<struct Stack_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+   int local_idx = local_idx_array[synobj_list_id];
+   
+   newstate = synobj_list->front();
+   if (is_synobj_free(newstate)) {
+       synobj_list->pop();
+   } else {
+       newstate = new struct Stack_synobj();
+   }
+   newstate->reclaim_wrapper();
+   while (true) 
+   {
+    try{
+     occupied_synobj_array[local_idx] = state.load();
+     while (occupied_synobj_array[local_idx].load() != state.load()) {
+         occupied_synobj_array[local_idx] = state.load();
+     }
+     oldstate=occupied_synobj_array[local_idx].load();
+     
+     *newstate = *oldstate;
+     T array__newstate_idx__copy=0;
+     if (newstate->idx_<capacity_) 
+       {
+          array__newstate_idx__copy = t;
+          newstate->insert_mod(&(array_[newstate->idx_++]),array_[newstate->idx_],array__newstate_idx__copy);
+          __ret__1 = true;
+       }
+     else 
+       {
+          __ret__1 = false;
+       }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      newstate->apply_mod();
+      occupied_synobj_array[local_idx] = newstate;
+      synobj_list->push(newstate);
+      break;
+     }
+    } catch(...){}
+   }
+   return __ret__1;
+}
+template <typename T>
+bool Stack<T>::pop(T& t) {
+   struct Stack_synobj* oldstate;
+   struct Stack_synobj* newstate;
+   int __ret__2=-1;
+   int synobj_list_id = find_synobj_list_id();
+   std::queue<struct Stack_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+   int local_idx = local_idx_array[synobj_list_id];
+   
+   newstate = synobj_list->front();
+   if (is_synobj_free(newstate)) {
+       synobj_list->pop();
+   } else {
+       newstate = new struct Stack_synobj();
+   }
+   newstate->reclaim_wrapper();
+   while (true) 
+   {
+    try{
+     occupied_synobj_array[local_idx] = state.load();
+     while (occupied_synobj_array[local_idx].load() != state.load()) {
+         occupied_synobj_array[local_idx] = state.load();
+     }
+     oldstate=occupied_synobj_array[local_idx].load();
+     
+     *newstate = *oldstate;
+     if (newstate->idx_>0) 
+       {
+          t = array_[newstate->idx_-1];
+          newstate->idx_--;
+          __ret__2 = true;
+       }
+     else 
+       {
+          __ret__2 = false;
+       }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      newstate->apply_mod();
+      occupied_synobj_array[local_idx] = newstate;
+      synobj_list->push(newstate);
+      break;
+     }
+    } catch(...){}
+   }
+   return __ret__2;
+}
+template <typename T>
+bool Stack<T>::peek(T& t) {
+   struct Stack_synobj* __res;
+   int __ret__3=-1;
+   while(true)
+   {
+    try {
+     __res=state.load();
+     if (__res->idx_>0) 
+       {
+          t = array_[__res->idx_-1];
+          __ret__3 = true;
+       }
+     else 
+       {
+          __ret__3 = false;
+       }
+     break;
+    } catch(...){}
+   }
+   return __ret__3;
+}
+template <typename T>
+bool Stack<T>::isFull() {
+   struct Stack_synobj* __res;
+   bool __ret__5=-1;
+   while(true)
+   {
+    try {
+     __res=state.load();
+     __ret__5 = __res->idx_>capacity_;
+     break;
+    } catch(...){}
+   }
+   return __ret__5;
+}
+template <typename T>
+bool Stack<T>::isEmpty() {
+   struct Stack_synobj* __res;
+   bool __ret__7=-1;
+   while(true)
+   {
+    try {
+     __res=state.load();
+     __ret__7 = __res->idx_<=0;
+     break;
+    } catch(...){}
+   }
+   return __ret__7;
+}

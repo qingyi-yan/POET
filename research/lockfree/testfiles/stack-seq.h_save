@@ -1,0 +1,101 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <string>
+template <typename T>
+class Stack  
+  {
+    public:
+    public:
+    Stack (int capacity) : capacity_(capacity),idx_(0) {
+       array_ = new T [capacity_];
+       for (int i=0; i<capacity_; i+=1)
+         {
+            array_[i] = 0;
+         }
+    }
+    ;
+    bool push(T t) ;
+    bool pop(T& t) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    unsigned size() {
+       size_t __ret__11;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__11 = idx_;
+        }
+       return __ret__11;
+    }
+    private:
+    const size_t capacity_;
+    size_t idx_;
+    T* array_;
+    private:
+    mutable TATAS lock1;
+  };
+template <typename T>
+bool Stack<T>::push(T t) {
+   bool ret;
+   
+   {
+     AcquireLock acq(lock1);
+   
+   if (idx_<capacity_) 
+     {
+        array_[idx_++] = t;
+        ret = true;
+     }
+   else 
+     {
+        ret = false;
+     }
+    }
+   return ret;
+}
+template <typename T>
+bool Stack<T>::pop(T& t) {
+   bool ret;
+   
+   {
+     AcquireLock acq(lock1);
+   
+   if (idx_>0) 
+     {
+        t = array_[idx_-1];
+        idx_--;
+        ret = true;
+     }
+   else 
+     {
+        ret = false;
+     }
+    }
+   return ret;
+}
+template <typename T>
+bool Stack<T>::isFull() {
+   bool __ret__5;
+   
+   {
+     AcquireLock acq(lock1);
+   
+   __ret__5 = idx_>capacity_;
+    }
+   return __ret__5;
+}
+template <typename T>
+bool Stack<T>::isEmpty() {
+   bool __ret__8;
+   
+   {
+     AcquireLock acq(lock1);
+   
+   __ret__8 = idx_<=0;
+    }
+   return __ret__8;
+}

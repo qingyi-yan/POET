@@ -1,0 +1,276 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <utility>
+template <class key_type,class data_type>
+class hash_entry  
+  {
+    public:
+    hash_entry<key_type,data_type>* next;
+    key_type key;
+    std::pair<key_type,data_type> value;
+  };
+template <class key_type,class data_type>
+class hash_map  
+  {
+    hash_entry<key_type,data_type>** table;
+    ;
+    struct hash_map_synobj{
+      size_t hash_length;
+      struct ModifyLog
+      {
+        hash_entry<key_type,data_type>** m_table;
+        hash_entry<key_type,data_type>*  m_table_old;
+        hash_entry<key_type,data_type>*  m_table_new;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      hash_map_synobj() : modlog(0) {}
+      void insert_mod(hash_entry<key_type,data_type>** m_table, hash_entry<key_type,data_type>* m_table_old, hash_entry<key_type,data_type>* m_table_new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_table = m_table;
+        tmp.m_table_new = m_table_new;
+        tmp.m_table_old = m_table_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) {
+          cur = new std::vector<struct ModifyLog>;
+          modlog = cur;
+        }
+        cur->push_back(tmp);
+      }
+      void apply_mod ()
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          std::atomic<hash_entry<key_type,data_type>*>* tmp_atomic = reinterpret_cast<std::atomic<hash_entry<key_type,data_type>*>*>(tmp.m_table);
+          std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_table_old, tmp.m_table_new);
+        }
+        modlog.compare_exchange_weak(cur, 0);
+      }
+      
+      hash_map_synobj& operator =(hash_map_synobj& that)
+      {
+        that.apply_mod();
+          hash_length=that.hash_length;
+        modlog = 0;
+        return *this;
+      }
+    };
+    std::atomic <struct hash_map_synobj*> state;
+    ;
+    ;
+    public:
+    typedef std::pair<key_type,data_type> value_type;
+    size_t bucket(int k) {
+       struct hash_map_synobj* __res;
+       int __ret__2=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__2 = k%__res->hash_length;
+         break;
+        } catch(...){}
+       }
+       return __ret__2;
+    }
+    hash_entry<key_type,data_type>* search(int k) {
+       struct hash_map_synobj* oldstate;
+       struct hash_map_synobj* newstate;
+       int index=0;
+       hash_entry<key_type,data_type>* p=(hash_entry<key_type,data_type>*)(-1);
+       hash_entry<key_type,data_type>* __ret__4=(hash_entry<key_type,data_type>*)(-1);
+       newstate = new struct hash_map_synobj();
+       while (true) 
+       {
+        try{
+         oldstate=state.load();
+         
+         *newstate = *oldstate;
+         index = k%newstate->hash_length;
+         p = table[index];
+         __ret__4 = p;
+         while (p)
+           {
+              if (p->key==k) 
+                {
+                   break;
+                }
+              p = p->next;
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          break;
+         }
+        } catch(...){}
+       }
+       return __ret__4;
+    }
+    hash_entry<key_type,data_type>* insert(value_type v) {
+       struct hash_map_synobj* oldstate;
+       struct hash_map_synobj* newstate;
+       hash_entry<key_type,data_type>* __ret__5=(hash_entry<key_type,data_type>*)(-1);
+       int index=0;
+       hash_entry<key_type,data_type>* p=(hash_entry<key_type,data_type>*)(-1);
+       hash_entry<key_type,data_type>* __ret__6=(hash_entry<key_type,data_type>*)(-1);
+       newstate = new struct hash_map_synobj();
+       while (true) 
+       {
+        try{
+         oldstate=state.load();
+         
+         *newstate = *oldstate;
+         hash_entry<key_type,data_type>* table_index_copy=0;
+         index = v.first%newstate->hash_length;
+         p = table[index];
+         __ret__6 = __ret__5;
+         while (p&&__ret__5==(hash_entry<key_type,data_type>*)(-1))
+           {
+              if(!p) throw "NullPtrExcpt";
+              if (p->key==v.first) 
+                {
+                   __ret__5 = NULL;
+                }
+              if (__ret__5!=NULL) 
+                {
+                   p = p->next;
+                }
+           }
+         if (__ret__5!=NULL) 
+           {
+              p = new hash_entry<key_type,data_type> ();
+              if(!p) throw "NullPtrExcpt";
+              p->key = v.first;
+              p->value = v;
+              p->next = table[index];
+              table_index_copy = p;
+              newstate->insert_mod(&(table[index]),table[index],table_index_copy);
+              __ret__5 = p;
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          break;
+         }
+        } catch(...){}
+       }
+       return __ret__6;
+    }
+    int erase(int k) {
+       struct hash_map_synobj* oldstate;
+       struct hash_map_synobj* newstate;
+       size_t n=0;
+       size_t index=0;
+       hash_entry<key_type,data_type>* prev;
+       hash_entry<key_type,data_type>* curr=(hash_entry<key_type,data_type>*)(-1);
+       newstate = new struct hash_map_synobj();
+       while (true) 
+       {
+        try{
+         oldstate=state.load();
+         
+         *newstate = *oldstate;
+         hash_entry<key_type,data_type>* table_index_copy=0;
+         hash_entry<key_type,data_type>* prev_next_copy=0;
+         index = k%newstate->hash_length;
+         curr = table[index];
+         prev = curr;
+         while (curr)
+           {
+              if (curr->key==k) 
+                {
+                   n++;
+                   if (curr==table[index]) 
+                     {
+                        table_index_copy = curr->next;
+                        newstate->insert_mod(&(table[index]),table[index],table_index_copy);
+                        
+                        curr = prev = table_index_copy;
+                     }
+                   else 
+                     {
+                        prev_next_copy = curr->next;
+                        if(!prev) throw "NullPtrExcpt";
+                        newstate->insert_mod(&(prev->next),prev->next,prev_next_copy);
+                        
+                        curr = prev_next_copy;
+                     }
+                }
+              else 
+                {
+                   prev = curr;
+                   curr = curr->next;
+                }
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          break;
+         }
+        } catch(...){}
+       }
+       return n;
+    }
+    bool empty() {
+       struct hash_map_synobj* oldstate;
+       struct hash_map_synobj* newstate;
+       int i;
+       bool res=true;
+       hash_entry<key_type,data_type>* e;
+       newstate = new struct hash_map_synobj();
+       while (true) 
+       {
+        try{
+         oldstate=state.load();
+         
+         *newstate = *oldstate;
+         for (i=0; i<newstate->hash_length; i+=1)
+           {
+              if (table[i]!=NULL) 
+                {
+                   e = table[i];
+                   res = false;
+                }
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          break;
+         }
+        } catch(...){}
+       }
+       return res;
+    }
+    public:
+    hash_map (int init_hash_length)  {
+       struct hash_map_synobj* state_tmp=new hash_map_synobj ();
+       state_tmp->hash_length = init_hash_length;
+       table = (hash_entry<key_type,data_type>**)calloc(init_hash_length,sizeof(hash_entry<key_type,data_type>*));
+       if (table==NULL) 
+         {
+            printf("ERROR: hash_map calloc failure \n");
+            exit(0);
+         }
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ;
+    ~hash_map() {
+       free(table);
+    }
+    ;
+  };

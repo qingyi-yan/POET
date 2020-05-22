@@ -1,0 +1,886 @@
+include C++front.code
+
+<define already_locked 0 />
+<parameter libraryname default="TATAS" message="library name"/>
+<parameter lockname default="TATAS" message="lock type name"/>
+
+<code RangeType pars=(lo : ID|INT, hi : ID|INT) > SHOULDN'T BEHERE [@lo@--@hi@] </code>
+
+<code MacroPartitionRevalidation pars=(par, rev)>
+@(switch(par) {
+case TRUE: "#define ENABLE_DATA_PARTITION // data partitioned"
+default: "// unable to partition data"
+})@
+
+@(switch(rev) {
+case TRUE: "#define ENABLE_REVALIDATION // safe to revalidate"
+default: "// unsafe revalidation"
+})@
+
+</code>
+
+
+<code LibraryInclude pars=(syn)>
+@(switch(syn) {
+case "syn1": CODE.LibraryInclude_ForNonblocking
+default: CODE.LibraryInclude_Basic
+})@
+</code>
+
+<code LibraryInclude_Basic >
+#include "@GLOBAL.libraryname@.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+</code>
+
+<code LibraryInclude_ForNonblocking >
+#include "nonblocking_header.h"
+</code>
+
+<code AcquireLock pars=(syn)>
+AcquireLock acq_@syn@;
+</code>
+
+<code AtomicModify pars=(decls, mod:LIST(_,"\n"),syn : INT)>
+@(if (!GLOBAL.already_locked) {
+  GLOBAL.already_locked=1; unlock=1;
+  StmtList#decls
+@
+{
+  AcquireLock acq(lock@syn@);
+@} else {unlock=0; ""})@
+@mod@
+@(if (unlock) { GLOBAL.already_locked=0; " }"} else {""})@
+</code>
+
+<code AtomicPtrType pars=(t:Type)>
+std::atomic <@t@*>
+</code>
+
+<code LockDecl pars=(syn) >
+mutable @GLOBAL.lockname@ lock@syn@;
+</code>
+
+<code LockObj pars=(var, syn : INT)>
+if (@var@ != 0)  acq_@syn@.lock(@var@->lock@syn@);
+</code>
+
+<code LockVar pars=(var)>
+AcquireLock acq_@var@(lock@var@);
+</code>
+
+<code IncrementalLockAcq pars=(var)>
+AcquireLock acq_@var@;
+</code>
+
+<code IncrementalLockModify pars=(var,newvar,synid)>
+if (@newvar@!=0)
+   acq_@var@.lock(@newvar@->lock@synid@);
+</code>
+
+<code LockedBlock pars=(var : LIST(CODE.LockVar|CODE.LockObj,"\n"), label, body : LIST(_,"\n"))>
+{
+  @var@
+  @body@
+}
+</code>
+
+<code Linearization> @""@ </code>
+
+<<* <code LocalVarDecl pars=(content : LIST(CODE.DeclStmt,"\n"))> @content@ </code>
+<code LocalVarDecl pars=(content : LIST(CODE.DeclStmt,"\n"))> @" "@  </code>
+<*
+<code Loop_fsm pars=(body : LIST(CODE.Stmt,"\n"),ctrl:CODE.LoopIndex|"")>
+@((ctrl == "")? (
+@while (true) @
+): ( ctrl ))@
+{
+  @body@
+retry: GOTO_NANOSLEEP;
+}
+</code>
+*>
+
+<code Loop_fsm pars=(body : LIST(CODE.Stmt,"\n"),ctrl:CODE.LoopIndex|"")>
+@((ctrl == "")? (
+@WRITE_OP_BEGIN@
+): ( @WRITE_OP_BEGIN(@ctrl@)@ ))@
+  // write operation begin
+  @body@
+  // write operation end
+WRITE_OP_END
+</code>
+
+<code Loop_read pars=(body:LIST(CODE.Stmt,"\n"), ctrl:CODE.LoopIndex|"")>
+@((ctrl == "")? (
+@READ_OP_BEGIN@
+): ( @READ_OP_BEGIN(@ctrl@)@ ))@
+  // read operation begin
+  @body@
+  // read operation end
+READ_OP_END
+</code>
+
+<code LogvarType_Handle pars=(type, syn)>
+@(switch(syn) {
+<<* case "syn1": CODE.PtrType#(type)
+case "syn1": CODE.PtrType#("wrapper_t")
+default: type
+})@
+</code>
+
+<code CheckConflictInvoke_Handle pars=(exp, var, syn)>
+@(switch(syn) {
+case "syn1": CODE.CheckConflictInvoke#(exp, var)
+default: exp
+})@
+</code>
+
+<*
+<code CheckConflictInvoke pars=(exp, var)>
+if(!check_conflict(oldstate,newstate,@exp@,@var@)) CONFLICT_HANDLE;
+</code>
+*>
+
+<code CheckConflictInvoke pars=(exp, var)>
+MOD_READ(@exp@,@var@);
+</code>
+
+<code CheckConflictForRead_Handle pars=(exp, var, syn)>
+@(switch(syn) {
+case "syn1": CODE.CheckConflictForReadInvoke#(exp, var)
+default: exp
+})@
+</code>
+
+<<* if(!check_conflict(oldstate,@exp@,@var@)) CONFLICT_HANDLE;
+<code CheckConflictForReadInvoke pars=(exp, var)>
+MOD_READ_R(@exp@,@var@);
+</code>
+
+<code CheckConflictForRecursiveWrite pars=(exp, var, syn)>
+if(!check_conflict(oldstate,newstate,@exp@,@var@)) throw "conflict";
+</code>
+
+<code CheckConflictForRecursiveRead pars=(exp, var, syn)>
+if(!check_conflict(oldstate,@exp@,@var@)) throw "conflict";
+</code>
+
+<code ReadWrapper_Handle pars=(exp, syn)>
+@(switch(syn) {
+case "syn1": CODE.ReadWrapperInvoke#(exp)
+default: exp
+})@
+</code>
+
+<*
+<code ReadWrapperInvoke pars=(exp)>
+read_wrapper(@exp@)
+</code>
+*>
+
+<code ReadWrapperInvoke pars=(exp)>
+WRP_READ(@exp@)
+</code>
+
+<code SnapshotVar_Handle pars=(exp, syn)>
+@(switch(syn) {
+case "syn1": CODE.SnapshotVar#(exp)
+default: exp
+})@
+</code>
+
+<code SnapshotVar pars=(exp)>
+SNAPSHOT(@exp@)
+</code>
+
+<code WriteWrapper_Handle pars=(exp, syn)>
+@(switch(syn) {
+case "syn1": CODE.WriteWrapperInvoke#(exp)
+default: exp
+})@
+</code>
+
+<*
+<code WriteWrapperInvoke pars=(exp)>
+write_wrapper(@exp@)
+</code>
+*>
+
+<code WriteWrapperInvoke pars=(exp)>
+WRP_WRITE(@exp@)
+</code>
+
+<code NullPtrExcpt pars=(exp)>
+if(!@exp@) throw "NullPtrExcpt";
+</code>
+
+<code Assign_fsm pars=(lhs : EXP, rhs : EXP) >
+@lhs@=@rhs@.load();
+</code>
+
+<code Allocate pars=(var : EXP, t : CODE.Type)>
+@var@ = new @t@();
+</code>
+
+<code CopyObject pars=(from,to)>
+===SHOULD BE TRANSLATED ===CopyObject(@from@,@to@);
+</code>
+
+<code Invoke pars=(op,var)>
+===SHOULD BE TRANSLATED ===invoke(@op@,@var@);
+</code>
+
+<code CompareSwap_Handle pars=(var, oldval, newval, label, body, syn) >
+@(switch (syn) {
+case "syn1": CODE.CompareSwap#(var,oldval,newval,label,body)
+case "syn4": CODE.CompareSwap_with_reuse#(var,oldval,newval,label,body)
+case "syn5": CODE.CompareSwap_noopt#(var,oldval,newval,label,body)
+default: ";"
+}
+)@
+</code>
+
+<*
+<code CompareSwap pars=(var, oldval, newval, label, body) >
+if (@var@.compare_exchange_strong(@oldval@,@newval@))
+{
+ @newval@->apply_mod();
+ @body@
+}
+</code>
+*>
+
+<code CompareSwap pars=(var, oldval, newval, label, body) > @""@ </code>
+
+<code CompareSwap_with_reuse pars=(var, oldval, newval, label, body) >
+if (@var@.compare_exchange_strong(@oldval@,@newval@))
+{
+ @newval@->apply_mod();
+ @body@
+}
+</code>
+
+<code CompareSwap_noopt pars=(var, oldval, newval, label, body) >
+if (@var@.compare_exchange_strong(@oldval@,@newval@))
+{
+ @newval@->apply_mod();
+ break;
+}
+</code>
+
+<code SynObjName pars=(classname)> @classname@_synobj </code>
+<code SplitName pars=(var) >
+@(switch (var) {
+   case ObjAccess#(v1,v2)|PtrAccess#(v1,v2)|ArrayAccess#(v1,v2)|(v1 v2):
+    if (v2 != "") { ((SplitName#v1) "_" (SplitName#v2)) }
+    else { SplitName#v1 }
+   case ID | CODE.Name: var
+   case CODE.VarRef#(n,"++"|"--") : SplitName#n
+   case CODE.Bop#("%",n,_) : SplitName#n
+   default: ""
+  }) @
+</code>
+<code CopyName pars=(orig:CODE.SplitName)> @orig@_copy </code>
+<code ModLogName pars=(origname) > m_@((origname:CODE.ObjAccess#(n,_))?n : origname)@ </code>
+
+<code CopyFromThat pars=(vardecl) >
+@(TypeInfo#(type, name, _)=vardecl;
+name "=that." name
+)@;
+</code>
+
+<code CopyFromThat_with_reuse pars=(vardecl) >
+  @(TypeInfo#(type, name, _)=vardecl; name "=that." name)@;
+</code>
+
+<code ModCopyOperatorDecl_Handle pars=(structname : ID, vardecls : LIST(CODE.CopyFromThat,"\n"), syn)>
+@(switch(syn) {
+case "syn1": CODE.ModCopyOperatorDecl#(structname,vardecls)
+case "syn4": CODE.ModCopyOperatorDecl_with_reuse#(structname,vardecls)
+case "syn5": CODE.ModCopyOperatorDecl_noopt#(structname,vardecls)
+default: ";"
+})@
+</code>
+
+
+<code ModCopyOperatorDecl pars=(structname : ID, vardecls : LIST(CODE.CopyFromThat,"\n"))>
+@structname@& operator =(@structname@& that)
+{
+    @vardecls@
+    synobj=that.synobj;
+    return *this;
+}
+
+</code>
+
+<<* <code ModCopyOperatorDecl pars=(structname : ID, vardecls : LIST(CODE.CopyFromThat,"\n"))>
+<<* @structname@& operator =(@structname@& that)
+<<* {
+<<*   that.apply_mod();
+<<*   @vardecls@
+<<*   this->version_number = that.version_number + 1;
+<<*   this->log_num = 0;
+<<*   this->total_log_num = 0;
+<<*   return *this;
+<<* }
+<<*
+<<* </code>
+
+<code ModCopyOperatorDecl_with_reuse pars=(structname : ID, vardecls : LIST(CODE.CopyFromThat_with_reuse,"\n"))>
+@structname@& operator =(@structname@& that)
+{
+  that.apply_mod();
+  @vardecls@
+  if (modlog.load()!=0) {
+    modlog.load()->clear();
+  } else {
+    old_modlog->clear();
+    modlog = old_modlog;
+    old_modlog = 0;
+  }
+  return *this;
+}
+</code>
+
+<code ModCopyOperatorDecl_noopt pars=(structname : ID, vardecls : LIST(CODE.CopyFromThat_with_reuse,"\n"))>
+@structname@& operator =(@structname@& that)
+{
+  that.apply_mod();
+  @vardecls@
+  modlog = 0;
+  return *this;
+}
+</code>
+
+<code Action pars=(op, label)> @op@ </code>
+
+<code Unsynchronized pars=(name) match=CODE.Name > @name@ </code>
+
+<********** modification log support ************>
+
+<code NodeAllocator pars=(basetype)>
+struct @basetype@;
+typedef @basetype@ gc_node_t;
+#define ENABLE_GC_NODE_ALLOCATOR
+</code>
+
+<code UtilHeaderInclude pars=(objtype, modtype)>
+struct GarbageCollector;
+@objtype@;
+typedef @objtype@ synobj_t;
+@(switch (modtype) {
+case CODE.PtrType#(CLEAR basetype): CODE.NodeAllocator#(basetype)
+default: ""
+})@
+typedef struct {
+    @modtype@ value;
+    int version;
+} wrapper_t;
+typedef @modtype@ value_t;
+
+#include "nonblocking_sync.h"
+</code>
+
+<code UtilHeaderInclude_Handle pars=(objtype, modtype, syn)>
+@(switch (syn) {
+case "syn1": CODE.UtilHeaderInclude#(objtype, modtype)
+default: ";"
+})@
+</code>
+
+<code ModLogInvoke_Handle pars=(obj,lhs,rhs,syn)>
+@(CODE.ModLogInvoke#(obj,lhs,rhs))@
+</code>
+
+<*
+<code ModLogInvoke pars=(obj,lhs,rhs) >
+@(b,c,a) = normalize_exp(lhs);
+obj@->insert_mod(&(@lhs@),@c@,@rhs@);
+</code>
+*>
+
+<code ModLogInvoke pars=(obj,lhs,rhs) >
+MOD_WRITE(@lhs@,@rhs@);
+</code>
+<code ModApplyInvoke pars=(base) >
+@base@.load()->apply_mod();
+</code>
+
+<*
+<code ModLogMemberDecl pars=(type,name) >
+@type@** @name@;
+@type@*  @name@_old;
+@type@   @name@_new;
+</code>
+*>
+
+<code ModLogMemberDecl pars=(type,name) >
+wrapper_type** @name@;
+wrapper_type*  @name@_old;
+@type@   @name@_new;
+</code>
+
+<code ModLogMemberDecl_with_reuse pars=(type,name) >
+@type@* @name@;
+@type@  @name@_old;
+@type@  @name@_new;
+</code>
+
+<code ModLogDecl_Handle pars=(members : LIST(CODE.ModLogMemberDecl,"\n"),structname:ID, modtype, syn)>
+@(switch (syn) {
+case "syn1": CODE.ModLogDecl#(members,structname,modtype)
+case "syn4": CODE.ModLogDecl_with_reuse#(members,structname,modtype)
+case "syn5": CODE.ModLogDecl_noopt#(members,structname,modtype)
+default: ";"
+})@
+</code>
+
+<code ModLogDecl pars=(members : LIST(CODE.ModLogMemberDecl,"\n"),structname:ID, modtype)>
+synobj_t* gc_next;
+GarbageCollector* parent_gc;
+Template_Synobj<wrapper_t,value_t> synobj;
+
+
+</code>
+
+<<* <code ModLogDecl pars=(members : LIST(CODE.ModLogMemberDecl,"\n"),structname:ID, modtype)>
+<<*
+<<* garbage_collector *parent_gc;
+<<* int obj_block_id;
+<<* int version_number;
+<<*
+<<* struct ModifyLog
+<<* {
+<<*   @members@
+<<* };
+<<*
+<<* ModifyLog logs[LOG_NUM];
+<<* volatile int log_num;
+<<* int total_log_num;
+<<*
+<<* @structname@() {
+<<*   version_number = -1;
+<<*   log_num = 0;
+<<*   total_log_num = 0;
+<<* }
+<<*
+<<* </code>
+
+<code ModLogDecl_noopt pars=(members : LIST(CODE.ModLogMemberDecl_with_reuse,"\n"),structname:ID, modtype)>
+struct ModifyLog
+{
+  @members@
+};
+std::atomic<std::vector<struct ModifyLog> *> modlog;
+@structname@() : modlog(0) {}
+
+</code>
+
+<code ModLogDecl_with_reuse pars=(members : LIST(CODE.ModLogMemberDecl_with_reuse,"\n"),structname:ID, modtype)>
+struct ModifyLog
+{
+  @members@
+};
+std::atomic<std::vector<struct ModifyLog> *> modlog;
+std::vector<struct ModifyLog> * old_modlog;
+
+@structname@() : modlog(0) {
+  old_modlog = new std::vector<struct ModifyLog>;
+}
+
+</code>
+
+<code ModLogMemberCopy pars=(type,name)>
+logs[log_num].@name@ = @name@;
+logs[log_num].@name@_new = @name@_new;
+logs[log_num].@name@_old = @name@_old;
+</code>
+
+<code ModLogMemberCheck pars=(type,name)>
+for (int i = 0; i < log_num; i++) {
+  if (logs[i].@name@ == @name@) {
+    logs[i].@name@_new = @name@_new;
+    return;
+  }
+}
+
+</code>
+
+
+<code ModLogMemberApply pars=(type,name)>
+void apply_mod()
+{
+    synobj.apply_mod();
+}
+
+void reclaim_wrappers ()
+{
+    synobj.reclaim_wrappers();
+}
+</code>
+
+<code ModLogMemberApply_with_reuse pars=(type,name)>
+void reclaim_wrapper () {}
+void apply_mod ()
+{
+  std::vector<struct ModifyLog> * cur = modlog.load();
+  if (cur == 0) return;
+  for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+       p != cur->end(); p++) {
+    struct ModifyLog tmp = (*p);
+    std::atomic<@type@>* tmp_atomic = reinterpret_cast<std::atomic<@type@>*>(tmp.@name@);
+    std::atomic_compare_exchange_weak(tmp_atomic, &tmp.@name@_old, tmp.@name@_new);
+  }
+  if(modlog.compare_exchange_weak(cur, 0)) {
+      old_modlog = cur;
+  }
+}
+
+</code>
+
+<code ModLogMemberApply_noopt pars=(type,name)>
+void apply_mod ()
+{
+  std::vector<struct ModifyLog> * cur = modlog.load();
+  if (cur == 0) return;
+  for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+       p != cur->end(); p++) {
+    struct ModifyLog tmp = (*p);
+    std::atomic<@type@>* tmp_atomic = reinterpret_cast<std::atomic<@type@>*>(tmp.@name@);
+    std::atomic_compare_exchange_weak(tmp_atomic, &tmp.@name@_old, tmp.@name@_new);
+  }
+  modlog.compare_exchange_weak(cur, 0);
+}
+
+</code>
+
+<code InitializeModLog pars=(members : LIST(CODE.ModLogMemberCopy,"\n"))>
+@members@ </code>
+
+<code CheckModLogExist pars=(members : LIST(CODE.ModLogMemberCheck,"\n"))>
+@members@ </code>
+
+<<* <code ModParamDecl pars=(type,name)> @type@** @name@, @type@* @name@_old, @type@ @name@_new </code>
+<code ModParamDecl pars=(type,name)> wrapper_type** @name@, wrapper_type* @name@_old, @type@ @name@_new </code>
+
+<code ModParamDecl_with_reuse pars=(type,name)> @type@* @name@, @type@ @name@_old, @type@ @name@_new </code>
+
+<code InsertModDecl_Handle pars=(members : LIST(CODE.ModParamDecl,","), syn)>
+@(switch(syn) {
+case "syn1": CODE.InsertModDecl#(members)
+case "syn4": CODE.InsertModDecl_with_reuse#(members)
+case "syn5": CODE.InsertModDecl_noopt#(members)
+default: ";"
+})@
+</code>
+
+<*
+<code InsertModDecl pars=(members : LIST(CODE.ModParamDecl,","))>
+void insert_mod(@members@)
+{
+  @CODE.CheckModLogExist#(members)@
+  @CODE.InitializeModLog#(members)@
+  log_num ++;
+  total_log_num = log_num;
+}
+
+</code>
+*>
+
+<code InsertModDecl pars=(members : LIST(CODE.ModParamDecl,","))>
+void insert_mod(wrapper_t** addr, wrapper_t* old_val, value_t new_val)
+{
+    synobj.insert_mod(addr, old_val, new_val);
+}
+
+</code>
+
+<code InsertModDecl_noopt pars=(members : LIST(CODE.ModParamDecl_with_reuse,","))>
+void insert_mod(@members@)
+{
+  struct ModifyLog tmp;
+  @CODE.InitializeModLog#(members)@
+  std::vector<struct ModifyLog> * cur = modlog.load();
+  if (cur == 0) {
+    cur = new std::vector<struct ModifyLog>;
+    modlog = cur;
+  }
+  cur->push_back(tmp);
+}
+
+</code>
+
+<code InsertModDecl_with_reuse pars=(members : LIST(CODE.ModParamDecl_with_reuse,","))>
+void insert_mod(@members@)
+{
+  struct ModifyLog tmp;
+  @CODE.InitializeModLog#(members)@
+  std::vector<struct ModifyLog> * cur = modlog.load();
+  cur->push_back(tmp);
+}
+
+</code>
+
+<code ReadWrapperDecl_Handle pars=(type, syn)>
+@(switch(syn) {
+case "syn1": CODE.ReadWrapperDecl#(type)
+default: ";"
+})@
+</code>
+
+<code ReadWrapperDecl pars=(type)> @""@ </code>
+
+<code SynObjAllocInit>
+thread_count = 0;
+for (int i = 0; i < 1000; i++) {
+    synobj_lists[i] = 0;
+    synobj_list_ids[i] = 0;
+    occupied_synobj_array[i] = 0;
+    local_idx_array[i] = 0;
+}
+</code>
+
+
+<code TempSynObjAllocDecl_Handle pars=(type,vartype,members,syn)>
+;
+</code>
+
+<code SynObjAllocDecl_Handle pars=(type,vartype,members,syn)>
+@(switch(syn){
+case "syn1": CODE.SynObjAllocDecl#(type, vartype, members)
+case "syn4": CODE.SynObjAllocDecl_with_reuse#(type, vartype, members)
+default: ";"
+})@
+</code>
+
+<code SynObjAllocDecl_with_reuse pars=(type, vartype, members)>
+@CODE.SynObjAllocDecl#(type, vartype, members)@
+</code>
+
+<code RemoveSynobjStruct pars=(type)>
+;
+</code>
+
+<code SynObjAllocDecl pars=(type, vartype, members)> @""@ </code>
+
+<code CheckConflict_Handle pars=(type,vartype,members,syn)>
+@(switch(syn){
+<<* case "syn1": CODE.CheckConflict#(type, vartype, members)
+case "syn1": ""
+default: ";"
+})@
+</code>
+
+<code CheckConflict pars=(type, vartype, members)>
+inline bool check_conflict(@type@ *oldstate, @type@ *newstate, wrapper_type* &param, @vartype@ &res)
+{
+  for (int i = 0; i < newstate->log_num; i++) {
+    if (newstate->logs[i].@(HEAD(members):(_, CLEAR name); name)@ == &param) {
+        res = newstate->logs[i].@(HEAD(members):(_, CLEAR name); name)@_new;
+        return (oldstate == STATE.load());
+    }
+  }
+  wrapper_type* tmp = param;
+  res = (tmp?(tmp->value):0);
+  return (oldstate == STATE.load());
+}
+
+inline bool check_conflict(@type@ *oldstate, @vartype@* &param, @vartype@ &res)
+{
+  @vartype@* tmp = param;
+  res = (tmp?(*tmp):0);
+
+  int old_version_number = oldstate->version_number;
+  int cur_version_number = STATE.load()->version_number;
+
+  for (int i = old_version_number + 1; i <= cur_version_number; i++) {
+    @type@ *state_tmp = (@type@*) GC->conflict_array->rb[i];
+    if (state_tmp == 0) continue;
+
+    for (int i = 0; i < state_tmp->total_log_num; i++) {
+      if (state_tmp->logs[i].@(HEAD(members):(_, CLEAR name); name)@ == &param) {
+          res = (state_tmp->logs[i].@(HEAD(members):(_, CLEAR name); name)@_old?((state_tmp->logs[i].@(HEAD(members):(_, CLEAR name); name)@_old)->value):0);
+          return true;
+      }
+    }
+
+  }
+  return true;
+}
+
+</code>
+
+
+<code SynObjAllocInvoke_Handle pars=(type, idx, syn)>
+@(switch(syn) {
+case "syn1": CODE.SynObjAllocInvoke#(type)
+case "syn4": CODE.SynObjAllocInvoke_with_reuse#(type)
+case "syn5": CODE.SynObjAllocInvoke_noopt#(type)
+default: ";"
+})@
+</code>
+
+<code SynObjAllocInvoke_with_reuse pars=(type)>
+@CODE.SynObjAllocInvoke#(type)@
+</code>
+
+<*
+<code SynObjAllocInvoke pars=(idx)>
+newstate = allocate_synobj();
+oldstate = STATE.load();
+
+</code>
+*>
+
+<code SynObjAllocInvoke pars=(idx)> @""@ </code>
+
+<code SynObjAllocInvoke_noopt pars=(type)>
+newstate = new @type@();
+</code>
+
+<code ReadObjObtain_Handle pars=(idx, syn)>
+@(switch(syn) {
+case "syn1": CODE.ReadObjObtain#(idx)
+default: ";"
+})@
+</code>
+
+<*
+<code ReadObjObtain pars=(idx)>
+// used for performance optimization
+// will be removed if it's useless
+newstate = get_read_synobj();
+
+</code>
+*>
+
+<code ReadObjObtain pars=(idx)> @""@ </code>
+
+<code OccupyOldStateInvoke_Handle pars=(syn)>
+@(switch(syn) {
+case "syn1": CODE.OccupyOldStateInvoke
+case "syn4": CODE.OccupyOldStateInvoke_with_reuse
+case "syn5": CODE.OccupyOldStateInvoke_noopt
+default: ";"
+})@
+</code>
+
+<code OccupyOldStateInvoke_with_reuse>
+@CODE.OccupyOldStateInvoke@
+</code>
+
+<*
+<code OccupyOldStateInvoke>
+oldstate = load_current_state(oldstate);
+
+</code>
+*>
+
+<code OccupyOldStateInvoke> @""@ </code>
+
+<code OccupyOldStateInvoke_noopt>
+oldstate=STATE.load();
+
+</code>
+
+<code ApplyModDecl_Handle pars=(members : LIST(CODE.ModLogMemberApply,"\n"), syn)>
+@(switch(syn) {
+case "syn1": CODE.ApplyModDecl#(members)
+case "syn4": CODE.ApplyModDecl_with_reuse#(members)
+case "syn5": CODE.ApplyModDecl_noopt#(members)
+default: ";"
+})@
+</code>
+
+<code ApplyModDecl pars=(members : LIST(CODE.ModLogMemberApply,"\n"))>
+@members@
+</code>
+
+<code ApplyModDecl_with_reuse pars=(members : LIST(CODE.ModLogMemberApply_with_reuse,"\n"))>
+@members@
+</code>
+
+<code ApplyModDecl_noopt pars=(members : LIST(CODE.ModLogMemberApply_noopt,"\n"))>
+@members@
+</code>
+
+<code SynBreak>
+break;
+</code>
+
+<code SynBreak_noopt>
+break;
+</code>
+
+<code CondCopyPtr pars=(from, to, elemtype) >
+if (@from@ != 0) @to@ = new @elemtype@(*@from@);
+else @to@ = 0;
+</code>
+
+<code RecursiveFunCall_handle pars=(name)>
+;
+</code>
+
+<code RecursiveFunCall_read pars=(name)>
+@name@_read
+</code>
+
+<code RecursiveFunCall_write pars=(name)>
+@name@_write
+</code>
+
+<code RecursiveFunLoadState_handle pars=(type)>
+;
+</code>
+
+<code RecursiveFunLoadState_read pars=(type)>
+@type@ *oldstate = get_old_synobj();
+
+</code>
+
+<code RecursiveFunLoadState_write pars=(type)>
+@type@ *oldstate = get_old_synobj();
+@type@ *newstate = get_new_synobj();
+
+</code>
+
+<code SynObjInit_Handle pars=(var, syn)>
+@(switch(syn) {
+case "syn1": CODE.SynObjInit#(var)
+default: ";"
+})@
+</code>
+
+<code SynObjInit pars=(var)>
+@var@->synobj.parent_gc = gc;
+@var@->synobj.version_number = 1;
+</code>
+
+<code StateCpVar pars=(idx)>
+state_@idx@
+</code>
+
+<code StateArray pars=(base,idx)>
+state[@idx@]
+</code>
+
+<code ArrayEntry pars=(entry)>
+@entry@
+</code>
+
+<code SnapshotRead pars=(addr,dst)>
+SNAPSHOT_READ(@addr@,@dst@);
+</code>
+
+
+<code SnapshotWrite pars=(addr,src)>
+SNAPSHOT_WRITE(@addr@,@src@);
+</code>
+
+<code AllocateNodeInvoke pars=(val) >
+allocate_node(@val@)
+</code>
+

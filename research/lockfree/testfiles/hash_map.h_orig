@@ -1,0 +1,115 @@
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <utility>
+
+template <class key_type>
+class hash_set {
+    struct hash_entry {
+        hash_entry* next;
+        key_type key;
+    };
+
+    hash_entry** table;
+    size_t hash_length;
+public:
+
+    bool search(int k) {
+        bool ret = false;
+        hash_entry *p = table[k%hash_length];
+        while (p) {
+            if (p->key == k) {
+                ret = true;
+                break;
+            } else if (p->key > k) {
+                ret = false;
+                break;
+            }
+            p = p->next;
+        }
+        return ret;
+    };
+    bool insert(int k) {
+        bool ret = true;
+        hash_entry *p = table[k%hash_length];
+        hash_entry *p_prev = 0;
+        hash_entry* new_p = new hash_entry;
+        while (p) {
+            if (p->key == k) {
+                ret = false;
+                break;
+            } else if (p->key > k) {
+                ret = true;
+                break;
+            }
+            p_prev = p;
+            p = p->next;
+        }
+
+        if (ret) {
+            new_p->key = k;
+            new_p->next = p;
+            if (p_prev == 0) {
+                table[k%hash_length] = new_p;
+            } else {
+                p_prev->next = new_p;
+            }
+        }
+        return ret;
+    }
+
+    bool erase(int k) {
+        bool ret = false;
+        hash_entry* curr = table[k%hash_length];
+        hash_entry* prev = 0;
+
+        while (curr) {
+            if (curr->key == k) {
+                ret = true;
+                break;
+            } else if (curr->key > k) {
+                ret = false;
+                break;
+            }
+            prev = curr;
+            curr = curr->next;
+        }
+        if(ret) {
+            if (prev == 0) {
+                table[k%hash_length] = curr->next;
+            } else {
+                prev->next = curr->next;
+            }
+        }
+        return ret;
+    };
+
+/*
+    bool empty() {
+        int i;
+        bool res = true;
+        hash_entry *e;
+        for (i = 0; i < hash_length; i ++) {
+            if (table[i] != NULL) {
+                e = table[i];
+                res = false;
+            }
+        }
+        return res;
+    };
+*/
+
+    hash_set(int init_hash_length) {
+        hash_length = init_hash_length;
+        table = (hash_entry **)calloc(init_hash_length,sizeof(hash_entry*));
+        if (table == NULL) {
+            printf("ERROR: hash_set calloc failure \n");
+            exit(0);
+        }
+    };
+    ~hash_set() {
+        free(table);
+    };
+};
+
+

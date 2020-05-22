@@ -1,0 +1,15 @@
+SYN syn6 (state : ref(State)) {
+  modify(op1,val(newstate)) {
+     local { oldstate : ref(State); newstate : ref(State); };
+     loop {
+       copy(oldstate -> newstate);
+       invoke(op1,val(newstate));
+       compare_and_swap state = (oldstate -> newstate) : linearization(modify) { break; };
+     };
+  }
+  read(op2,val(__res)) {
+      local { __res : ref(State); };
+      __res = state : linearization(read);
+      invoke(op2,val(__res));
+  }
+}

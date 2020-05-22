@@ -1,0 +1,78 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+template <typename T>
+class BST  
+  ;
+template <typename T>
+class Node  
+  {
+    public:
+    friend class BST<T>;
+    Node (T v)  {
+       value = v;
+       left = 0;
+       right = 0;
+       parent = 0;
+    }
+    private:
+    Node<T>* left;
+    Node<T>* right;
+    Node<T>* parent;
+    T value;
+  };
+template <typename T>
+class BST  
+  {
+    public:
+    public:
+    BST ()  {
+       root = (Node<T>**)calloc(50,sizeof(Node<T>*));
+       num_subtree = 16;
+       size_subtree = 10000;
+    }
+    ;
+    bool insert(int newItem) {
+       Node<T>* newNode=new Node<T> (newItem);
+       Node<T>* newNodeParent=(Node<T>*)(-1);
+       Node<T>* root_node=(Node<T>*)(-1);
+       Node<T>* curr=(Node<T>*)(-1);
+       bool ret=-1;
+       {
+         AcquireLock acq(lock1);
+       
+       newNodeParent = 0;
+       root_node = root[newItem/size_subtree];
+       curr = root_node->right;
+       ret = true;
+       if (ret) 
+         {
+            newNode->parent = newNodeParent;
+            if (newNodeParent==0) 
+              {
+                 root_node->right = newNode;
+              }
+            else 
+              {
+                 if (newItem<newNodeParent->value) 
+                   {
+                      newNodeParent->left = newNode;
+                   }
+                 else 
+                   {
+                      newNodeParent->right = newNode;
+                   }
+              }
+         }
+        }
+       return ret;
+    }
+    private:
+    Node<T>** root;
+    int num_subtree;
+    int size_subtree;
+    private:
+    mutable TATAS lock1;
+  };

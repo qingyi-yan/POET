@@ -1,0 +1,85 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <string>
+template <typename T>
+class RingBuffer  
+  {
+    public:
+    public:
+    RingBuffer (int capacity) : capacity_(capacity) {
+       head = 0;
+       tail = 0;
+       data = new T [capacity_];
+    }
+    ;
+    bool push(T v) ;
+    bool pop(T& v) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    unsigned size() {
+       
+       int __ret__5;
+       {
+         AcquireLock acq_1(lock1);
+         __ret__5 = tail-head;
+       }
+       return __ret__5;
+    }
+    private:
+    T* data;
+    const size_t capacity_;
+    size_t head;
+    size_t tail;
+    private:
+    mutable TATAS lock1;
+  };
+template <typename T>
+bool RingBuffer<T>::push(T item) {
+   
+   bool ret;
+   {
+     AcquireLock acq_1(lock1);
+     if (tail-head>=capacity_) 
+       {
+          ret = false;
+       }
+     else 
+       {
+          int index=tail;
+          tail = tail+1;
+          data[index%capacity_] = item;
+          ret = true;
+       }
+   }
+   return ret;
+}
+template <class T>
+bool RingBuffer<T>::pop(T& result) {
+   
+   bool ret;
+   {
+     AcquireLock acq_1(lock1);
+     if (tail<=head) 
+       {
+          ret = false;
+       }
+     else 
+       {
+          result = data[head%capacity_];
+          head = head+1;
+          ret = true;
+       }
+   }
+   return ret;
+}
+template <class T>
+bool RingBuffer<T>::isFull() {
+   
+}
+template <class T>
+bool RingBuffer<T>::isEmpty() {
+   
+}

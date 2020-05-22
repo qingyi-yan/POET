@@ -1,0 +1,14 @@
+SYN syn2 (state : State) {
+  modify (op1,state) {
+    lock(state) :linearization(modify)
+    {
+      invoke(op1,state); 
+    };
+  }
+  read(op2,state) {
+    lock(state) :linearization(read)
+    {
+      invoke(op2,state); 
+    };
+  }
+}

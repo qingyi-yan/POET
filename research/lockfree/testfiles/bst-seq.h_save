@@ -1,0 +1,279 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+template <typename T>
+class BST  
+  ;
+template <typename T>
+class Node  
+  {
+    public:
+    friend class BST<T>;
+    Node (T v)  {
+       value = v;
+       left = 0;
+       right = 0;
+       parent = 0;
+    }
+    private:
+    Node<T>* left;
+    Node<T>* right;
+    Node<T>* parent;
+    T value;
+  };
+template <typename T>
+class BST  
+  {
+    public:
+    public:
+    BST ()  {
+       root = new Node (-1);
+    }
+    ;
+    bool insert(T newItem) {
+       Node<T>* newNode=new Node<T> (newItem);
+       Node<T>* tmp_var_0;
+       Node<T>* curr=(Node<T>*)(-1);
+       Node<T>* newNodeParent=(Node<T>*)(-1);
+       Node<T>* root_node=(Node<T>*)(-1);
+       bool ret=-1;
+       {
+         AcquireLock acq(lock1);
+       
+       curr = 0;
+       newNodeParent = 0;
+       root_node = 0;
+       ret = true;
+       root_node = root;
+       curr = root_node->right;
+       while (curr)
+         {
+            newNodeParent = curr;
+            if (curr->value==newItem) 
+              {
+                 ret = false;
+                 break;
+              }
+            else if (newItem<curr->value) 
+              {
+                 curr = curr->left;
+              }
+            else 
+              {
+                 curr = curr->right;
+              }
+         }
+       if (ret) 
+         {
+            newNode->parent = newNodeParent;
+            if (newNodeParent==0) 
+              {
+                 root_node->right = newNode;
+              }
+            else 
+              {
+                 if (newItem<newNodeParent->value) 
+                   {
+                      newNodeParent->left = newNode;
+                   }
+                 else 
+                   {
+                      newNodeParent->right = newNode;
+                   }
+              }
+         }
+        }
+       return ret;
+    }
+    bool remove(T& t) {
+       bool ret=-1;
+       Node<T>* nodeToRemove=(Node<T>*)(-1);
+       Node<T>* root_node=(Node<T>*)(-1);
+       {
+         AcquireLock acq(lock1);
+       
+       ret = false;
+       nodeToRemove = 0;
+       root_node = root;
+       nodeToRemove = root_node->right;
+       while (nodeToRemove!=0)
+         {
+            if (t==nodeToRemove->value) 
+              {
+                 ret = true;
+                 break;
+              }
+            else 
+              {
+                 if (t<nodeToRemove->value) 
+                   {
+                      nodeToRemove = nodeToRemove->left;
+                   }
+                 else 
+                   {
+                      nodeToRemove = nodeToRemove->right;
+                   }
+              }
+         }
+       if (ret) 
+         {
+            if (nodeToRemove->left==0) 
+              {
+                 Node<T>* u=nodeToRemove;
+                 Node<T>* v=nodeToRemove->right;
+                 if (u->parent==0) 
+                   {
+                      root_node->right = v;
+                   }
+                 else 
+                   {
+                      if (u==u->parent->left) 
+                        {
+                           u->parent->left = v;
+                        }
+                      else 
+                        {
+                           u->parent->right = v;
+                        }
+                   }
+                 if (v!=0) 
+                   {
+                      v->parent = u->parent;
+                   }
+              }
+            else 
+              {
+                 if (nodeToRemove->right==0) 
+                   {
+                      Node<T>* u=nodeToRemove;
+                      Node<T>* v=nodeToRemove->left;
+                      if (u->parent==0) 
+                        {
+                           root_node->right = v;
+                        }
+                      else 
+                        {
+                           if (u==u->parent->left) 
+                             {
+                                u->parent->left = v;
+                             }
+                           else 
+                             {
+                                u->parent->right = v;
+                             }
+                        }
+                      if (v!=0) 
+                        {
+                           v->parent = u->parent;
+                        }
+                   }
+                 else 
+                   {
+                      Node<T>* successor=0;
+                      {
+                         Node<T>* rootNode=nodeToRemove->right;
+                         Node<T>* current=rootNode;
+                         while (current->left!=0)
+                           {
+                              current = current->left;
+                           }
+                         successor = current;
+                      }
+                      if (successor->parent!=nodeToRemove) 
+                        {
+                           {
+                              Node<T>* u=successor;
+                              Node<T>* v=successor->right;
+                              if (u->parent==0) 
+                                {
+                                   root_node->right = v;
+                                }
+                              else 
+                                {
+                                   if (u==u->parent->left) 
+                                     {
+                                        u->parent->left = v;
+                                     }
+                                   else 
+                                     {
+                                        u->parent->right = v;
+                                     }
+                                }
+                              if (v!=0) 
+                                {
+                                   v->parent = u->parent;
+                                }
+                           }
+                           successor->right = nodeToRemove->right;
+                           successor->right->parent = successor;
+                        }
+                      {
+                         Node<T>* u=nodeToRemove;
+                         Node<T>* v=successor;
+                         if (u->parent==0) 
+                           {
+                              root_node->right = v;
+                           }
+                         else 
+                           {
+                              if (u==u->parent->left) 
+                                {
+                                   u->parent->left = v;
+                                }
+                              else 
+                                {
+                                   u->parent->right = v;
+                                }
+                           }
+                         if (v!=0) 
+                           {
+                              v->parent = u->parent;
+                           }
+                      }
+                      successor->left = nodeToRemove->left;
+                      successor->left->parent = successor;
+                   }
+              }
+         }
+        }
+       return ret;
+    }
+    bool contains(T& v) {
+       Node<T>* curr;
+       Node<T>* root_node;
+       bool ret;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       curr = 0;
+       root_node = 0;
+       ret = false;
+       root_node = root;
+       curr = root_node->right;
+       while (curr)
+         {
+            if (curr->value==v) 
+              {
+                 ret = true;
+                 break;
+              }
+            else if (v<curr->value) 
+              {
+                 curr = curr->left;
+              }
+            else 
+              {
+                 curr = curr->right;
+              }
+         }
+        }
+       return ret;
+    }
+    private:
+    Node<T>* root;
+    private:
+    mutable TATAS lock1;
+  };

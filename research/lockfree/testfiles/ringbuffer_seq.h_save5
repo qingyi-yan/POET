@@ -1,0 +1,200 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <string>
+template <typename T>
+class RingBuffer  
+  {
+    struct RingBuffer_synobj{
+      size_t tail;size_t head;
+      struct ModifyLog
+      {
+        T* m_data;
+        T  m_data_old;
+        T  m_data_new;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      RingBuffer_synobj() : modlog(0) {}
+      void insert_mod(T* m_data, T m_data_old, T m_data_new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_data = m_data;
+        tmp.m_data_new = m_data_new;
+        tmp.m_data_old = m_data_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) {
+          cur = new std::vector<struct ModifyLog>;
+          modlog = cur;
+        }
+        cur->push_back(tmp);
+      }
+      void apply_mod ()
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          std::atomic<T>* tmp_atomic = reinterpret_cast<std::atomic<T>*>(tmp.m_data);
+          std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_data_old, tmp.m_data_new);
+        }
+        modlog.compare_exchange_weak(cur, 0);
+      }
+      
+      RingBuffer_synobj& operator =(RingBuffer_synobj& that)
+      {
+        that.apply_mod();
+          tail=that.tail;
+          head=that.head;
+        modlog = 0;
+        return *this;
+      }
+    };
+    std::atomic <struct RingBuffer_synobj*> state;
+    ;
+    ;
+    public:
+    public:
+    RingBuffer (int capacity) : capacity_(capacity) {
+       struct RingBuffer_synobj* state_tmp=new RingBuffer_synobj ();
+       state_tmp->head = 0;
+       state_tmp->tail = 0;
+       data = new T [capacity_];
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ;
+    bool push(T v) ;
+    bool pop(T& v) ;
+    bool isFull() ;
+    bool isEmpty() ;
+    std::string toString() {
+       struct RingBuffer_synobj* __res;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         return "Capacity: "+std::to_string(capacity_)+"\n"+"Index: "+std::to_string(__res->tail-__res->head);
+         break;
+        } catch(...){}
+       }
+    }
+    unsigned size() {
+       struct RingBuffer_synobj* __res;
+       int __ret__10=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__10 = __res->tail-__res->head;
+         break;
+        } catch(...){}
+       }
+       return __ret__10;
+    }
+    private:
+    T* data;
+    const size_t capacity_;
+    ;
+    ;
+  };
+template <typename T>
+bool RingBuffer<T>::push(T item) {
+   struct RingBuffer_synobj* oldstate;
+   struct RingBuffer_synobj* newstate;
+   int __ret__1=-1;
+   newstate = new struct RingBuffer_synobj();
+   while (true) 
+   {
+    try{
+     oldstate=state.load();
+     
+     *newstate = *oldstate;
+     T data_index_copy=0;
+     if (newstate->tail-newstate->head>=capacity_) 
+       {
+          __ret__1 = false;
+       }
+     if (__ret__1!=false) 
+       {
+          int index=newstate->tail++;
+          data_index_copy = item;
+          newstate->insert_mod(&(data[index%capacity_]),data[index%capacity_],data_index_copy);
+          __ret__1 = true;
+       }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      newstate->apply_mod();
+      break;
+     }
+    } catch(...){}
+   }
+   return __ret__1;
+}
+template <class T>
+bool RingBuffer<T>::pop(T& result) {
+   struct RingBuffer_synobj* oldstate;
+   struct RingBuffer_synobj* newstate;
+   int __ret__2=-1;
+   newstate = new struct RingBuffer_synobj();
+   while (true) 
+   {
+    try{
+     oldstate=state.load();
+     
+     *newstate = *oldstate;
+     if (newstate->tail<=newstate->head) 
+       {
+          __ret__2 = false;
+       }
+     if (__ret__2!=false) 
+       {
+          result = data[newstate->head%capacity_];
+          newstate->head++;
+          __ret__2 = true;
+       }
+     if (state.compare_exchange_strong(oldstate,newstate))
+     {
+      newstate->apply_mod();
+      break;
+     }
+    } catch(...){}
+   }
+   return __ret__2;
+}
+template <class T>
+bool RingBuffer<T>::isFull() {
+   struct RingBuffer_synobj* __res;
+   bool __ret__4=-1;
+   while(true)
+   {
+    try {
+     __res=state.load();
+     __ret__4 = __res->tail-__res->head>=capacity_;
+     break;
+    } catch(...){}
+   }
+   return __ret__4;
+}
+template <class T>
+bool RingBuffer<T>::isEmpty() {
+   struct RingBuffer_synobj* __res;
+   bool __ret__6=-1;
+   while(true)
+   {
+    try {
+     __res=state.load();
+     __ret__6 = __res->tail<=__res->head;
+     break;
+    } catch(...){}
+   }
+   return __ret__6;
+}

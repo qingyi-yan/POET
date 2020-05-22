@@ -1,0 +1,35 @@
+
+1. Translation of control states to Spin model
+
+========= specification =======
+<FSM x init=s1>
+  <states s1, s2 />
+  <event write>  
+     <states w1, w2 />
+     <transition from=(s1) to=(w1) />
+     <transition from=() to=(w2) />
+     <transition from=(w2) to=(s1,s2) />
+  </event>
+</iFSM>
+======= Translation =======
+
+#define x_s1 0
+#define x_s2 1
+#define x_write_w1 2
+#define x_write_w2 3
+
+#define MAX_THREADS 10
+int monitor[MAX_THREADS];
+
+byte write_select1;
+active proctype x_write ()
+{
+  if :: (monitor[_pid] == x_s1) -> monitor[_pid] = x_w1; 
+     :: (monitor[_pid] != x_s1) -> skip fi;
+  monitor[_pid] = x_write_w2;
+  if :: (monitor[_pid] == x_write_w2) -> 
+     { if ::(write_select1>0) -> monitor[_pid] = x_s1;
+        :: else -> monitor[_pid] = x_s2 fi; } fi;
+  
+}
+

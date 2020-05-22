@@ -1,0 +1,2286 @@
+include utils.incl
+include analysis.pi
+include normalize.pi
+include opt.pi
+
+<parameter syn type=STRING default="" message="synchronziation file name" />
+<parameter cpp type=STRING default="" message="input file name" />
+<parameter out type=STRING default="" message="output file name" />
+<parameter reduce type=0|1 default=0 message="whether to remove unsafe interface"/>
+
+<code Env pars=(scopename,scopevars,scopefuns, prev)/>
+
+<define global_lock_map MAP{}/>
+<code Unsynchronized pars=(name) match=CODE.Name />
+<code CondCopyPtr pars=(from, to, elemtype)
+                  match=(CODE.ExpStmt#(CODE.Assign#(to,NewAlloc#(elemtype,Uop#("*",from))))) />
+
+<code PtrAccess />
+
+
+<<* syn1: memopt + fixaba
+<<* syn4: memopt
+<<* syn5: noopt
+<define syn_name NULL/>
+
+<<* members of modify logs;
+<<* obtained inside xform.gen_modify_log();
+<<* used for generating garbage_collector etc;
+<define modlog_members NULL/>
+
+<<* type of shared objects modified via logs;
+<<* obtained inside xform.gen_modify_log();
+<<* used for handling conflict detection and ABA prevention etc;
+<define logvar_type NULL />
+
+<<* used for generating temp variables to store the return of check_conflict
+<define tmp_var_idx 0/>
+
+<<* tables to find shared object and the tempory variable storing its value
+<<* to avoid repeated conflict detection
+<define var2tmpvar MAP{}/>
+<define tmpvar2val MAP{}/>
+
+<<* if a variable is locally defined, it doesn't need to be handled
+<define local_defvar MAP{}/>
+
+<<* record recursive functions
+<define recursive_functions MAP{}/>
+
+<<* if snapshot not modified, revalidation can be enabled
+<define snapshot_modified FALSE />
+
+<<* define tables regarding members accessed by each function for partition
+<define shared_op_cpvars MAP{} />
+<define method_snapshot_map MAP{} />
+<define method_name "" />
+<define snapshot_new_entry "" />
+
+<define partition_by_cpvar FALSE />
+<define partition_by_array FALSE />
+<define partition_by_both FALSE />
+<define single_partition FALSE />
+
+<********************** driver **********>
+
+<trace input_ast/>
+<input from=syn cond=(syn!="") to=syn_ast syntax="syn_fsm.code"/>
+<input from=cpp to=input_ast syntax="C++front.code"/>
+
+<<* <eval DEBUG{input_ast} />
+<eval input_ast />
+
+<define TRACE_TARGET input_ast/>
+
+<eval
+  if (syn!="") {
+    syn = syn_ast;
+    syn_ast : CODE.SYN#(CLEAR syn_name,_,_,_);
+  } else {
+    syn_name = "";
+  }
+  ast = ERASE(input_ast);
+  XFORM.enter_block(ast);
+  REPLACE(ast, CODE.LibraryInclude#(syn_name) :: ast, input_ast);
+  foreach cur=CODE.ClassType#(_,CODE.ClassBody,_) \in ast do
+     cur = TRACE(cur);
+     INSERT(cur, input_ast);
+     enter_block(cur[ClassType.body]);
+     XFORM.make_shared(cur, syn, NULL);
+     exit_block(cur);
+  enddo
+
+  <<* fix aba problem, particularly change the types of class members
+  if (syn_name == "syn1") {
+    if(partition_by_array) {
+      repl_config = NULL;
+      foreach arrayentry = CODE.ArrayEntry#(_) \in input_ast do
+        repl_config = (arrayentry, CODE.ArrayEntry#(snapshot_new_entry))::repl_config;
+      enddo
+      if (repl_config != NULL) REPLACE(repl_config, input_ast);
+    }
+
+    input_ast = XFORM.fix_ABA_problem(input_ast);
+  }
+
+  foreach entry=(classname=_, syn_id=_) \in global_lock_map do
+     if (classname : TypeName#(name2=_,_)) classname=name2;
+     class = "";
+     foreach class=CODE.ClassType#(classname, CODE.ClassBody#(CLEAR body), CLEAR base) \in ERASE(input_ast) do
+          if (body != "") break;
+     enddo
+     if (class == "") {
+        print("Warning[driver]: Cannot find class " classname " to enable locking of its objects");
+        continue;
+     }
+     new_class = CODE.ClassType#(classname, CODE.ClassBody#(AppendList(body,AccessControl#("private")::CODE.LockDecl#(syn_id))), base);
+     REPLACE(ERASE(class), new_class,class);
+  enddo
+  repl_config = NULL;
+  foreach cur=CODE.DeclStmt#(CODE.TypeInfo#(_,"state", "")) \in input_ast do
+    repl_config = XFORM.merge_list((cur, ""), repl_config);
+  enddo
+  if(repl_config != NULL) REPLACE(repl_config, input_ast);
+  <<* input_ast = CODE.MacroPartitionRevalidation#(partition_by_array, !snapshot_modified)::input_ast;
+  REPLACE(CODE.LibraryInclude#(syn_name), CODE.MacroPartitionRevalidation#(partition_by_array, !snapshot_modified)::CODE.LibraryInclude#(syn_name), input_ast);
+<<* PRINT(input_ast);
+/>
+
+<output to=out syntax=("fsm_cpp.code") from=(input_ast)/>
+
+
+<********************** impl of make_shared **********>
+<define syn_id 0/>
+
+<xform make_shared pars=(container, syn, env) >
+   if (!(container[ClassType.body] : CODE.ClassBody)) RETURN container;
+
+
+   <*Step(1) identify and inline calls to public operations **>
+    shared_ops=NULL; private_ops=NULL; new_class_ops=NULL;
+    class_ops=XFORM.member_functions(container);
+    for (p = class_ops; p != NULL; p = cdr(p)) {
+       cur_op = ERASE(car(p)); t_cur_op = TRACE(cur_op);
+       INSERT(t_cur_op, GLOBAL.TRACE_TARGET);
+       new_class_ops = t_cur_op :: new_class_ops;
+       if (find_access_control(cur_op, container):"private"|"protected") {
+           XFORM.is_recursive_function(cur_op);
+           private_ops = t_cur_op :: private_ops;
+       } else {
+           if (XFORM.is_recursive_function(cur_op)) {
+             private_ops = t_cur_op :: private_ops;
+           } else {
+             shared_ops = t_cur_op :: shared_ops;
+           }
+       }
+    }
+    class_ops = new_class_ops;
+    for (p = class_ops; p != NULL; p = cdr(p)) {
+       cur_op = ERASE(car(p));
+       if (!(cur_op :  CODE.TemplateDecl#(_,d=_))) d = cur_op;
+       if (d :  CODE.InlineDecl#(d1=_)) d = d1;
+       CODE.FunctionDecl#(cur_name=_,params=_, rtype=_, body=_) = d;
+       if (body != "") {
+         if (cur_name : ScopedName#(CLEAR a)) cur_name = car(cdr(a));
+         for (p2 = shared_ops; p2 != NULL; p2 = cdr(p2)) {
+            cur_op2 = car(p2);
+            if (cur_op2 != cur_op) { <* if cur_op is not recursive here *>
+              foreach cur_call=CODE.DeclStmt#((CODE.TypeInfo _))|CODE.ExpStmt|CODE.FunctionCall \in ERASE(cur_op2) do
+                 if (Lookup(DELAY{CODE.FunctionCall#(cur_name | CODE.TypeName#(cur_name, CODE.TemplateInstantiation), _)},cur_call)) {
+                    InlineFunction[trace=cur_op2](cur_op, cur_call);
+                 }
+              enddo
+            }
+         }
+      }
+    }
+    new_shared_ops = NULL;
+    ClassBody#new_classbody = ClassBody#classbody = container[ClassType.body];
+    for (p = shared_ops; p != NULL; p = cdr(p)) {
+       (succ, new_classbody, class_ops) = XFORM.examine_funcalls(car(p),new_classbody, class_ops);
+        if (succ)  new_shared_ops = car(p) :: new_shared_ops;
+        else {
+           private_ops = car(p) :: private_ops;
+        }
+    }
+    shared_ops = ReverseList(new_shared_ops);
+
+  <** Step(2) identify non-local operations and modifications**>
+    has_mod=0; new_shared_ops=NULL;
+    for ( p = shared_ops; p != NULL; p = cdr(p)) {
+      cur_op=car(p);
+      if (!(cur_op : CODE.TemplateDecl#(_,d=_))) d = cur_op;
+      CODE.FunctionDecl#(cur_name,params, rtype, body) = d;
+      (mod,read) = XFORM.global_modread(d);
+      if (mod != NULL)  { has_mod = 1; }
+      mod_param=0;
+      if (mod != NULL) {
+        foreach TypeInfo#(CODE.PtrType,cur_p=_,_) \in params do
+           if (Lookup(cur_p,mod)) { mod_param=cur_p; break; }
+        enddo
+      }
+      if (mod != NULL || read != NULL) {
+         if (mod_param != 0) {
+            print("making " cur_name " private b/c it modifies function parameters " mod_param ":" mod);
+            private_ops = cur_op :: private_ops;
+         }
+         else new_shared_ops = cur_op :: new_shared_ops;
+      }
+   }
+   if (has_mod == 0) RETURN container;
+   shared_ops = ReverseList(new_shared_ops);
+
+   <* step (3) modify the class body *>
+    for (p = private_ops; p != NULL; p = cdr(p)) {
+       cur_op=car(p);
+       <<*print ("remove private operation::" cur_op);
+       <<*new_classbody=REPLACE(cur_op, "", new_classbody);
+    }
+    <*
+    foreach cur=CODE.Constructor \in new_classbody do
+       new_classbody=REPLACE(cur, CODE.AccessControl#"public"::cur, new_classbody);
+    enddo
+    *>
+
+    if (classbody != new_classbody) {
+       new_classbody=FlattenList(new_classbody);
+       REPLACE(classbody, new_classbody, container);
+    }
+   (lockvars,logvars) = XFORM.initialize_syn(container, shared_ops, class_ops, syn);
+
+   <* fine-grained partition *>
+   cpvar_accessed = FALSE;
+   array_accessed = FALSE;
+   accessed_together = FALSE;
+
+   partition_by_cpvar = FALSE;
+   partition_by_array = FALSE;
+   partition_by_both = FALSE;
+
+   foreach sop = FunctionDecl#(fname=_, fparam=_ , _ , fbody=_) \in shared_ops do
+     cpvar_list = XFORM.lookup_table(shared_op_cpvars, (fname,fparam));
+     varlist=NULL;
+     arrayaccesslist=NULL;
+     if(!(cpvar_list : (CLEAR varlist, CLEAR arrayaccesslist))) {
+       varlist=NULL;
+       arrayaccesslist=NULL;
+     }
+     foreach cur_lockvar=CODE.TypeInfo#(_,v=_,_) \in lockvars do
+       if (Lookup(v, sop)) {
+        if (varlist == NULL) {
+          varlist = cur_lockvar;
+        } else {
+          if (!XFORM.list_find_repeat(varlist, cur_lockvar)) {
+            varlist = cur_lockvar::varlist;
+          }
+        }
+       }
+     enddo
+
+     shared_op_cpvars = XFORM.insert_table(shared_op_cpvars,(fname,fparam), (varlist,arrayaccesslist));
+
+     if (varlist != NULL) cpvar_accessed = TRUE;
+     if ((arrayaccesslist != NULL) && (LEN(arrayaccesslist)==1)) array_accessed = TRUE;
+     if (cpvar_accessed && array_accessed) accessed_together = TRUE;
+   enddo
+
+   if (accessed_together) partition_by_cpvar = TRUE;
+   else if (cpvar_accessed && array_accessed) partition_by_both = TRUE;
+   else if ((cpvar_accessed == FALSE) && array_accessed) partition_by_array = TRUE;
+   else if (cpvar_accessed && (array_accessed == FALSE)) partition_by_cpvar = TRUE;
+   else PRINT("meaningless operation");
+
+   single_partition = FALSE;
+   if (partition_by_cpvar) {
+    PRINT("partition_by_cpvar");
+    partition = lockvars;
+    foreach sop = FunctionDecl#(fname=_, fparam=_ , _ , fbody=_) \in shared_ops do
+      cpvar_list = XFORM.lookup_table(shared_op_cpvars, (fname,fparam));
+      cpvar_list : (CLEAR varlist, CLEAR arrayaccesslist);
+
+      if (LEN(varlist) == LEN(lockvars)) {single_partition = TRUE; BREAK; }
+      p1 = varlist;
+      p2 = p1;
+      new_partition = FALSE;
+      for (_partition=partition; _partition!=NULL; _partition = TAIL(_partition)) {
+        e = HEAD(_partition);
+        if (XFORM.list_find_repeat(e, p1)) BREAK;
+        p1_e_empty = TRUE;
+        for (_e = e; _e != NULL; _e = TAIL(_e)) {
+          head_e = HEAD(_e);
+          if (XFORM.list_find_repeat(p1, head_e)) {p1_e_empty = FALSE; break}
+        }
+        if (p1_e_empty) CONTINUE;
+        p2 = XFORM.merge_list(p1, e);
+        p2 = XFORM.list_remove_repeat(p2);
+        partition=RemoveFromList(e,partition);
+        new_partition = TRUE;
+        p1 = p2;
+      }
+      if (LEN(p2) == LEN(lockvars)) {single_partition = TRUE; BREAK;}
+      if (new_partition) partition = p2::partition;
+    enddo
+
+    if (!single_partition) {
+      foreach sop = FunctionDecl#(fname=_, fparam=_ , _ , fbody=_) \in shared_ops do
+        cpvar_list = XFORM.lookup_table(shared_op_cpvars, (fname,fparam));
+        cpvar_list : (CLEAR varlist, CLEAR arrayaccesslist);
+        partition_idx = -1;
+        for(_partition = partition; _partition != NULL; _partition=TAIL(_partition)) {
+            e = HEAD(_partition);
+            if (XFORM.list_find_repeat(e, HEAD(varlist))) {
+                method_snapshot_map=XFORM.insert_table(method_snapshot_map, (fname,fparam), CODE.StateCpVar#(partition_idx));
+                BREAK;
+            }
+            partition_idx = partition_idx + 1;
+        }
+      enddo
+    }
+
+   } else if (partition_by_array) {
+      foreach sop = FunctionDecl#(fname=_, fparam=_ , _ , fbody=_) \in shared_ops do
+        cpvar_list = XFORM.lookup_table(shared_op_cpvars, (fname,fparam));
+        cpvar_list : (CLEAR varlist, CLEAR arrayaccesslist);
+        arrayaccesslist : CODE.ArrayAccess#(array_base=_, array_idx=_);
+        method_snapshot_map=XFORM.insert_table(method_snapshot_map, (fname,fparam), CODE.StateArray#(array_base, array_idx));
+      enddo
+   } else if (partition_by_both) {
+      PRINT("TODO");
+   }
+
+   CODE.ClassBody#new_classbody=container[ClassType.body];
+   container_env = Env#(container[ClassType.name],XFORM.member_variables(new_classbody),class_ops, env);
+
+   for ( p = shared_ops; p != NULL; p = cdr(p)) {
+     cur_op = car(p);
+     XFORM.synchronize_method[container=container](cur_op, syn, lockvars, logvars, container_env);
+   }
+   if(snapshot_modified) PRINT("snapshot_modified");
+   else PRINT("snapshot not modified");
+
+   <<* specially handle constructor/destructor and recursive functions
+   if (logvar_type != NULL) {
+    XFORM.synchronize_constructor_destructor(container);
+    XFORM.synchronize_recursive_functions(container);
+   }
+</xform>
+
+
+<*** impl of synchronize_method, synchronize_block, and initialize_syn *******>
+
+<xform synchronize_method pars=(cur_op, syn, lockvars, logvars, env)  container = "" >
+  if (cur_op : "" | NULL)  RETURN cur_op;
+
+  if (!(cur_op : CODE.TemplateDecl#(_,d)) ) d = cur_op;
+  CODE.FunctionDecl#(op_name,params, rtype, origbody) = d;
+
+  method_name = (op_name,params);
+
+  print ("synchronizing function: " op_name);
+  enter_block(cur_op);
+  enter_block(origbody);
+
+  var2tmpvar = MAP{} :: var2tmpvar;
+  tmpvar2val = MAP{} :: tmpvar2val;
+  local_defvar = MAP{} :: local_defvar;
+
+  origbody = origbody[StmtBlock.stmts];
+  body = XFORM.eliminate_early_return(origbody, rtype);
+  body = XFORM.breakup_var_decls(body);
+  foreach cur=CODE.DeleteStmt \in body do
+     body = REPLACE(cur, "", body);
+  enddo
+
+  isvalid = 1;
+  if (get_type(rtype) : PtrType|RefType) {
+    foreach s=CODE.Return#(e=_) \in body do
+     if ( !(e : ""|"NULL"|INT|True|False)) {
+        if (Lookup(e, lockvars)) { isvalid = 0;  break; }
+        switch (e) {
+         case Uop#("*",_)|PtrAccess|ID|CODE.Name|ArrayAccess|CODE.Uop#("&",_):
+            (var,_,_)=compute_points_to_path(logvars,e,s,body);
+            for (p = var; p != NULL; p = cdr(p)) {
+               foreach TypeInfo#(t=_,name=_,_) \in logvars do
+                  if ((get_type(car(p)) : RefType#t|PtrType#t)
+                      && Lookup(name, car(p))) {isvalid = 0; break; }
+               enddo
+            }
+        }
+     }
+   enddo
+   if (!isvalid) {
+      print ("making " op_name " private because it returns pointers to internal data.");
+      REPLACE(cur_op, "", container); return "";
+   }
+  }
+
+   local_defvar = MAP{};
+   if (params != "") {
+     for (_params = params; _params != NULL; _params = TAIL(_params)) {
+         param = HEAD(_params);
+         if (param : CODE.TypeInfo#(CLEAR param_type, CLEAR param_name, _)) {
+            local_defvar = XFORM.insert_table(local_defvar, param_name, XFORM.get_base_type(param_type));
+            insert_typeInfo("", param); <<* fix symbol table
+         }
+     }
+   }
+
+  params = XFORM.synchronized_variables(lockvars,params);
+
+  op_env = Env#(op_name,params,env[Env.scopefuns],env);
+  (before,synread,synmod,after, new_loop_body) = XFORM.split_statements_by_syn(lockvars,logvars,body);
+  if (syn == "") {
+       mod = AppendList(synread,synmod);
+       (decls,mod)=extract_var_decls(mod);
+       res = AppendList(before,AppendList(CODE.AtomicModify#(decls,mod, GLOBAL.syn_id), after));
+       exit_block(); exit_block();
+        var2tmpvar = TAIL(var2tmpvar);
+        tmpvar2val = TAIL(tmpvar2val);
+        local_defvar = TAIL(local_defvar);
+       RETURN (REPLACE(origbody,res,cur_op));
+  }
+
+ CODE.SYN#(_,syndecl,mod, read) = syn;
+ res = after;
+
+ if (synmod != "" && synmod != NULL) {
+     <<* synmod = AppendList(synread, synmod);
+     synmod = new_loop_body;
+     synread = NULL;
+     (decls,synmod) = extract_var_decls(synmod);
+     (localmod,modbody)=XFORM.synchronize_block(syndecl,mod,synmod,lockvars,logvars, op_env);
+     res = AppendList(modbody,res);
+     before = AppendList(localmod,AppendList(before, decls));
+ }
+ if (synread != "" && synread != NULL) {
+     (decls,synread) = extract_var_decls(synread);
+     (localread,readbody)=XFORM.synchronize_block(syndecl,read,synread,lockvars,logvars,op_env);
+     if (syn_name == "syn1") {
+        readbody = CODE.Loop_read#(readbody, "");
+     }
+     res = AppendList(readbody,res);
+     before = AppendList(localread,AppendList(before,decls));
+ }
+ res = AppendList(before, res);
+
+ if (syn_name == "syn1") {
+ <<* additional optimization
+ (res, _) = XFORM.method_insert_handles(res);
+
+ exit_block(); exit_block();
+ var2tmpvar = TAIL(var2tmpvar);
+ tmpvar2val = TAIL(tmpvar2val);
+ local_defvar = TAIL(local_defvar);
+ }
+ REPLACE(origbody,res,cur_op)
+</xform>
+
+<xform synchronize_block pars=(syndecl,synblock,block,lockvars,logvars,env)>
+ CODE.TypeInfo#(syn_type,syn_var,_) = syndecl;
+  CODE.SYN_Modify#(CODE.OpDecl#(op,var), local, body)
+ |CODE.SYN_Read#(CODE.OpDecl#(op,var), local, body) = synblock;
+ switch (syn_type) {
+ case ID: body = REPLACE(CODE.LockVar#syn_var, LockVar#(GLOBAL.syn_id), body);
+ case CODE.ArrayType: <* fine-grained locking *>
+       <* TODO add sorting of modvars *>
+      (initlocks,block) = XFORM.gen_fine_grained_locking(env,lockvars,block);
+      foreach cur=CODE.LockVar#(CODE.ArrayAccess#(syn_var,_)) \in ERASE(body) do
+          body=REPLACE(cur, initlocks, body);
+      enddo
+ case CODE.PtrType#modtype:
+       cpmod = "";
+       foreach cur=CODE.CopyObject#(CLEAR oldvar,CLEAR nptr) \in COPY(body) do
+          if (cpmod == "" || cpmod == NULL) (cpmod,block) = XFORM.gen_fine_grained_copy(syn_var,"__cpptr__",block, logvars, env[Env.scopefuns]);
+          cur_cp = REPLACE(syn_var, oldvar, REPLACE("__cpptr__",nptr,cpmod));
+          cur_cp = ""; <<* remove *newstate=*oldstate
+          body=REPLACE(cur, cur_cp, body);
+       enddo
+       if ((var : CODE.ValExp#(CLEAR modptr)) && modptr != syn_var) {
+          repl=NULL;
+          foreach_r (ERASE(block) : (curptr=CODE.PtrAccess#(syn_var,_)|CODE.ModLogInvoke#(syn_var,_,_)) : TRUE) {
+             newptr = REPLACE(syn_var, modptr, curptr);
+             repl = (curptr,newptr)::repl;
+          }
+          if (repl != NULL) block=REPLACE(repl, block);
+       }
+       classname = env[Env.prev][Env.scopename];
+       (local,body) = REPLACE(modtype, CODE.StructType#(CODE.Name#(CODE.SynObjName#(classname)),""), (local,body));
+ }
+ res = REPLACE(CODE.Invoke#(op,var), block, body);
+ (local,res)
+</xform>
+
+<xform initialize_syn pars=(container, shared_ops, class_ops, syn) >
+
+ ClassType#(classname, ClassBody#classbody,_) = container;
+ (vardecls,classbody_r) = XFORM.member_variables_to_modify(classbody);
+
+ if (syn == "")  syn_type = "";
+ else CODE.SYN#(_, TypeInfo#(syn_type,syn_var,_),mod,read) = syn;
+  lockvars = logvardecls=NULL;
+
+ switch (syn_type) {
+ case "": XFORM.gen_object_lock(classname); lockvars=vardecls;
+ case ID:
+    if (Lookup(LockVar#(syn_var), mod)) {
+       XFORM.gen_object_lock(classname);
+       lockvars=vardecls;
+    }
+ case CODE.PtrType :
+    typename=CODE.SynObjName#(classname);
+    objtype = CODE.Name#(typename);
+    enter_block("NEW");
+    (logvardecls, modlog) = XFORM.gen_modify_log(vardecls,typename, shared_ops);
+    <<* foreach cur=CODE.TypeInfo#(_,v=_,_) \in logvardecls do
+    foreach cur=CODE.TypeInfo#(_,v=_,_) \in vardecls do
+      if (Lookup(ArrayAccess#(v, _), shared_ops)) {
+        foreach sop = FunctionDecl#(fname=_, fparam=_ , _ , fbody=_) \in shared_ops do
+          if (Lookup(ArrayAccess#(v,_), sop)) {
+            cpvar_list = XFORM.lookup_table(shared_op_cpvars, (fname,fparam));
+            varlist=NULL;
+            arrayaccesslist=NULL;
+            if(!(cpvar_list : (CLEAR varlist, CLEAR arrayaccesslist))) {
+              varlist=NULL;
+              arrayaccesslist=NULL;
+            }
+            foreach cur_array_access=ArrayAccess#(v,idx=_) \in sop do
+              if (arrayaccesslist == NULL) {
+                arrayaccesslist=cur_array_access;
+              } else {
+                if(!Lookup(cur_array_access, arrayaccesslist)) {
+                  arrayaccesslist=cur_array_access::arrayaccesslist;
+                }
+              }
+            enddo
+            shared_op_cpvars = XFORM.insert_table(shared_op_cpvars,(fname,fparam), (varlist,arrayaccesslist));
+          }
+        enddo
+      }
+
+      if (!Lookup(Assign#(v,_), shared_ops)) {
+          vardecls=RemoveFromList(cur,vardecls) ;
+      }
+
+      if (v : ObjAccess#(name=_,_)) {
+        foreach cur1=CODE.TypeInfo#(_,name,_) \in vardecls do
+           vardecls=RemoveFromList(cur1,vardecls); break;
+        enddo
+      }
+    enddo
+    foreach cur=CODE.TypeInfo#(CODE.ConstType,v=_,_) \in vardecls do
+       vardecls=RemoveFromList(cur,vardecls);
+    enddo
+
+    (lockvars,classbody_r) = XFORM.outline_variable_decls(vardecls, classbody,class_ops, objtype,syn_var);
+    if (modlog != NULL) {
+        vardecls = DeclStmt#vardecls :: CODE.ArrayEntry#(" ") :: modlog :: CODE.ModCopyOperatorDecl_Handle#(typename,vardecls,syn_name);
+        for (p = shared_ops; p != NULL; p = cdr(p)) {
+          cur = car(p);
+          foreach CODE.FunctionDecl#(CLEAR nm,_,_,CODE.StmtBlock#(CLEAR mbody)) \in ERASE(cur) do
+              assert (mbody != "");
+              REPLACE(mbody,CODE.BookKeeping#(CODE.ModApplyInvoke#(syn_var))::mbody, cur);
+           enddo
+        }
+        structbody=CODE.DeclarationBlock[symtab=exit_block(vardecls)]#(vardecls);
+    }
+    else
+       structbody=CODE.DeclarationBlock[symtab=exit_block(vardecls)]#(DeclStmt#vardecls);
+    insert_typeInfo(structbody,objtype);
+    ptrtype = CODE.AtomicPtrType#(CODE.StructType#(objtype,""));
+    synobjtype = CODE.StructType#(objtype, "");
+    insert_typeInfo(ptrtype, syn_var);
+    foreach l = CODE.AccessControl#"public" \in classbody_r do
+     classbody_r = REPLACE(
+          <<* (l, CODE.DeclStmt#(CODE.StructType#("garbage_collector", ""))::CODE.DeclStmt#(CODE.StructType#(objtype,structbody)) :: DeclStmt#(TypeInfo#(ptrtype,syn_var,""))::CODE.TempSynObjAllocDecl_Handle#(synobjtype,logvar_type,modlog_members, syn_name):: l), classbody_r);
+          (l, CODE.DeclStmt#(CODE.StructType#(objtype,structbody)) :: DeclStmt#(TypeInfo#(ptrtype,syn_var,""))::CODE.TempSynObjAllocDecl_Handle#(synobjtype,logvar_type,modlog_members, syn_name):: l), classbody_r);
+     classbody_r = CODE.UtilHeaderInclude_Handle#(synobjtype, logvar_type, "syn1")::classbody_r;
+     break;
+    enddo
+ case CODE.ArrayType : <* fine-grained locking *>
+    foreach curinfo=CODE.TypeInfo#(CLEAR t, CLEAR v,_) \in reverse(vardecls) do
+        if (t : CODE.PtrType#(CLEAR t1)) {
+            XFORM.gen_object_lock(t1);
+        }
+        classbody_r = CODE.LockDecl#(v)::classbody_r;
+    enddo
+    lockvars = vardecls;
+ }
+ REPLACE(classbody, classbody_r, container);
+ return (lockvars,logvardecls);
+</xform>
+
+<*** impl of split_statements_by_syn, gen_finegrained_locking *******>
+
+<xform use_synchronized_vars pars=(lockvars, e) direct_use_only = 0 >
+  if (Lookup(PtrAccess#(PtrAccess#(_,_),_)|ArrayAccess#(PtrAccess#(_,_),_),e)) return 1;;
+  foreach TypeInfo#(_,v=_,_) \in lockvars do
+     if (!direct_use_only) { if  (Lookup(v, e)) return 1; }
+     else { if (Lookup_nested_list(v,e)) return 1; }
+  enddo
+ return 0;
+</xform>
+
+<define block_idx 0/>
+
+<xform split_statements_by_syn pars=(lockvars,logvars,origblock)
+         begin = 1 block_idx=0
+         output=(_before,_synread,_synmod,_body)
+         prevmod=""  prev_read="">
+  if (begin == 1) {
+    begin = 1;
+    prevmod=TRACE(NULL); prevread=TRACE(NULL);
+  }
+ switch (origblock) {
+ case CODE.BookKeeping|CODE.Loop|CODE.Loop_r|CODE.For : (origblock,NULL,NULL,NULL, origblock)
+ case CODE.EmptyStmt |CODE.Break | "" | CODE.Else | NULL : (NULL,NULL,NULL,NULL, origblock)
+ case CODE.Return#e:
+     need_syn = use_synchronized_vars(lockvars::logvars,e);
+     if (need_syn && prevmod == NULL) {
+        return_var = XFORM.gen_return_var("");
+        e_type = get_type(e);
+        if (e_type : CODE.IntType) e_type = CODE.IntType#("int");
+        if (e_type != "auto") {
+            RETURN (DeclStmt#(TypeInfo#(e_type, return_var,"")), ExpStmt#(Assign#(return_var, e)), NULL, Return#(return_var), ExpStmt#(Assign#(return_var, e)));
+        } else {
+            RETURN (NULL,origblock,NULL,NULL, origblock);
+        }
+     }
+     else {(NULL,NULL,NULL, origblock, NULL)} <* has to be the last stmt *>
+ case CODE.DeclStmt:
+       decls = NULL; r1=r2=r3=NULL; new_body = NULL;
+       foreach d = CODE.TypeInfo#(t=_,v=_,init=""|VarInit#(exp=_)|ArrayInit#(exp=_)) \in reverse(origblock) do
+         insert_typeInfo("",d); <* fix symbol table after inlining *>
+         if (init == "") { decls = d :: decls;}
+         else if (Lookup(ConstType#(_), t)) { decls = d :: decls; }
+         else if (Lookup(ArrayInit#(_), init)) { decls = d :: decls; }
+         else {
+            (e0,e1,e2,e3, e4)= split_statements_by_syn(lockvars,logvars,ExpStmt#(Assign#(v,exp)));
+            if (e0 != NULL) {
+                decls = d :: decls;
+            } else if (e1 != NULL) {
+                r1 = DeclStmt#d :: r1;
+                new_body = XFORM.merge_list(new_body, DeclStmt#d);
+            } else if (e2 != NULL) {
+                r2 = DeclStmt#d :: r2;
+                new_body = XFORM.merge_list(new_body, DeclStmt#d);
+            } else if (e3 != NULL) r3 = DeclStmt#d :: r3;
+         }
+       enddo
+       if (decls != NULL) {
+            decls = ReverseList(decls);
+            decls = DeclStmt#decls;
+       }
+       if (r1!= NULL) r1 = ReverseList(r1);
+       if (r2!= NULL) r2 = ReverseList(r2);
+       if (r3!= NULL) r3 = ReverseList(r3);
+       (decls, r1,r2,r3, new_body)
+ case CODE.ExpStmt#e | CODE.If#e | CODE.While#e :
+       (m,r)=global_modread(e);
+       if (use_synchronized_vars(lockvars::logvars, m)
+          || XFORM.intersect_nested_list(m::r, prevmod) != NULL)
+        {
+          if ((e:Assign#(e_lhs, e_rhs)) && !(e_lhs:ArrayAccess#(_,_)) && (Lookup(TypeInfo#("ALIAS", e_lhs,_), lockvars::logvars))) {
+              REPLACE(prevread, AppendList(r, AppendList(m, ERASE(prevread))), prevread);
+              return (NULL,origblock,NULL,NULL, origblock);
+          } else {
+              REPLACE(prevmod, AppendList(r, AppendList(m, ERASE(prevmod))), prevmod);
+              return (NULL,NULL,origblock,NULL, origblock);
+          }
+        }
+       else if (use_synchronized_vars(lockvars::logvars,r)
+           || XFORM.intersect_nested_list(r, prevread) != NULL)
+             { REPLACE(prevread, AppendList(r, AppendList(m, ERASE(prevread))), prevread);
+                 return (NULL,origblock,NULL,NULL, origblock) }
+       else if (prevmod == NULL && prevread==NULL)  {
+            if (Lookup(NewAlloc#(_,_), origblock)) {
+                return (origblock, NULL, NULL, NULL, NULL)  }
+           else { return (NULL, origblock,NULL, NULL, origblock)  }
+       }
+       else  { (NULL, NULL, NULL,origblock, NULL) }
+ case CODE.StmtBlock#b :
+      if (block_idx >= 0) {
+        GLOBAL.block_idx = GLOBAL.block_idx + 1;
+        foreach t=TypeInfo#(_,name=_,_) \in b do
+          if (!(name : Name#(n=_))) n=name;
+          b = rename_var(t, n, CODE.Name#("_b" GLOBAL.block_idx "_" n), b);
+        enddo
+      }
+      split_statements_by_syn(lockvars, logvars, b)
+ case ( (first=CODE.BookKeeping#CODE.ModApplyInvoke) second):
+    (before2,read2,mod2,after2, body2) = split_statements_by_syn(lockvars,logvars, second);
+     (AppendList(first,before2),read2,mod2,after2, body2)
+ case CODE.Nest#(first,second) | (first (second=CODE.Nest#(CODE.Else,_))):
+    if (first : CODE.Loop|CODE.While|CODE.For) {
+       lockvars=XFORM.AddAlias(lockvars, second);
+       logvars=XFORM.AddAlias(logvars, second);
+    }
+    (before1,read1,mod1,after1, body1) = split_statements_by_syn[block_idx=-1](lockvars,logvars, first);
+    (before2,read2,mod2,after2, body2) = split_statements_by_syn[block_idx=-1](lockvars, logvars, second);
+    if (mod1 != NULL || mod2 != NULL) { (NULL, NULL, origblock, NULL, origblock) }
+    else if (read1 != NULL || read2 != NULL) { (NULL, origblock, NULL, NULL, origblock) }
+    else if (after1 != NULL || after2 != NULL) { (NULL, NULL, NULL, origblock, NULL) }
+    else {(origblock, NULL, NULL, NULL, NULL) }
+ case (first second):
+    for (""; second != NULL && car(second) : CODE.Nest#(CODE.Else,_); "") {
+       first = (first  car(second));
+       second = cdr(second);
+    }
+    (before1,read1,mod1,after1,body1) = split_statements_by_syn(lockvars,logvars, first);
+    (before2,read2,mod2,after2,body2) =
+      split_statements_by_syn(XFORM.AddAlias(lockvars, first),AddAlias(logvars,first), second);
+    <* recompute to accommodate mod and read by the later statements *>
+    (before1,read1,mod1,after1,body1) = split_statements_by_syn(lockvars,logvars, first);
+    (AppendList(before1,before2), AppendList(read1,read2), AppendList(mod1,mod2), AppendList(after1,after2), AppendList(body1,body2))
+ }
+</xform>
+
+<xform gen_fine_grained_locking pars=(env,lockvars,block) >
+   vars = AppendList[erase_replicate=1](global_modread(block));
+
+   init_locks=XFORM.gen_member_lock[ptr_level=1](lockvars,vars);
+   init_locks=XFORM.gen_member_lock[ptr_level=1;res=init_locks](env[Env.scopevars],vars);
+   init_locks=XFORM.gen_member_lock[ptr_level=0;res=init_locks](lockvars,vars);
+   lockdecls = NULL;
+   foreach  CODE.LockObj#(obj=_, id=_) \in init_locks do
+      if (!Lookup(CODE.AcquireLock#id, lockdecls))
+         lockdecls = (AcquireLock#id) :: lockdecls;
+   enddo
+   if (lockdecls != NULL) init_locks = lockdecls :: init_locks;
+
+   res = block; processed=MAP{};
+   foreach TypeInfo#(CLEAR t, CLEAR x, CLEAR init) \in block do
+      if (processed[x] != "" || init : CODE.VarInit#(CODE.NewAlloc)) CONTINUE;
+      processed[x]=1;
+      if (Lookup_nested_list(x, vars) && Lookup(CODE.Uop#("*",x)|CODE.PtrAccess#(x,_), block)) {
+         t = t[PtrType.base];
+         values = XFORM.incremental_values(x,block);
+         foreach cur=(CLEAR assign,CLEAR newvalue) \in values do
+            if (processed[newvalue] == "") {
+               processed[newvalue] = 1;
+               res = REPLACE(assign, (assign::CODE.IncrementalLockModify#(x, newvalue, gen_object_lock(t))), res);
+            }
+         enddo
+         init_locks = AppendList(init_locks, CODE.IncrementalLockAcq#(x));
+      }
+   enddo
+   (init_locks,res)
+</xform>
+
+<************* utility functions *****************>
+
+<xform examine_funcalls pars=(cur_op, class_body, class_ops)
+         output=(_succ, _new_classbody, _new_class_ops) >
+  succ=1; new_classbody = class_body; new_classops = class_ops;
+  if (cur_op : CODE.TemplateDecl#(_,tmp=_)) cur_op = tmp;
+  CODE.FunctionDecl#(op_name,params, rtype, body) = cur_op;
+  if (op_name : CODE.Unsynchronized) return (0, class_body, class_ops);
+  <* cannot contain unknown function calls *>
+  foreach cur_call=CODE.FunctionCall#(CLEAR cur_name,CLEAR args) \in body do
+     if (cur_name : CODE.TypeName#(n=_,CODE.TemplateInstantiation)) cur_name=n;
+     if (is_known_operator(cur_name)) continue;
+     if (!Lookup(CODE.Unsynchronized#cur_name, new_classbody)) {
+       cur_body=NULL;
+       foreach op1=FunctionDecl#(cur_name|ScopedName#(_ cur_name), CLEAR params, CLEAR rtype, CLEAR cur_body) \in class_body do
+             if (find_access_control(op1, class_body) : "private"|"protected")
+                 break; <<* already unsynchronized
+             d=TRACE(FunctionDecl#(CODE.Unsynchronized#cur_name, params, rtype, cur_body));
+             new_classbody = AppendList(new_classbody,CODE.AccessControl#"private" d);
+             new_classops = AppendList(new_classops, d);
+             (succ,new_classbody, new_classops) = examine_funcalls(d, new_classbody, new_classops);
+             cur_op=REPLACE(cur_call,FunctionCall#(Unsynchronized#cur_name, args), cur_op);
+             break;
+           enddo
+           if (cur_body==NULL) {
+             print("[make_shared " op_name "]: cannot find function definition for " cur_name);
+             succ = 0;
+             break;
+           }
+         }
+   enddo
+   (succ, new_classbody, new_classops)
+</xform>
+
+<xform outline_variable_accesses pars=(body,vardecls,ptrname) >
+    body_r = body;
+    foreach cur_stmt=CODE.ExpStmt#(CLEAR e)|CODE.If#(CLEAR e)|CODE.While#(CLEAR e)|CODE.VarInit#(CLEAR e)|CODE.Loop#(CLEAR e)|CODE.Return#(CLEAR e)|CODE.DeleteStmt#(CLEAR e) \in COPY(body_r) do
+       repl = NULL;
+       foreach_r ( e : (cur=ID) : TRUE) {
+          if (Lookup(CODE.TypeInfo#(_,cur,_), vardecls))
+              repl = (cur, CODE.PtrAccess#(ptrname, cur)) :: repl;
+       }
+       if (repl != NULL) {
+          e_r = REPLACE(repl, e);
+          new_stmt = REPLACE(e, e_r, cur_stmt);
+          body_r = REPLACE(cur_stmt, new_stmt, body_r);
+       }
+   enddo
+   body_r
+</xform>
+
+    <***** collect member variable declarations *****>
+<xform member_variables_to_modify pars=(body)>
+    vardecls = NULL; body = FlattenList(body);
+    for (p=body; p != NULL; p = cdr(p)) {
+       if ( (cur=car(p)) : CODE.DeclStmt#(CLEAR info)) {
+          if (car(info) : TypeInfo) { <<* is a variable decl
+            left = NULL;
+            foreach info=CODE.TypeInfo#(CLEAR t,_,_) \in cur do
+               if (!(t : CODE.ConstType|CODE.StaticType#ConstType)) { <* skip const type *>
+                  vardecls = info :: vardecls;
+                  insert_typeInfo("",info);
+               }
+            enddo
+          }
+       }
+    }
+   (vardecls, body)
+</xform>
+
+<xform outline_variable_decls pars=(vardecls, body, class_ops, objtype, ptrname)>
+    body_r = body; vardecls_r = vardecls;
+    foreach cur=TypeInfo#(_,n=_,_) \in vardecls do
+      insert_typeInfo("",cur);
+      body_r = REPLACE(cur, "", body_r);
+      vardecls_r = REPLACE(n, PtrAccess#(ptrname,n), vardecls_r);
+    enddo
+    outline_variable_accesses(class_ops,vardecls,ptrname);
+    repl = NULL; init="";
+    for (p = body_r; p != NULL; p = cdr(p)) {
+      cur = car(p);
+      switch (cur) {
+      case  CODE.FunctionDecl#(CODE.Unsynchronized#_,_,_,CLEAR curbody):
+        curbody_r = CODE.StmtBlock#(XFORM.SubstituteAtomicPtr(objtype, ptrname, ptrname, curbody[StmtBlock.stmts]));
+        cur_repl = REPLACE(curbody, curbody_r, cur);
+        repl = (cur, cur_repl)::repl;
+      case CODE.Destructor#(_,curbody=_):
+         if (curbody : CODE.EmptyStmt) {
+           foreach cur=CODE.Destructor#(CODE.GlobalDestructorName,curbody=_) \in GLOBAL.TRACE_TARGET do "" enddo;
+           if (curbody : EmptyStmt) { print("Error: cannot find destructor defn from " GLOBAL.TRACE_TARGET); assert(0); }
+         }
+         curbody_r = outline_variable_accesses(curbody, vardecls, ptrname);
+         curbody_r = CODE.StmtBlock#(XFORM.SubstituteAtomicPtr(objtype, ptrname, ptrname, curbody_r[StmtBlock.stmts]));
+         cur_repl = REPLACE(curbody, curbody_r, cur);
+         if (cur == car(p)) repl = (cur, cur_repl)::repl;
+         else REPLACE(cur,cur_repl, GLOBAL.TRACE_TARGET);
+      case CODE.Constructor#(_,_,CLEAR init, CLEAR curbody):
+         if (curbody : CODE.EmptyStmt) {
+           foreach cur=Constructor#(_,_,init=_,curbody=_) \in GLOBAL.TRACE_TARGET do "" enddo;
+           if (curbody : EmptyStmt) { print("Error: cannot find constructor defn from " GLOBAL.TRACE_TARGET); assert(0); }
+         }
+         curbody_r = outline_variable_accesses(curbody, vardecls, ptrname);
+         new_init = NULL; init_r = NULL;
+         foreach_r ( init : (cur_assign=CODE.ConstructorParamInit#(name=_,value=_)): TRUE) {
+            if (Lookup(name,vardecls))
+               new_init = ExpStmt#(Assign#(CODE.PtrAccess#(ptrname,name),value))::new_init ;
+            else init_r = cur_assign::init_r;
+         }
+         if (init_r != NULL) init_r = CODE.ConstructorInit#init_r;
+         init_gc=CODE.ExpStmt#(CODE.Assign#("gc", CODE.NewAlloc#("GarbageCollector", "")))::CODE.DeclStmt#(CODE.TypeInfo#(CODE.PtrType#(CODE.StructType#(objtype,"")), ptrname^"_tmp",CODE.VarInit#(CODE.NewAlloc#(CODE.TypeName#(objtype,""),""))))::CODE.SynObjInit_Handle#(ptrname^"_tmp", "syn1")::CODE.ExpStmt#(CODE.Assign#(ptrname^"_shared", ptrname^"_tmp"));
+         new_init = XFORM.merge_list(init_gc, new_init);
+         if (partition_by_array == TRUE) {
+            new_init = REPLACE("gc", CODE.ArrayAccess#("gc", "i"), new_init);
+            new_init = REPLACE(ptrname^"_shared", CODE.ArrayAccess#(ptrname^"_shared", "i"), new_init);
+            new_init = CODE.Nest#(For#(DeclStmt#(TypeInfo#("int","i",VarInit#0)),Bop#("<","i","N_SNAPSHOT"),Bop#("+=","i",1)), CODE.StmtBlock#(new_init));
+         }
+
+         curbody_r = AppendList(new_init, curbody_r[StmtBlock.stmts]);
+         <<* curbody_r = CODE.StmtBlock#((XFORM.SubstituteAtomicPtr(objtype, ptrname, NULL, curbody_r))::CODE.ExpStmt#(CODE.Assign#(ptrname,ptrname^"_tmp")));
+         curbody_r = CODE.StmtBlock#((XFORM.SubstituteAtomicPtr(objtype, ptrname, NULL, curbody_r)));
+         curbody_r = REPLACE(ptrname^"_shared", ptrname, curbody_r);
+         if (init != "") { cur_repl = REPLACE(init, init_r,cur); init=""; }
+         else cur_repl = cur;
+         cur_repl = REPLACE(curbody, curbody_r, cur_repl);
+         if (cur == car(p)) repl = (cur, cur_repl)::repl;
+         else REPLACE(cur,cur_repl, GLOBAL.TRACE_TARGET);
+       default: ""
+       }
+    }
+    if (repl != NULL) body_r = REPLACE(ReverseList(repl), body_r);
+    (vardecls_r,body_r)
+</xform>
+
+<xform synchronized_variables pars=(lockvars,vars)>
+  res = NULL;
+  foreach_r (vars : (cur = CODE.TypeInfo#(t, v, _)) : TRUE) {
+     switch (t) {
+     case ScopedName#("std" "size_t")|CODE.IntType | ID | CODE.ConstType | CODE.RefType#(CODE.ConstType) : ""
+     case CODE.PtrType#(CLEAR b)|CODE.RefType#(CLEAR b):
+          if (Lookup(b,lockvars)) res = cur :: res;
+     }
+  }
+  res
+</xform>
+
+<xform gen_member_lock pars=(globalvars,vars)
+    lock_map=GLOBAL.global_lock_map  processed="" ptr_level=0 res=NULL >
+  if (processed == "") processed = MAP{};
+    switch (globalvars) {
+      case TypeInfo#(vartype,varname,_):
+         switch (vars) {
+         case ID | CODE.Name:
+            if (ptr_level == 0 && vars == varname && processed[vars] == "") {
+                    processed[vars] = 1;
+                    CODE.LockVar#(vars)::res }
+            else { res }
+         case PtrAccess#(obj,_) | Uop#("*",obj) | Bop#("+",PtrAccess#(obj,_)|obj,_):
+             if (ptr_level > 0 && obj == varname && processed[vars] == "") {
+                processed[vars]= 1;
+                CODE.PtrType#base | CODE.AtomicPtrType#base  = vartype;
+                id = XFORM.gen_object_lock(base);
+                CODE.LockObj#(obj, id) :: res
+             }
+             else { res }
+         case (first second) :
+             res2 = gen_member_lock(globalvars,second);
+             gen_member_lock[res=res2](globalvars,first)
+         case ArrayAccess#(obj,_)|ObjAccess#(obj,_)|Uop#("&",obj): res <* unsafe? *>
+         case ""|NULL : res
+         case CODE.ScopedName:
+           if (! is_known_operator(vars)) print ("ERROR: unknown name: " vars );
+         }
+      case (first second):
+             res2 = gen_member_lock(second,vars);
+             gen_member_lock[res=res2](first,vars)
+      case ""|NULL: res
+    }
+</xform>
+
+
+<xform gen_object_lock pars=(base) lock_map=GLOBAL.global_lock_map >
+  for ( "" ; (base : CODE.ConstType#(CLEAR t1)|CODE.TypeName#(CLEAR t1,_));
+        base=t1) { "" }
+  id = lock_map[base];
+  if (id == "") {
+        GLOBAL.syn_id= GLOBAL.syn_id+1;
+        id = lock_map[base]=GLOBAL.syn_id;
+  }
+  id
+</xform>
+
+<xform incremental_values pars=(x,block) res="">
+  if (res == "") res = MAP{};
+  foreach cur=ExpStmt#(Assign#(x,CLEAR rhs)) \in block do
+    if (rhs : ID | CODE.Name) {
+       if (Lookup(DELAY{CODE.TypeInfo#(_,rhs,CLEAR rhsinit,_)},block))
+         { res[cur] = incremental_values(rhsinit,block); }
+       else { res[cur] = rhs; }
+    }
+  enddo
+  res
+</xform>
+
+<xform SubstituteAtomicPtr pars=(syntype,syn_var, synval, body)>
+   if (Lookup(syn_var, body)) {
+      body_r = REPLACE(syn_var, syn_var^"_tmp", body);
+      if (synval != NULL) {
+        init=CODE.DeclStmt#(CODE.TypeInfo#(CODE.PtrType#(CODE.StructType#(syntype,"")), syn_var^"_tmp",CODE.VarInit#(synval)));
+        init :: body_r
+      }  else {
+        body_r
+      }
+   }
+   else { body }
+</xform>
+
+
+<xform AddAlias pars=(lockvars, input)>
+    res = lockvars; t = "";
+    foreach cur=CODE.Assign#(CLEAR name, CLEAR rhs)|CODE.TypeInfo#(t=_,name=_,rhs=_) \in input do
+       if (use_synchronized_vars(lockvars, rhs) && t : ""|CODE.PtrType) {
+          res = TypeInfo#("ALIAS", name,"") :: res;
+       }
+    enddo
+    res
+</xform>
+
+<code OrigVar pars=(name)> @name@ </code>
+
+<xform gen_copy_path pars=(var, v, path)  replicate_vars=0
+     already_copied=0
+     elem_type="" decl="" trace="" >
+
+  if ( var : CODE.CopyName) return path;
+  rhs=(v == "") ? var : CODE.PtrAccess#(var,v);
+  res = path;
+
+   next=NULL;
+   pattern = DELAY{CODE.ExpStmt#(CODE.Assign#(CLEAR lhs,rhs))|CODE.DeclStmt#(TypeInfo#(_,CLEAR lhs,VarInit#(rhs)))};
+   foreach cur=pattern \in path do
+     if (!(lhs : CODE.OrigVar)) {
+        AppendVar[trace=decl](CODE.DeclStmt#(CODE.TypeInfo#(PtrType#(elem_type), CODE.CopyName#rhs,CODE.VarInit#(0))));
+        if (already_copied) cp1 = "";
+        else cp1 = CODE.CondCopyPtr#(rhs, CODE.CopyName#rhs, elem_type);
+        if (!replicate_vars) {
+          if (!already_copied)
+             cp1=cp1::CODE.ExpStmt#(CODE.Assign#(rhs,CODE.CopyName#rhs));
+          new_cur = REPLACE(rhs,CODE.CopyName#rhs,cur);
+        }
+        else  {
+          AppendVar[trace=decl](CODE.DeclStmt#(CODE.TypeInfo#(PtrType#(elem_type), CODE.CopyName#(lhs),CODE.VarInit#(0))));
+          new_cur = REPLACE(lhs, CODE.OrigVar#lhs,cur) :: ExpStmt#(Assign#(CODE.CopyName#(lhs),CopyName#rhs));
+        }
+        if (trace : VAR) REPLACE(cur, cp1::new_cur, trace);
+        res = REPLACE(cur, cp1::new_cur, res);
+      }
+      if (replicate_vars) {
+          res = gen_copy_path[already_copied=1](lhs,"", res);
+      }
+      else if (lhs != var) {
+           foreach PtrAccess#(lhs,v1=_) \in path do
+               res = gen_copy_path(lhs,v1, res);
+           enddo
+      }
+   enddo
+   res
+</xform>
+
+<xform rename_copy_uses pars=(to_rename, input)>
+  res = input;
+  for (p = to_rename; p != NULL; p = cdr(p)) {
+      (cpvar, cpstmt) = car(p);
+      var_uses = collect_variable_uses(cpvar, cpstmt, input);
+      for (p2=var_uses; p2 != NULL; p2=cdr(p2)) {
+         if (Lookup(CODE.CopyName#cpvar|CODE.OrigVar|CODE.CopyName#(PtrAccess#(cpvar,_)), car p2)) CONTINUE;
+         switch (usestmt=car(p2)) {
+         case ExpStmt#(CODE.Assign)|CODE.DeclStmt:  <* new uses *>
+            usestmt_2 = REPLACE(cpvar, CODE.CopyName#(cpvar), usestmt);
+            res = REPLACE(usestmt,usestmt_2,res);
+         case CODE.While | CODE.If: <* old uses *> NULL
+         }
+      }
+  }
+  res
+</xform>
+
+<xform gen_fine_grained_copy pars=(from,to,block, logvars,class_ops) >
+  mod = XFORM.collect_ptr_mod[level=2;whole_program=class_ops](from, block);
+  done = NULL;
+
+  foreach cur_p = TypeInfo#(_,(cur=ID)|CODE.ObjAccess#(cur=ID,_),_) \in logvars do
+      if (Lookup(cur,done)) continue;
+     mod = AppendList(mod,XFORM.collect_ptr_mod[level=1;whole_program=class_ops](cur, block));
+  enddo
+
+  to_rename=NULL; decl=NULL; scopes = block;
+  for (p_mod = mod; p_mod != NULL; p_mod=cdr(p_mod)) {
+     switch (car(p_mod)) {
+     case ((act="ENTER"|"EXIT"), CLEAR m):
+          if (act == "ENTER") { enter_block(m); scopes=m :: scopes;}
+          else { exit_block(m); scopes=cdr(scopes); }
+     case (cpstmt=_,CLEAR cpvar):
+        (var,path,_)=compute_points_to_path(from|CODE.CopyName,cpvar,cpstmt,block);
+        if (path == NULL && Lookup(CopyName#(cpvar), block)) {
+           res=REPLACE(cpvar, CODE.CopyName#(cpvar),cpstmt);
+           block=REPLACE(cpstmt, res, block);
+           cpstmt=res;
+        }
+        else {
+         assert(get_type(cpvar) : PtrType#(elemtype=_)|RefType#(elemtype=_)|(elemtype=_));
+         log=0;
+         if (Lookup(CODE.Alias | CODE.PtrAccess#(PtrAccess,_) | CODE.ArrayAccess#(PtrAccess,_),var)) log = 1;
+         if (log == 0) {
+           foreach TypeInfo#(_,v=_,_) \in logvars do
+              if (v : ObjAccess#(v1=_,_)) v = v1;
+              if (Lookup(v, var)) log= 1;
+           enddo
+         }
+         if (log) {
+            switch (cpstmt) {
+            case CODE.ExpStmt#(e=CODE.Assign):
+               res = NULL;
+               for ( "" ; (e : CODE.Assign#(CLEAR lhs, CLEAR rhs)) && Lookup(cpvar,lhs); e=rhs)
+                   {
+                     t1=CODE.CopyName#(lhs);
+                     TRACE(decl,AppendVar[trace=decl](CODE.DeclStmt#(CODE.TypeInfo#(get_type(lhs), t1,CODE.VarInit#(0)))));
+                     for (_rhs = rhs; _rhs : CODE.Assign#(_, CLEAR __rhs); _rhs = __rhs);
+                     res = CODE.ExpStmt#(CODE.Assign#(t1,_rhs))::CODE.BookKeeping#(CODE.ModLogInvoke#(from,lhs,t1))::res;
+                     to_rename = (lhs, cpstmt) :: to_rename;
+                   }
+               block = REPLACE(cpstmt, res, block);
+               to_rename = REPLACE(cpstmt, res, to_rename);
+           case CODE.ExpStmt#(FunctionCall#(ScopedName#("std" "memcpy"),(dst=_ src=_ Bop#("*",lhs=_,rhs=_)))):
+               if (lhs:CODE.SizeOf#(_)) {
+                    cnt = rhs;
+               } else {
+                    cnt = lhs;
+               }
+               res = CODE.Nest#(For#(DeclStmt#(TypeInfo#("int","i",VarInit#0)),Bop#("<","i",cnt),Bop#("+=","i",1)), CODE.BookKeeping#(CODE.ModLogInvoke#(from, CODE.ArrayAccess#(dst,"i"), CODE.ArrayAccess#(src, "i"))));
+               block = REPLACE(cpstmt, res, block);
+               to_rename = (dst, cpstmt) :: to_rename;
+           case CODE.ExpStmt#(FunctionCall#(ScopedName#("std" "memmove"),(dst=_ src=_ Bop#("*",lhs=_,rhs = _)))):
+               if (lhs:CODE.SizeOf#(CLEAR lhs_val_type, _)) {
+                    cnt = rhs;
+                    val_type = lhs_val_type;
+               } else {
+                    rhs : CODE.SizeOf#(CLEAR rhs_val_type, _);
+                    cnt = lhs;
+                    val_type = rhs_val_type;
+               }
+               res = CODE.Nest#(For#(DeclStmt#(TypeInfo#("int","i",VarInit#0)),Bop#("<","i",cnt),Bop#("+=","i",1)), CODE.BookKeeping#(CODE.ModLogInvoke#(from, CODE.ArrayAccess#(dst,"i"), CODE.ArrayAccess#(src, "i"))));
+               block = REPLACE(cpstmt, res, block);
+               to_rename = (dst, cpstmt) :: to_rename;
+           case CODE.ExpStmt#(FunctionCall#(ScopedName#("std" "memset"),(src=_ val=_ size=_))) | CODE.ExpStmt#(FunctionCall#("memset",(src=_ val=_ size=_))):
+               if (size : CODE.Bop#("*", CLEAR lhs, CLEAR rhs)) {
+                if (lhs : CODE.SizeOf#(_)) {
+                  cnt = rhs;
+                } else {
+                  cnt = lhs;
+                }
+               } else if (size : CODE.SizeOf#(_)) {
+                  cnt = 1;
+               }
+               res = CODE.Nest#(For#(DeclStmt#(TypeInfo#("int","i",VarInit#0)),Bop#("<","i",cnt),Bop#("+=","i",1)), CODE.ExpStmt#(CODE.Assign#(CODE.ArrayAccess#(src, "i"), val)));
+               block = REPLACE(cpstmt, res, block);
+               to_rename = (dst, cpstmt) :: to_rename;
+             default: ;
+           }
+         }
+         else {
+           <<* whether the copy needs to be a replicate of the original
+           replicate_cpvar = Lookup(PtrAccess#(cpvar, _),var);
+           if (replicate_cpvar) {
+             if (!(cpvar : PtrAccess#(name=_,fd=_))) {name=cpvar; fd=""; }
+             repl=REPLACE(cpvar, CODE.CopyName#cpvar,cpstmt);
+             block=REPLACE(cpstmt, repl, block);
+             TRACE((decl block), gen_copy_path[elem_type=elemtype;already_copied=1;trace=block;decl=decl](name, fd, ERASE(block)));
+             cpstmt=repl;
+           }
+           for (pv = var; pv != NULL; pv=cdr(pv)) {
+             cur = car(pv);
+               if (!(cur : CODE.Alias | NewAlloc | CODE.CopyName))  {
+                if (cur : ArrayAccess#(PtrAccess#(varname=_,_),_)) {
+                     cur = varname; }
+                if (! (cur:PtrAccess#(varname=_,fd=_)))
+                 { varname = cur; fd = ""; }
+                TRACE( (decl block), gen_copy_path[elem_type=elemtype;decl=decl;trace=block;replicate_vars=replicate_cpvar](varname, fd, path));
+              }
+           }
+         }
+       }
+       if (Lookup(CopyName#cpvar, block)) to_rename = (cpvar, cpstmt) :: to_rename;
+     }
+  }
+  res = rename_copy_uses(to_rename, block);
+  if (decl != NULL) res = AppendList(decl,res);
+  (ExpStmt#(Assign#(CODE.Uop#("*",to), CODE.Uop#("*",from))),res)
+</xform>
+
+<xform find_ptr_decls pars=(vardecls) res = NULL var="" >
+ foreach cur=CODE.TypeInfo#(t=_,name=_,_) \in vardecls do
+   switch (t) {
+    case CODE.IntType1|CODE.RefType#CODE.ConstType|CODE.StaticType#CODE.ConstType|CODE.ConstType|"size_t"|CODE.ScopedName#("std" "size_t"): ""
+    case CODE.PtrType|CODE.RefType:
+        if (var == "") res = cur :: res;
+        else res = TypeInfo#(t, CODE.ObjAccess#(var,name),"") :: res;
+    case CODE.TypeName#(t1,p):
+         t2 = find_type_definition(t1,GLOBAL.TRACE_TARGET);
+         if (var == "") var = name;
+         else var = CODE.ObjAccess#(var, name);
+         res = find_ptr_decls[res=res](t2);
+    default: ;
+   }
+ enddo
+ res
+</xform>
+
+<xform is_modified pars=(name, input)>
+  foreach c = CODE.Assign#(lhs=_,_)|CODE.Return#(lhs=_) \in input do
+    if (Lookup(name, lhs)) return 1;
+  enddo
+
+  vname = NULL;
+  foreach c= CODE.DeclStmt#(typeinfo_list=_) \in input do
+    if (Lookup(name, typeinfo_list)) {
+        for (typeinfo = HEAD(typeinfo_list); typeinfo_list!=NULL; typeinfo_list = TAIL(typeinfo_list)) {
+            TypeInfo#(type, vname, VarInit#(val)) = typeinfo;
+            if (val == name) {
+                if (is_modified(vname, input)) return 1;
+            }
+        }
+    }
+  enddo
+  return 0;
+</xform>
+
+<xform gen_modify_log pars=(vardecls, structname, classops) >
+ ptrdecls=find_ptr_decls(vardecls);
+ graphs = Graph#(NULL, NULL);
+ graphs = analyze_connectivity(graphs, classops);
+ synlog = NULL;
+ logvars=NULL;
+ foreach cur=TypeInfo#(cur_type=_,cur_name=_,_) \in ptrdecls do
+     classops_nohandle = COPY(classops);
+     if (!is_modified(cur_name, classops_nohandle)) continue;
+     if (! is_linked_by_unknown(cur_name, graphs)) continue;
+     if (cur_type : PtrType#(t1=_) && !Lookup(Uop#("*",cur_name),classops) && Lookup(CODE.ArrayAccess#(cur_name,_),classops)) cur_type = t1;
+     logvars = cur :: logvars;
+     if (!Lookup(cur_type,synlog)) synlog = (cur_type,CODE.ModLogName#cur_name) :: synlog;
+     if (synlog == NULL && XFORM.modify_synchronized_vars(NULL, classops))
+        synlog = (cur_type,"ptr");
+ enddo
+
+ for (_synlog = synlog; _synlog != NULL; _synlog = TAIL(_synlog)) {
+    (cur_type, cur_name) = car(_synlog);
+    logvar_type = merge_list(logvar_type, cur_type);
+ }
+ logvar_type = XFORM.list_remove_repeat(logvar_type);
+
+ if (synlog != NULL)
+   {
+    modlog_members = merge_list(synlog, modlog_members);
+    RETURN (logvars, CODE.BookKeeping#(CODE.ModLogDecl_Handle#(synlog,structname,logvar_type,syn_name)::CODE.InsertModDecl_Handle#(synlog,syn_name)::CODE.ApplyModDecl_Handle#(synlog,syn_name)));
+    }
+ else { (logvars, NULL) }
+</xform>
+
+<xform modify_synchronized_vars pars=(lockvars, e) >
+  foreach Assign#(lhs=_,_) \in e do
+     if (Lookup(PtrAccess#(PtrAccess#(_,_),_)|ArrayAccess#(PtrAccess#(_,_),_),lhs)) return 1;
+     foreach TypeInfo#(_,v=_,_) \in lockvars do
+        if (Lookup(v, lhs))  { return 1; }
+     enddo
+  enddo
+ return 0;
+</xform>
+
+<**** functions used to check if a shared object is modified via logs etc ****>
+
+<xform is_local_defvar pars=(input_var, input_type)>
+    res = XFORM.lookup_table(local_defvar, input_var);
+    if (XFORM.get_base_type(res) == XFORM.get_base_type(input_type)) {
+        RETURN TRUE;
+    } else {
+        RETURN FALSE;
+    }
+</xform>
+
+<xform get_base_type pars=(input_type)>
+  switch(input_type) {
+     case CODE.RefType#(CLEAR sub_input_type):
+         RETURN (get_base_type(sub_input_type));
+     case CODE.ConstType#(CLEAR sub_input_type):
+         RETURN (get_base_type(sub_input_type));
+     case CODE.PtrType#(CLEAR sub_input_type):
+         res = get_base_type(sub_input_type);
+         RETURN (CODE.PtrType#(res));
+     default:
+         RETURN input_type;
+  }
+</xform>
+
+<xform is_logvar_type pars=(input_type)>
+     for (_logvar_type = logvar_type; _logvar_type != NULL; _logvar_type=TAIL(_logvar_type)){
+         cur_logvar_type = HEAD(_logvar_type);
+         if (get_base_type(cur_logvar_type) == get_base_type(input_type)) {
+             RETURN TRUE;
+         }
+     }
+     RETURN FALSE;
+</xform>
+
+<xform is_logvar_type_contained pars=(input_type)>
+     for (_logvar_type = logvar_type; _logvar_type != NULL; _logvar_type=TAIL(_logvar_type)){
+         cur_logvar_type = HEAD(_logvar_type);
+         if (REPLACE(cur_logvar_type, "", input_type) != input_type) {
+             RETURN TRUE;
+         }
+     }
+     RETURN FALSE;
+</xform>
+
+<*** functions used to access tables ***>
+
+<xform lookup_table pars=(table, target)>
+    res = "";
+    for (ptable = table; ptable != NULL; ptable = TAIL(ptable)) {
+        cur_table = HEAD(ptable);
+        res = cur_table[target];
+        if (res != "") BREAK;
+    }
+    RETURN res;
+</xform>
+
+<xform insert_table pars=(table, key, val)>
+    cur_table = HEAD(table);
+    cur_table[key] = val;
+    RETURN (cur_table::TAIL(table));
+</xform>
+
+<*** functions used to manage list ***>
+
+<xform merge_list pars=(head_list, tail_list)>
+    if (head_list == NULL) RETURN tail_list;
+    if (tail_list == NULL) RETURN head_list;
+    for (hlist = ReverseList(head_list); hlist != NULL; hlist = TAIL(hlist)){
+        tail_list = AppendList(HEAD(hlist), tail_list);
+    }
+    RETURN tail_list;
+</xform>
+
+<xform join_list pars=(head_list, tail_list)>
+    if (head_list == NULL) RETURN NULL;
+    if (tail_list == NULL) RETURN NULL;
+    sum_list = merge_list(head_list, tail_list);
+    res_list = NULL;
+
+    for (p = sum_list; p!=NULL; p = TAIL(p)) {
+        headp = HEAD(p);
+        if (XFORM.list_find_repeat(res_list, headp)) CONTINUE;
+        if (res_list==NULL) res_list = headp;
+        else res_list = headp::res_list;
+    }
+    res_list = ReverseList(res_list);
+
+    RETURN res_list;
+</xform>
+
+<xform list_find_repeat pars=(input_list, target_elem)>
+    for (p = input_list; p!=NULL; p=TAIL(p)) {
+        if (XFORM.list_eq(target_elem, HEAD(p))) RETURN TRUE;
+    }
+    RETURN FALSE;
+</xform>
+
+<xform list_remove_repeat pars=(input_list)>
+    res_list = NULL;
+    for (p = input_list; p!=NULL; p=TAIL(p)) {
+        target_elem = HEAD(p);
+        if (list_find_repeat(res_list, target_elem)) CONTINUE;
+        if (res_list == NULL) {
+            res_list = target_elem;
+        } else {
+            res_list = target_elem :: res_list;
+        }
+    }
+    res_list = ReverseList(res_list);
+    if ((res_list != NULL) && TAIL(res_list) == NULL) res_list = HEAD(res_list);
+    RETURN res_list;
+</xform>
+
+<xform list_eq pars=(left_list, right_list)>
+    if (LEN(left_list) != LEN(right_list)) RETURN FALSE;
+    if (LEN(left_list) == 1) RETURN (left_list == right_list);
+    res_eq = TRUE;
+    for (; left_list != NULL; left_list = TAIL(left_list)) {
+        h_left = HEAD(left_list);
+        find_eq = FALSE;
+        for (rlist = right_list; rlist != NULL; rlist=TAIL(rlist)) {
+            h_right = HEAD(rlist);
+            if (XFORM.list_eq(h_left, h_right)) {
+                find_eq = TRUE;
+                BREAK;
+            }
+        }
+        if (find_eq == FALSE) {
+            res_eq = FALSE;
+        }
+    }
+</xform>
+
+<*** used for ABA prevention, particularly change types of class members**>
+<xform fix_ABA_problem pars=(origblock)>
+    new_origblock = ERASE(origblock);
+    foreach cur=CODE.ClassType#(_,CODE.ClassBody,_) \in new_origblock do
+         old_body = cur[ClassType.body];
+         enter_block(cur[ClassType.body]);
+         new_body = XFORM.logvar_type_replace_classbody(old_body, logvar_type);
+         exit_block(cur);
+         new_origblock = REPLACE(old_body,new_body, new_origblock);
+    enddo
+    origblock = new_origblock;
+    RETURN origblock;
+</xform>
+
+<xform logvar_type_replace pars=(stmtlist, input_logvar_type)>
+ if ((syn_name=="syn4")||(syn_name=="syn5")) RETURN stmtlist;
+ new_stmtlist = NULL;
+ for (; stmtlist != NULL; stmtlist = TAIL(stmtlist)) {
+  curstmt = HEAD(stmtlist);
+  switch (curstmt) {
+    case DeclStmt#(CLEAR decl_body) :
+        new_decl_body = NULL;
+        for (; decl_body != NULL; decl_body = TAIL(decl_body)) {
+            cur_decl = HEAD(decl_body);
+            if (cur_decl : TypeInfo#(_,_,_)) {
+                cur_decl = REPLACE(input_logvar_type, CODE.LogvarType_Handle#(input_logvar_type, syn_name), cur_decl);
+            } else if (cur_decl : StructType#(CLEAR cur_decl_name, DeclarationBlock#(CLEAR struct_body))) {
+                if (!(Lookup(CODE.SynObjName#(_), cur_decl_name))) {
+                    <<* types of synobj members no need to change
+                    new_struct_body = logvar_type_replace(struct_body, input_logvar_type);
+                    cur_decl = REPLACE(struct_body, new_struct_body, cur_decl);
+                }
+            }
+            new_decl_body = XFORM.merge_list(new_decl_body, cur_decl);
+        }
+        curstmt = CODE.DeclStmt#(new_decl_body);
+    case (CLEAR first_stmt CLEAR rest_stmt) :
+        first_stmt_res = logvar_type_replace(first_stmt, input_logvar_type);
+        rest_stmt_res = logvar_type_replace(rest_stmt, input_logvar_type);
+        curstmt = XFORM.merge_list(first_stmt_res, rest_stmt_res);
+    default:
+        curstmt;
+  }
+  new_stmtlist = XFORM.merge_list(new_stmtlist, curstmt);
+ }
+ RETURN new_stmtlist;
+</xform>
+
+<xform logvar_type_replace_classbody pars=(input_classbody, input_logvar_type)>
+ if (!(input_classbody : ClassBody#(CLEAR stmtlist))) RETURN input_classbody;
+ new_stmtlist = logvar_type_replace(stmtlist, input_logvar_type);
+ RETURN (ClassBody#(new_stmtlist));
+</xform>
+
+<xform is_recursive_function pars=(input)>
+    orig_input = input;
+    if (input:TemplateDecl#(CLEAR t, CLEAR d)) input = d;
+    if (input:InlineDecl#(CLEAR d)) input = d;
+    FunctionDecl#(name, ptype, rtype, body) = input;
+    if(name : ScopedName#(CLEAR s CLEAR n)) name = n;
+    if (XFORM.lookup_table(recursive_functions, name)!="") {
+        PRINT("******** unexpected error  *********");
+        RETURN TRUE;
+    }
+    if (Lookup(FunctionCall#(name, _), body)) {
+        recursive_functions=XFORM.insert_table(recursive_functions,name,orig_input);
+        RETURN TRUE;
+    } else {
+        RETURN FALSE;
+    }
+</xform>
+
+<** insert template handles for replacement and transformation **>
+<xform method_insert_handles pars=(origblock)>
+origblock = XFORM.normalize_ptrobj_access(origblock);
+ if (origblock: CODE.ExpStmt#(FunctionCall#(ScopedName#("std" "memset"),(src=_ val=_ size=_))) | CODE.ExpStmt#(FunctionCall#("memset",(src=_ val=_ size=_)))) {
+    type = "";
+    if (size : CODE.Bop#("*", CLEAR lhs, CLEAR rhs)) {
+        if (lhs : CODE.SizeOf#(CLEAR type)) {cnt = rhs;} else {cnt = lhs; rhs:CODE.Sizeof#(CLEAR type);}
+    } else if (size : CODE.SizeOf#(CLEAR type)) {
+        cnt = 1;
+    }
+    if (type:(CLEAR type_base, "*")) {
+        type = CODE.PtrType#(type_base);
+    }
+    if (is_logvar_type(type)) {
+      if (cnt != 1) {
+          origblock = CODE.Nest#(For#(DeclStmt#(TypeInfo#("int","i",VarInit#0)),Bop#("<","i",cnt),Bop#("+=","i",1)), CODE.ExpStmt#(CODE.FunctionCall#(ScopedName#("std" "memset"), (CODE.Uop#("&", CODE.ArrayAccess#(src, "i")) val CODE.SizeOf#(type, "")))));
+      }
+    }
+ }
+ switch (origblock) {
+ case CODE.BookKeeping#(CODE.ModLogInvoke#(CLEAR first, CLEAR second, CLEAR third)): {
+    res = NULL;
+    if (second:CODE.PtrAccess#(CLEAR second_lhs,CLEAR second_rhs)) {
+        res = XFORM.break_pointer_chain(second);
+        second_lhs_tmp_pointer = lookup_table(var2tmpvar, second_lhs);
+        if (second_lhs_tmp_pointer == "") {
+            second_lhs_type = get_type(second_lhs);
+            if (is_logvar_type(second_lhs_type) && (!is_local_defvar(second_lhs, second_lhs_type))) {
+                second_lhs_tmp_pointer = CODE.ReadWrapper_Handle#(second_lhs, syn_name);
+            } else {
+                second_lhs_tmp_pointer = second_lhs;
+            }
+        }
+        second = CODE.PtrAccess#(second_lhs_tmp_pointer, second_rhs);
+        third_type = get_type(third);
+        if (is_logvar_type(third_type) && !(is_local_defvar(third, third_type))) {
+            third = CODE.ReadWrapper_Handle#(third, syn_name);
+        }
+        origblock = CODE.BookKeeping#(CODE.ModLogInvoke_Handle#(first, second, third, syn_name));
+
+
+        new_res = NULL;
+        for (;res != NULL; res= TAIL(res)) {
+            s = HEAD(res);
+            if ((s : CODE.DeclStmt#(CLEAR decls))&&(Lookup(CODE.ReadWrapper_Handle#(_,_), s))) {
+                for (decl = HEAD(decls); decls!=NULL; decls=TAIL(decls)) {
+                    if (Lookup(CODE.ReadWrapper_Handle#(_,_),decl)) {
+                        CODE.TypeInfo#(var_type,var_name, CODE.VarInit#(var_val)) = decl;
+                        CODE.ReadWrapper_Handle#(valexp,valsynname) = var_val;
+                        new_res = XFORM.merge_list(new_res, CODE.DeclStmt#(CODE.TypeInfo#(var_type,var_name,""))::CODE.CheckConflictInvoke_Handle#(valexp,var_name,valsynname));
+                    } else {
+                        new_res=XFORM.merge_list(new_res,CODE.DeclStmt#(decl));
+                    }
+
+                }
+            } else {
+                new_res = XFORM.merge_list(new_res, s);
+            }
+        }
+        res= new_res;
+
+        res = merge_list(res, origblock);
+    } else {
+        third_type = get_type(third);
+        if (is_logvar_type(third_type) && !(is_local_defvar(third, third_type))) {
+            third = CODE.ReadWrapper_Handle#(third, syn_name);
+        }
+        origblock = CODE.BookKeeping#(CODE.ModLogInvoke_Handle#(first, second, third, syn_name));
+        res = origblock;
+    }
+    RETURN (res, NULL);
+ }
+ case CODE.BookKeeping#(CODE.ModApplyInvoke#(_)) : {
+    RETURN (NULL, NULL);
+ }
+ case CODE.PtrAccess#(CLEAR lhs, CLEAR rhs): {
+    res = XFORM.break_pointer_chain(origblock);
+    lhs_tmp_pointer = lookup_table(var2tmpvar, lhs);
+    if (lhs_tmp_pointer == "") {
+        lhs_type = get_type(lhs);
+        if (is_logvar_type(lhs_type) && (!is_local_defvar(lhs, lhs_type))) {
+            lhs_tmp_pointer = CODE.ReadWrapper_Handle#(lhs, syn_name);
+        } else {
+            lhs_tmp_pointer = lhs;
+        }
+    }
+    origblock_type = get_type(origblock);
+    lhs_type = get_type(lhs);
+
+    if (is_logvar_type(origblock_type) && (!is_local_defvar(origblock, origblock_type)) && (!Lookup(CODE.SynObjName#(_), lhs_type))) {
+        origblock = CODE.ReadWrapper_Handle#(CODE.PtrAccess#(lhs_tmp_pointer, rhs), syn_name);
+    } else {
+        origblock = CODE.PtrAccess#(lhs_tmp_pointer, rhs);
+    }
+    if (origblock:CODE.PtrAccess#("newstate", CLEAR v))
+        origblock = CODE.SnapshotVar_Handle#(v, syn_name);
+    RETURN (res, origblock);
+ }
+ case CODE.ObjAccess#(CLEAR lhs, CLEAR rhs): {
+    origblock_type = get_type(origblock);
+    if (is_logvar_type(origblock_type) && (!is_local_defvar(origblock, origblock_type))) {
+        origblock = CODE.ReadWrapper_Handle#(origblock, syn_name);
+    }
+    RETURN (NULL, origblock);
+ }
+ case CODE.ArrayAccess#(CLEAR lhs, CLEAR rhs): {
+    origblock_type = get_type(origblock);
+    if (is_logvar_type(origblock_type) && (!is_local_defvar(origblock, origblock_type))) {
+        res_lhs = method_insert_handles(lhs);
+        res_lhs : (CLEAR res_lhs_lhs, CLEAR res_lhs_rhs);
+        res_rhs = method_insert_handles(rhs);
+        res_rhs : (CLEAR res_rhs_lhs, CLEAR res_rhs_rhs);
+        origblock = CODE.ArrayAccess#(res_lhs_rhs, res_rhs_rhs);
+        origblock = CODE.ReadWrapper_Handle#(origblock, syn_name);
+    }
+    RETURN (NULL, origblock);
+ }
+ case Uop#(CLEAR op, CLEAR e) : {
+    res_e = method_insert_handles(e);
+    res_e : (CLEAR res_e_lhs, CLEAR res_e_rhs);
+    RETURN (res_e_lhs, CODE.Uop#(op, res_e_rhs));
+ }
+ case Bop#(CLEAR op, CLEAR lhs, CLEAR rhs) : {
+    res_lhs = XFORM.method_insert_handles(lhs);
+    res_lhs : (CLEAR res_lhs_lhs, CLEAR res_lhs_rhs);
+    res_rhs = XFORM.method_insert_handles(rhs);
+    res_rhs : (CLEAR res_rhs_lhs, CLEAR res_rhs_rhs);
+    res = merge_list(res_lhs_lhs, res_rhs_lhs);
+    RETURN (res, Bop#(op, res_lhs_rhs, res_rhs_rhs));
+ }
+ case If#(CLEAR ifcond) : {
+    res_ifcond = method_insert_handles(ifcond);
+    res_ifcond : (CLEAR res_ifcond_lhs, CLEAR res_ifcond_rhs);
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_ifcond_rhs do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res_ifcond_lhs = merge_list(res_ifcond_lhs, DeclStmt#(CODE.TypeInfo#(logvar_type,new_var,""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+     res_ifcond_rhs = REPLACE(oldval, newval, res_ifcond_rhs);
+    enddo
+
+    RETURN (res_ifcond_lhs, If#(res_ifcond_rhs));
+ }
+ case Else#(elsecond,"") :{
+    res_elsecond = method_insert_handles(elsecond);
+    res_elsecond : (CLEAR res_elsecond_lhs, CLEAR res_elsecond_rhs);
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_elsecond_rhs do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res_elsecond_lhs = merge_list(res_elsecond_lhs, DeclStmt#(CODE.TypeInfo#(logvar_type,new_var,""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+     res_elsecond_rhs = REPLACE(oldval, newval, res_elsecond_rhs);
+    enddo
+
+    RETURN (res_elsecond_lhs, Else#(res_elsecond_rhs,""));
+ }
+ case While#(CLEAR whilecond) : {
+    res_whilecond = method_insert_handles(whilecond);
+    res_whilecond : (CLEAR res_whilecond_lhs, CLEAR res_whilecond_rhs);
+
+    check_conflict_handles = NULL;
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_whilecond_rhs do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res_whilecond_lhs = merge_list(res_whilecond_lhs, DeclStmt#(CODE.TypeInfo#(logvar_type, new_var, ""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+            check_conflict_handles = XFORM.merge_list(check_conflict_handles, CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        res_whilecond_rhs = REPLACE(oldval, newval, res_whilecond_rhs);
+    enddo
+
+    <<* RETURN (res_whilecond_lhs, While#(res_whilecond_rhs));
+    RETURN (res_whilecond_lhs, XFORM.merge_list(While#(res_whilecond_rhs), check_conflict_handles));
+ }
+ case For#(CLEAR for_first, CLEAR for_second, CLEAR for_third) : {
+    new_first = NULL;
+    res_first = NULL;
+    for (;for_first != NULL; for_first = TAIL(for_first)) {
+        res_for_first = method_insert_handles(HEAD(for_first));
+        res_for_first : (CLEAR res_for_first_lhs, CLEAR res_for_first_rhs);
+        res_first = merge_list(res_first, res_for_first_lhs);
+        new_first = merge_list(new_first, res_for_first_rhs);
+    }
+
+    if (new_first == NULL) {
+        if (res_first == NULL) {
+            new_first = EmptyStmt;
+        } else {
+            res_first_reverse = ReverseList(res_first);
+            new_first = HEAD(res_first_reverse);
+            res_first = ReverseList(TAIL(res_first_reverse));
+        }
+    }
+    new_second = NULL;
+    for (;for_second != NULL; for_second = TAIL(for_second)) {
+        res_for_second = method_insert_handles(HEAD(for_second));
+        res_for_second : (CLEAR res_for_second_lhs, CLEAR res_for_second_rhs);
+        res_first = merge_list(res_first, res_for_second_lhs);
+        new_second = merge_list(new_second, res_for_second_rhs);
+    }
+    if (new_second == NULL) new_second = EmptyStmt;
+    new_third = NULL;
+    for (;for_third != NULL; for_third = TAIL(for_third)) {
+        res_for_third = method_insert_handles(HEAD(for_third));
+        res_for_third : (CLEAR res_for_third_lhs, CLEAR res_for_third_rhs);
+        res_first = merge_list(res_first, res_for_third_lhs);
+        new_third = merge_list(new_third, res_for_third_rhs);
+    }
+    if (new_third == NULL) new_third = EmptyStmt;
+    res_second = CODE.For#(new_first, new_second, new_third);
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_second do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res_first = merge_list(res_first, DeclStmt#(CODE.TypeInfo#(logvar_type, new_var, ""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        res_second = REPLACE(oldval, newval, res_second);
+    enddo
+
+
+    RETURN (res_first, res_second);
+ }
+ case CODE.NewAlloc : {
+    if(logvar_type : CODE.PtrType#(CLEAR base_type)) {
+        if (origblock : CODE.NewAlloc#(base_type, CLEAR value)) {
+            origblock = CODE.AllocateNodeInvoke#(value);
+        }
+    }
+    RETURN (NULL, origblock);
+ }
+ case INT | CODE.True | CODE.False | CODE.Name | CODE.OrigVar | CODE.CopyName | CODE.CastExp | CODE.VarRef | "NULL": {
+    RETURN (NULL, origblock);
+ }
+ case ID : {
+    origblock_type = get_type(origblock);
+    if (is_logvar_type(origblock_type) && (!is_local_defvar(origblock, origblock_type))) {
+        origblock = CODE.ReadWrapper_Handle#(origblock, syn_name);
+    }
+    RETURN (NULL, origblock);
+ }
+ <<* to handle data = new T [] => data = new T*[];
+ case CODE.ExpStmt#(CODE.Assign#(CLEAR lhs, CODE.CastExp#(_, CODE.FunctionCall#("calloc", _)))) : {
+    if ((syn_name=="syn4")||(syn_name=="syn5")) RETURN (origblock, NULL);
+    res_lhs = XFORM.method_insert_handles(lhs);
+    res_lhs : (CLEAR res_lhs_lhs, CLEAR res_lhs_rhs);
+    logvar_type_base = "";
+    if (!(logvar_type : CODE.PtrType#(CLEAR logvar_type_base))) {
+        logvar_type_base = "";
+    }
+
+    if ((logvar_type_base != "") && (origblock != (REPLACE(CODE.SizeOf#(logvar_type_base, "*"), "", origblock)))) {
+        <<* origblock = REPLACE(logvar_type_base, logvar_type, origblock);
+        origblock = REPLACE(CODE.PtrType#(logvar_type_base), CODE.LogvarType_Handle#(logvar_type_base, syn_name), origblock);
+    }
+    origblock = REPLACE(lhs, res_lhs_rhs, origblock);
+    res = merge_list(res_lhs_lhs, origblock);
+    RETURN (res, NULL);
+ }
+ case CODE.ExpStmt#(CODE.Assign#(CLEAR lhs, CODE.NewAlloc#(logvar_type, CODE.ArraySubscript#(CLEAR new_alloc_size)))) : {
+    if ((syn_name=="syn4")||(syn_name=="syn5")) RETURN (origblock, NULL);
+    res_lhs = XFORM.method_insert_handles(lhs);
+    res_lhs : (CLEAR res_lhs_lhs, CLEAR res_lhs_rhs);
+    origblock = REPLACE(logvar_type, CODE.LogvarType_Handle#(logvar_type, syn_name), origblock);
+    origblock = REPLACE(lhs, res_lhs_rhs, origblock);
+    origblock = origblock :: CODE.ExpStmt#(FunctionCall#(CODE.ScopedName#("std" "memset"), (res_lhs_rhs 0 Bop#("*", new_alloc_size, CODE.SizeOf#(CODE.LogvarType_Handle#(logvar_type, syn_name), "")))));
+    res = merge_list(res_lhs_lhs, origblock);
+    RETURN (res, NULL);
+ }
+ case CODE.ExpStmt#(CLEAR e): {
+    res_e = XFORM.method_insert_handles(e);
+    res_e : (CLEAR res_e_lhs, CLEAR res_e_rhs);
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_e_rhs do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res_e_lhs = merge_list(res_e_lhs, DeclStmt#(CODE.TypeInfo#(logvar_type, new_var, ""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        res_e_rhs = REPLACE(oldval, newval, res_e_rhs);
+    enddo
+
+
+    res = merge_list(res_e_lhs, CODE.ExpStmt#(res_e_rhs));
+    RETURN (res, NULL);
+ }
+ case CODE.Assign#(CLEAR lhs, CLEAR rhs) : {
+    if (lhs:PtrAccess#("newstate", _)) {
+        snapshot_modified = TRUE;
+    }
+
+    res_lhs = XFORM.method_insert_handles(lhs);
+    res_lhs : (CLEAR res_lhs_lhs, CLEAR res_lhs_rhs);
+    res_rhs = XFORM.method_insert_handles(rhs);
+    res_rhs : (CLEAR res_rhs_lhs, CLEAR res_rhs_rhs);
+    res = merge_list(res_lhs_lhs, res_rhs_lhs);
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in res_lhs_rhs do
+        repl_config = merge_list((readhandle, CODE.WriteWrapper_Handle#(r, syn_name)),repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        res_lhs_rhs = REPLACE(oldval, newval, res_lhs_rhs);
+    enddo
+    if (res_lhs_rhs:CODE.SnapshotVar_Handle#(CLEAR exp, _)) {
+        RETURN (res, CODE.SnapshotWrite#(exp, res_rhs_rhs));
+    }
+    RETURN (res, CODE.Assign#(res_lhs_rhs, res_rhs_rhs));
+ }
+ case CODE.StmtBlock#(CLEAR b) : {
+    var2tmpvar = MAP{} :: var2tmpvar;
+    tmpvar2val = MAP{} :: tmpvar2val;
+    local_defvar = MAP{} :: local_defvar;
+    enter_block("NEW");
+    res_b = XFORM.method_insert_handles(b);
+    exit_block();
+    var2tmpvar = TAIL(var2tmpvar);
+    tmpvar2val = TAIL(tmpvar2val);
+    local_defvar = TAIL(local_defvar);
+    res_b : (CLEAR res_b_lhs, _);
+    RETURN (StmtBlock#(res_b_lhs), NULL);
+ }
+ case CODE.Nest#(CLEAR first, CLEAR second): {
+    enter_block("NEW");
+    if (first : CODE.If | CODE.While | CODE.For | CODE.Else) {
+        res_first = XFORM.method_insert_handles(first);
+        res_first : (CLEAR res_first_lhs, CLEAR res_first_rhs);
+    } else {
+        res_first_lhs = NULL;
+        res_first_rhs = first;
+    }
+    var2tmpvar = MAP{} :: var2tmpvar;
+    tmpvar2val = MAP{} :: tmpvar2val;
+    local_defvar = MAP{} :: local_defvar;
+    res = XFORM.method_insert_handles(second);
+    exit_block();
+    var2tmpvar = TAIL(var2tmpvar);
+    tmpvar2val = TAIL(tmpvar2val);
+    local_defvar = TAIL(local_defvar);
+    res : (CLEAR res_lhs, CLEAR res_rhs);
+    if (first:CODE.Else#(CODE.If#(_),"")) {
+        RETURN (res_first_lhs, CODE.Nest#(res_first_rhs, res_lhs));
+    } else if (first:CODE.While#(_)) {
+        while_cond = HEAD(res_first_rhs);
+        check_conflict_handles = TAIL(res_first_rhs);
+        if (check_conflict_handles == NULL) {
+            RETURN (merge_list(res_first_lhs, CODE.Nest#(res_first_rhs, res_lhs)), NULL);
+        }
+        new_while_body = XFORM.merge_list(res_lhs, check_conflict_handles);
+        RETURN (XFORM.merge_list(res_first_lhs, CODE.Nest#(while_cond, new_while_body)), NULL);
+    } else {
+        RETURN (merge_list(res_first_lhs, CODE.Nest#(res_first_rhs, res_lhs)), NULL);
+    }
+ }
+ case CODE.Loop_read#(CLEAR readbody, CLEAR second): {
+    var2tmpvar = MAP{} :: var2tmpvar;
+    tmpvar2val = MAP{} :: tmpvar2val;
+    local_defvar = MAP{} :: local_defvar;
+    enter_block("NEW");
+    res = XFORM.method_insert_handles(readbody);
+    exit_block();
+    var2tmpvar = TAIL(var2tmpvar);
+    tmpvar2val = TAIL(tmpvar2val);
+    local_defvar = TAIL(local_defvar);
+    res : (CLEAR res_lhs, CLEAR res_rhs);
+    res = merge_list(CODE.OccupyOldStateInvoke_Handle#(syn_name), res_lhs);
+
+    repl_config = NULL;
+    res_copy = COPY(res);
+    foreach readhandle = CODE.CheckConflictInvoke_Handle#(CLEAR exp, CLEAR var, CLEAR syn_name) \in res_copy do
+        repl_config = merge_list(repl_config, (readhandle, CODE.CheckConflictForRead_Handle#(exp, var, syn_name)));
+    enddo
+    foreach readhandle = CODE.RecursiveFunCall_handle#(CLEAR name) \in res_copy do
+        repl_config = merge_list((readhandle, CODE.RecursiveFunCall_read#(name)), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+    res_copy = REPLACE(oldval, newval, res_copy);
+    enddo
+    res = res_copy;
+
+    atomic_synobjtype = get_type("state");
+    atomic_synobjtype : CODE.AtomicPtrType#(CLEAR synobjtype);
+
+    if (partition_by_array) {
+        snapshot = lookup_table(method_snapshot_map, method_name);
+        if (snapshot : CODE.StateArray#(CLEAR base, CLEAR idx)) {
+          second = idx;
+
+          repl_config = NULL;
+          foreach cur_checkconflict = CODE.CheckConflictForRead_Handle#(ArrayAccess#(base,idx), CLEAR dst, _) \in res do
+            repl_config = (cur_checkconflict, CODE.SnapshotRead#(base^"_entry", dst)) :: repl_config;
+          enddo
+          if (repl_config != NULL) res = REPLACE(repl_config, res);
+        }
+    }
+
+    RETURN (CODE.Loop_read#(res, second), NULL);
+ }
+
+ case CODE.Loop_fsm#(CLEAR first, CLEAR second): {
+    var2tmpvar = MAP{} :: var2tmpvar;
+    tmpvar2val = MAP{} :: tmpvar2val;
+    local_defvar = MAP{} :: local_defvar;
+    enter_block("NEW");
+    res = XFORM.method_insert_handles(first);
+    exit_block();
+    var2tmpvar = TAIL(var2tmpvar);
+    tmpvar2val = TAIL(tmpvar2val);
+    local_defvar = TAIL(local_defvar);
+    res : (CLEAR res_lhs, CLEAR res_rhs);
+    res = merge_list(CODE.OccupyOldStateInvoke_Handle#(syn_name), res_lhs);
+    atomic_synobjtype = get_type("state");
+    atomic_synobjtype : CODE.AtomicPtrType#(CLEAR synobjtype);
+
+    repl_config = NULL;
+    foreach readhandle = CODE.RecursiveFunCall_handle#(CLEAR name) \in res do
+        repl_config = merge_list((readhandle, CODE.RecursiveFunCall_write#(name)), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        res = REPLACE(oldval, newval, res);
+    enddo
+    if (partition_by_array) {
+        snapshot = lookup_table(method_snapshot_map, method_name);
+        if (snapshot : CODE.StateArray#(CLEAR base, CLEAR idx)) {
+          second = idx;
+          new_entry_type = get_type(CODE.ArrayAccess#(base,idx));
+          snapshot_new_entry = CODE.DeclStmt#(CODE.TypeInfo#(new_entry_type,base^"_entry",""));
+          repl_config = NULL;
+          foreach cur_checkconflict = CODE.CheckConflictInvoke_Handle#(ArrayAccess#(base,idx), CLEAR dst, _) \in res do
+            repl_config = (cur_checkconflict, CODE.SnapshotRead#(base^"_entry", dst)) :: repl_config;
+          enddo
+
+          foreach cur_modloginvoke=CODE.ModLogInvoke_Handle#(_,ArrayAccess#(base,idx), CLEAR src,_) \in res do
+            repl_config = (cur_modloginvoke, CODE.SnapshotWrite#(base^"_entry", src)) :: repl_config;
+            snapshot_modified = TRUE;
+          enddo
+
+          if (repl_config != NULL) res = REPLACE(repl_config, res);
+        }
+    }
+    RETURN (CODE.Loop_fsm#(res, second), NULL);
+ }
+ case (CLEAR first CLEAR second): {
+    res_first = method_insert_handles(first);
+    res_second = method_insert_handles(second);
+    res_first : (CLEAR res_first_lhs, CLEAR res_first_rhs);
+    res_second : (CLEAR res_second_lhs, CLEAR res_second_rhs);
+    if ((first:CODE.Nest#(CODE.If#(_),_))
+    && (second!=NULL) && (HEAD(second):CODE.Nest#(CODE.Else#(CODE.If#(_),""),_))) {
+        res_first_lhs_reverse = ReverseList(res_first_lhs);
+        if_branch = HEAD(res_first_lhs_reverse);
+        res_first_lhs_remain = ReverseList(TAIL(res_first_lhs_reverse));
+        res = XFORM.merge_list(res_first_lhs_remain,res_second_lhs);
+        res = XFORM.merge_list(res, if_branch::res_second_rhs);
+        RETURN (res, NULL);
+    } else if ((first:CODE.Nest#(CODE.Else#(CODE.If#(_),""),_))
+    && (second!=NULL) && (HEAD(second):CODE.Nest#(CODE.Else#(CODE.If#(_),""),_))) {
+        res_left = XFORM.merge_list(res_first_lhs, res_second_lhs);
+        res_right = XFORM.merge_list(res_first_rhs, res_second_rhs);
+        RETURN (res_left, res_right);
+    } else if (first:CODE.Nest#(CODE.Else#(CODE.If#(_),_),_)) {
+        res_left = res_first_lhs;
+        res_right = merge_list(res_first_rhs, res_second_lhs);
+        RETURN (res_left, res_right);
+    } else {
+        res = merge_list(res_first_lhs, res_second_lhs);
+        RETURN (res, NULL);
+    }
+ }
+ case CODE.DeclStmt#(CLEAR decllist): {
+    res = NULL;
+    for (_decllist = decllist; _decllist != NULL; _decllist = TAIL(_decllist)){
+        d = HEAD(_decllist);
+        if (d : CODE.TypeInfo#(CLEAR dtype, CLEAR dname, CLEAR dinit)) {
+            is_new_alloc = FALSE;
+            if (dinit : CODE.VarInit#(CODE.NewAlloc#(logvar_type, CODE.ArraySubscript#(CLEAR new_alloc_size)))) {
+                is_new_alloc = TRUE;
+            }
+            if (dname : CODE.OrigVar#(CLEAR dname_orig)) {
+                dname = dname_orig;
+                d = CODE.TypeInfo#(dtype, dname, dinit);
+            }
+            if (!(dname:CODE.CopyName#(_))) {
+                insert_typeInfo("", d);
+            }
+            if (is_new_alloc == FALSE) {
+             local_defvar = insert_table(local_defvar, dname, dtype);
+            }
+            if (dinit : CODE.VarInit#(CLEAR dinit_val)) {
+                res_dinit = method_insert_handles(dinit_val);
+                res_dinit : (CLEAR res_dinit_lhs, CLEAR res_dinit_rhs);
+                res = merge_list(res, res_dinit_lhs);
+                origblock = REPLACE(dinit_val, res_dinit_rhs, origblock);
+            }
+            if ((syn_name == "syn1") && (is_new_alloc == TRUE)) {
+                origblock = REPLACE(logvar_type, CODE.LogvarType_Handle#(logvar_type, syn_name), origblock);
+                origblock = origblock :: CODE.ExpStmt#(FunctionCall#("memset", (dname 0 Bop#("*", new_alloc_size, CODE.SizeOf#(CODE.LogvarType_Handle#(logvar_type, syn_name), "")))));
+            }
+        }
+    }
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in origblock do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            res = merge_list(res, DeclStmt#(CODE.TypeInfo#(logvar_type, new_var, ""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        origblock = REPLACE(oldval, newval, origblock);
+    enddo
+
+    res = merge_list(res, origblock);
+    RETURN (res, NULL);
+ }
+ case CODE.LocalVarDecl#(CLEAR localdecl) : {
+    res = method_insert_handles(localdecl);
+    RETURN (origblock, NULL);
+ }
+ case CODE.FunctionCall#("assert", _) : {
+    RETURN (NULL, NULL);
+ }
+ case CODE.FunctionCall#("memset" | CODE.ScopedName#("std" "memset"), (CLEAR src CLEAR val CLEAR size)) : {
+    res_src = method_insert_handles(src);
+    res_src : (CLEAR res_src_lhs, CLEAR new_src);
+    origblock = CODE.FunctionCall#(ScopedName#("std" "memset"), (new_src, val, size));
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in origblock do
+        repl_config = merge_list((readhandle, CODE.WriteWrapper_Handle#(r, syn_name)),repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        origblock = REPLACE(oldval, newval, origblock);
+    enddo
+    RETURN (res_src_lhs, origblock);
+ }
+ case CODE.FunctionCall#("memcpy" | "memmove" | CODE.ScopedName#("std" "memcpy") | CODE.ScopedName#("std" "memmove"), _) : {
+    change_list = NULL;
+    foreach size = CODE.SizeOf#(CLEAR base_size, CLEAR ext) \in origblock do
+        if (ext == "*") {
+            change_list = XFORM.merge_list(change_list, (size, CODE.SizeOf#(CODE.PtrType#(base_size), "")));
+        }
+    enddo
+    if (change_list != NULL) change_list = XFORM.list_remove_repeat(change_list);
+    if (change_list != NULL) origblock = REPLACE(change_list, origblock);
+    if (syn_name == "syn1") origblock = REPLACE(logvar_type, CODE.LogvarType_Handle#(logvar_type, syn_name), origblock);
+    RETURN (NULL, origblock);
+ }
+ case CODE.FunctionCall#(CLEAR fname, CLEAR p) : {
+    if (lookup_table(recursive_functions, fname) != "") {
+        fname = CODE.RecursiveFunCall_handle#(fname);
+        origblock = CODE.FunctionCall#(fname,p);
+    }
+    newp = NULL;
+    new_left = NULL;
+    for (; p!= NULL; p = TAIL(p)) {
+        cur_p = HEAD(p);
+        res_cur_p = method_insert_handles(cur_p);
+        (res_cur_p_left, res_cur_p_right) = res_cur_p;
+        new_left = merge_list(new_left, res_cur_p_left);
+        newp = merge_list(newp, res_cur_p_right);
+    }
+
+    repl_config = NULL;
+    foreach readhandle = CODE.ReadWrapper_Handle#(CLEAR r,_) \in newp do
+        new_var = lookup_table(var2tmpvar, r);
+        <<* if (new_var == "") {
+            new_var = "tmp_var_"^tmp_var_idx;
+            tmp_var_idx = tmp_var_idx + 1;
+            var2tmpvar = insert_table(var2tmpvar,r,new_var);
+            new_left = merge_list(new_left, DeclStmt#(CODE.TypeInfo#(logvar_type, new_var, ""))::CODE.CheckConflictInvoke_Handle#(r, new_var, syn_name));
+        <<* }
+        repl_config = merge_list((readhandle, new_var), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        newp = REPLACE(oldval, newval, newp);
+    enddo
+
+    origblock = CODE.FunctionCall#(fname, newp);
+    RETURN (new_left, origblock);
+ }
+ case CODE.CompareSwap#(CLEAR a, CLEAR b, CLEAR c, CLEAR d, CLEAR e) : {
+    RETURN (CODE.CompareSwap_Handle#(a,b,c,d,e,syn_name), NULL);
+ }
+ case CODE.Return#(CLEAR e) : {
+    res_e = method_insert_handles(e);
+    (res_e_lhs, res_e_rhs) = res_e;
+    origblock = XFORM.merge_list(res_e_lhs, CODE.Return#(res_e_rhs));
+    RETURN (origblock, NULL);
+ }
+ case "" : RETURN (NULL, origblock);
+ default: {
+    RETURN (origblock, NULL);
+ }
+ }
+</xform>
+
+<****** break down pointer chains and add wrapper to access shared pointers **>
+
+<xform break_pointer_chain pars=(pointer)>
+    pointer : CODE.PtrAccess#(CLEAR lhs, CLEAR rhs);
+    lhs_type = get_type(lhs);
+    if (!is_logvar_type(lhs_type)) RETURN NULL;
+    res = "";
+    if (lhs : CODE.PtrAccess#(CLEAR lhs_lhs, CLEAR lhs_rhs)) {
+        res = XFORM.break_pointer_chain(lhs);
+    }
+
+    if (res == "") {
+        RETURN NULL;
+    }
+
+    lhs_lhs_tmp_pointer = lookup_table(var2tmpvar, lhs_lhs);
+    if (lhs_lhs_tmp_pointer == "") {
+        lhs_lhs_tmp_pointer = lhs_lhs;
+    }
+
+    lhs_tmp_pointer = lookup_table(var2tmpvar, lhs);
+    if (lhs_tmp_pointer == "") {
+        lhs_tmp_pointer = "tmp_var_"^tmp_var_idx;
+        tmp_var_idx = tmp_var_idx + 1;
+        var2tmpvar = insert_table(var2tmpvar,lhs,lhs_tmp_pointer);
+        local_defvar = insert_table(local_defvar, lhs_tmp_pointer, lhs_type);
+        if (is_logvar_type(lhs_type) && (!is_local_defvar(lhs,lhs_type))) {
+            if ((lhs:CODE.PtrAccess#(CLEAR lhs_a, CLEAR lhs_b)) && (Lookup(CODE.SynObjName#(_), get_type(lhs_a)))) {
+                res = merge_list(res, DeclStmt#(CODE.TypeInfo#(lhs_type, lhs_tmp_pointer, VarInit#(lhs))));
+             } else {
+                res = merge_list(res, DeclStmt#(CODE.TypeInfo#(lhs_type, lhs_tmp_pointer, VarInit#(CODE.ReadWrapper_Handle#(lhs, syn_name)))));
+            }
+        } else {
+            res = merge_list(res, DeclStmt#(CODE.TypeInfo#(lhs_type, lhs_tmp_pointer, VarInit#(lhs))));
+        }
+    }
+
+    lhs_tmp_pointer_val = CODE.PtrAccess#(lhs_lhs_tmp_pointer, lhs_rhs);
+    tmpvar2val = insert_table(tmpvar2val, lhs_tmp_pointer, lhs_tmp_pointer_val);
+
+    RETURN res;
+</xform>
+
+<*** normalize pointer and struct access etc ***>
+
+<xform normalize_ptrobj_access pars=(input_target)>
+  res = NULL;
+  prev_op = "";
+  curr_op = "";
+  for (;TRUE;) {
+    if (input_target : CODE.PtrAccess#(CLEAR lhs, CLEAR rhs)) {
+      curr_op = "ptr_access";
+    } else if (input_target : CODE.ObjAccess#(CLEAR lhs, CLEAR rhs)) {
+      curr_op = "obj_access";
+    } else {
+      curr_op = "";
+      BREAK;
+    }
+    if (prev_op == "") {
+      res = lhs;
+    } else if (prev_op == "ptr_access") {
+      res = CODE.PtrAccess#(res, lhs);
+    } else if (prev_op == "obj_access") {
+      res = CODE.ObjAccess#(res, lhs);
+    } else {
+      PRINT("unkown obj_access or ptr_access");
+      assert(0);
+    }
+    input_target = rhs;
+    prev_op = curr_op;
+  }
+  if (prev_op == "") {
+    res = input_target;
+  } else if (prev_op == "ptr_access") {
+    res = CODE.PtrAccess#(res, input_target);
+  } else if (prev_op == "obj_access") {
+    res = CODE.ObjAccess#(res, input_target);
+  } else {
+    PRINT("unkown obj_access or ptr_access");
+    assert(0);
+  }
+</xform>
+
+
+<*** specially handle constructor/destructor and recursive functions ***>
+
+<xform recursive_method_insert_handles pars=(input, container)>
+    container_name = container[ClassType.name];
+    state_type = CODE.StructType#(CODE.Name#(CODE.SynObjName#(container_name)), "");
+    state_load_handle = CODE.RecursiveFunLoadState_handle(state_type);
+
+    orig_input = input;
+    if (input:TemplateDecl#(CLEAR t, CLEAR d)) input = d;
+    if (input:InlineDecl#(CLEAR d)) input = d;
+    orig_decl = input;
+    FunctionDecl#(name, ptype, rtype, body) = input;
+    orig_ptype = ptype;
+    for (; ptype != NULL; ptype = TAIL(ptype)) {
+        p = HEAD(ptype);
+        TypeInfo#(pt, pn, pv) = p;
+        local_defvar = insert_table(local_defvar, pn, pt);
+    }
+    orig_body = body;
+    orig_name = name;
+    if(name : ScopedName#(CLEAR s CLEAR n)) name = n;
+    enter_block(orig_input);
+    res = XFORM.method_insert_handles(body);
+    (new_body, _) = res;
+    if (new_body:CODE.StmtBlock#(CLEAR body_content)) {
+        new_body = CODE.StmtBlock#(state_load_handle::body_content);
+    }
+    new_name = REPLACE(name, CODE.RecursiveFunCall_handle#(name), orig_name);
+    new_decl = FunctionDecl#(new_name, orig_ptype, rtype, new_body);
+
+    old_decl_in_class = FunctionDecl#(name, orig_ptype, rtype, EmptyStmt);
+    new_decl_in_class_read = FunctionDecl#(CODE.RecursiveFunCall_read#(name), orig_ptype, rtype, EmptyStmt);
+    new_decl_in_class_write = FunctionDecl#(CODE.RecursiveFunCall_write#(name), orig_ptype, rtype, EmptyStmt);
+
+    if(Lookup(old_decl_in_class, TRACE_TARGET)) {
+        REPLACE(old_decl_in_class, new_decl_in_class_read::new_decl_in_class_write, TRACE_TARGET);
+    }
+
+    new_input = REPLACE(orig_decl, new_decl, orig_input);
+
+    new_input_read = COPY(new_input);
+    repl_config = NULL;
+    foreach readhandle = CODE.CheckConflictInvoke_Handle#(CLEAR exp, CLEAR var, CLEAR syn_name) \in new_input_read do
+        repl_config = merge_list((readhandle, CODE.CheckConflictForRecursiveRead#(exp, var, syn_name)), repl_config);
+    enddo
+    foreach readhandle = CODE.RecursiveFunCall_handle#(CLEAR name) \in new_input_read do
+        repl_config = merge_list((readhandle, CODE.RecursiveFunCall_read#(name)), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config
+    do
+        new_input_read = REPLACE(oldval, newval, new_input_read);
+    enddo
+    new_input_read = REPLACE(state_load_handle, CODE.RecursiveFunLoadState_read#(state_type), new_input_read);
+
+    new_input_write = COPY(new_input);
+    repl_config = NULL;
+    foreach readhandle = CODE.CheckConflictInvoke_Handle#(CLEAR exp, CLEAR var, CLEAR syn_name) \in new_input_write do
+        repl_config = merge_list((readhandle, CODE.CheckConflictForRecursiveWrite#(exp, var, syn_name)), repl_config);
+    enddo
+    foreach readhandle = CODE.RecursiveFunCall_handle#(CLEAR name) \in new_input_write do
+        repl_config = merge_list((readhandle, CODE.RecursiveFunCall_write#(name)), repl_config);
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config
+    do
+        new_input_write = REPLACE(oldval, newval, new_input_write);
+    enddo
+    new_input_write = REPLACE(state_load_handle, CODE.RecursiveFunLoadState_write#(state_type), new_input_write);
+    exit_block();
+
+    RETURN new_input_read::new_input_write;
+</xform>
+
+<xform synchronize_recursive_functions pars=(container)>
+
+    old_syn_name = syn_name;
+    local_defvar = MAP{};
+    foreach i=(k=_, func=_) \in recursive_functions do
+        new_funcs = recursive_method_insert_handles(func, container);
+        REPLACE(func, new_funcs, TRACE_TARGET);
+    enddo
+    syn_name = old_syn_name;
+</xform>
+
+<xform synchronize_constructor_destructor pars=(container)>
+    old_syn_name = syn_name;
+    local_defvar = MAP{};
+    repl_config = NULL;
+    container_name = container[ClassType.name];
+    state_tmp_info = CODE.TypeInfo#(CODE.PtrType#(CODE.StructType#(CODE.Name#(CODE.SynObjName#(container_name)), "")), "state_tmp", "");
+    <<* to handle constructors
+    print ("synchronizing constructor: ");
+    foreach cur=CODE.Constructor#(_,_,_,CLEAR old_body) \in GLOBAL.TRACE_TARGET do
+      if ((cur[Constructor.name] != container_name) && (cur[Constructor.name] != CODE.GlobalConstructorName#(container_name))) CONTINUE;
+      if (old_body:CODE.EmptyStmt) CONTINUE;
+      enter_block(cur);
+      insert_typeInfo("", state_tmp_info);
+      res = XFORM.method_insert_handles(old_body);
+      res : (CLEAR res_lhs, CLEAR res_rhs);
+      new_body = res_lhs;
+      repl_config_new_body = NULL;
+      foreach checkconflicthandle = CODE.CheckConflictInvoke_Handle#(CLEAR r,CLEAR new_var,CLEAR syn_name) \in new_body do
+          repl_config_new_body = merge_list((checkconflicthandle, CODE.ExpStmt#(CODE.Assign#(new_var,CODE.ReadWrapper_Handle#(r, syn_name)))), repl_config_new_body);
+      enddo
+      foreach repl_v = (oldval, newval) \in repl_config_new_body do
+          new_body = REPLACE(oldval, newval, new_body);
+      enddo
+      repl_config = XFORM.merge_list(repl_config, (old_body, new_body));
+      exit_block();
+    enddo
+    <<* to handle destructors
+    print ("synchronizing destructor: ");
+    foreach cur=CODE.Destructor#(_,CLEAR old_body) \in GLOBAL.TRACE_TARGET do
+      if ((cur[Destructor.name] != container_name) && (cur[Destructor.name] != CODE.DestructorName#(container_name)) && (cur[Destructor.name]!=CODE.GlobalDestructorName#(container_name))) CONTINUE;
+      if (old_body:CODE.EmptyStmt) CONTINUE;
+      enter_block("NEW");
+      res = XFORM.method_insert_handles(old_body);
+      res : (CLEAR res_lhs, CLEAR res_rhs);
+      new_body = res_lhs;
+      repl_config_new_body = NULL;
+      foreach checkconflicthandle = CODE.CheckConflictInvoke_Handle#(CLEAR r,CLEAR new_var,CLEAR syn_name) \in new_body do
+          repl_config_new_body = merge_list((checkconflicthandle, CODE.ExpStmt#(CODE.Assign#(new_var,CODE.ReadWrapper_Handle#(r, syn_name)))), repl_config_new_body);
+      enddo
+      foreach repl_v = (oldval, newval) \in repl_config_new_body do
+          new_body = REPLACE(oldval, newval, new_body);
+      enddo
+      repl_config = XFORM.merge_list(repl_config, (old_body, new_body));
+      exit_block();
+    enddo
+    foreach repl_v = (oldval, newval) \in repl_config do
+        REPLACE(oldval, newval, GLOBAL.TRACE_TARGET);
+    enddo
+
+
+
+    syn_name = old_syn_name;
+</xform>
+
+

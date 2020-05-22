@@ -1,0 +1,305 @@
+
+==== Overall Strategy:
+ concurrency/mutual exclusion: all shared data accesses must be either locked or made atomic before proceeding with any modification
+    1 detection of all possibly shared data accesses:
+     treat all data accesses except those of local variables as shared 
+             (unless explicitly declared otherwise) 
+       categorization of variables:
+         member variables of the abstraction --- shared
+         function parameters --- local
+         local variables within method --- local
+         objects pointed to be shared/local variables --- shared except those allocated locally in the abstraction interface function.
+    2 Blocking synchronization: if a shared data may be modified, lock each data access before proceeding
+     : coarse-grained locking:
+       locking of the whole abstraction access: a single lock that must be acquired by each interface function of the abstraction before proceeding.
+       correctness: no accesses to any of the shared objects beyond the abstraction.
+     : fine-grained locking:
+       locking of individual data accesses, including
+           member variables of the abstraction 
+           objects pointed to by a local/shared variable accessed by any member function, including unlocking of the old objects and lock acquring of the new objects when these pointers are dynamically modified to point to different objects
+        correctness:+  need sorting of the locks to avoid deadlock
+    3 non-blocking synchronization: keep copies of all the shared modificaitons, then commit using a single atomic operation 
+    Stategies:
+     STEP1: accumulate all shared data modifications 
+          including: member variables of the abstraction 
+             and   objects pointed to by global/local variables 
+     STEP2: make a copy of each shared variable or object that may be modified; instead of directly modifying the original objects, modify the copies of the objects instead. 
+        Key 1: need to recognize aliasing of objects in each converted computation. Such objects cannot be safely relocated to a new private location 
+          e.g., the end object of a singly-linked list, which is reachable both through the end variable and the head variable of the abstraction.
+               both the head and end member variables, however, can be safely copied as their address is never taken. Neither the head nor the tail object of a doubly linked list can be safely relocated.
+          What about the internal objects of a singly-linked list? Yes, b/c they are reachable only through the head variable.
+            Answer: can make copies inside the original computation immediately before each modification and then change the modification to refer to the copied object.
+     STEP3: For each variable/object that can be copied, modify the computation to make sure it is consistent with the original code: for each object copied, identify all of its uses, separate all such uses into two categories: those using address of the original object vs. those using the value of the new one
+        Key 2: Like SSA construction, need to maintain the original use-def chain (reaching definition analysis).
+               e.g., need to make sure the addresses of the objects still refer to the old objects, while the 
+     e.g., to support internal modification of a single node (the parent) when inserting/deleting a particular node. Need to copy the whole chain of nodes from head.
+     STEP4 : Use modfication logging to support each aliased object that is modified but cannot be relocated, 
+          These include all objects that are reached through multiple pointer chasing paths in memory, where copying would make some pointers still linking the old objects, causing inconsistency.  
+        key 1: need to identify these objects at the beginning. At each please that such object is modified, replace the modifcation with a function call that logs the
+      original address or the object being modified, thd old value of the object, and the new value to be used to replace the old one, so that later a apply_mod function can be invoked to apply these logged modifications when safe. 
+        Key 2: Like SSA construction, need to maintain the original use-def chain (reaching definition analysis). If the new value of an object needs to be read to generate additional modifications, need to additionally save copies of the values of the modified object anyway so that they can be read to ensure correctness of the resulting code.
+     STEP5: commit all modifications using a single atomic operation
+         All the modifications need to wrapped up as a single state object, including the new relocated private copies of shared data that may be modified, and a logging entry for each modification made to a shared object that cannot be relocated (due to aliasing concerns). The address of the most recent state object is remembered, and its content copied into a new unique state object to save modifications by the current operation, then the new state object is used to replace the old one in a single atomic operation 
+only if the address of the most recent state object has not changed (that is, no other threads had tried to modify the state yet); otherwise, the new most recent state
+is copied, and the operation starts over. Once the new state is allowed to replace and become the most recent one, the relocated copies of the shared data become their
+official copies, and all the logged modifications are applowed to the real shared data before by calling a carryout_log member method of new the state object. 
+Multiple threads may try to call this method on the same state object concurrently without affecting correctness. The logged modifications are always carried out 
+before the new state object is be returned by the load_state_obj function (the only way to access the most recent state object) and used for any other operations,   
+     : Correctness: since such objects are part of the abstraction state, this solution is fine between write operations, as the ordering of the abstraction state modification with ensure their linearizability. 
+        Question: what about consistency (linearizability) between read and write operations? A read operation may only see part of the modifications. 
+        Solution: if any operation write any shared data that can be relocated, or read/write any shared object that cannot be relocated, it must load the most recent state object and checks whether its address had changed before committing or finishing its operation.  it doesn't matter if a single vs  multiple such modifications need to be applied? 
+       Key: since each such operation only checks the validity of its read/write operatinos until the end of the operation, it may be reading obsolete values of shared objects that cannot be relocated, albeit such read or write operations will be aborted at the end. So each potentially faultable operation must be checked to avoid any memory errors. Since no object will be deleted while its address is still being held by any thread,  the only thing to check as null pointer dereferences. 
+
+**** remaining issues 
+   2.2 ordering of locks: (YET TO FULLY RESOLVE)
+    in the case of fine-grained locking, the order consistency depends on the context and the ordering of the dynamic pointer variable modifications. 
+    . consistentcy of locking member variables of the abstraction and the objectes pointed by them
+      : locked in the same order as the member variables are declared in the abstraction
+    . consistency of locking objects pointed to by the variables, including
+       relocking of dynamically pointer traversals.
+      The correctness requires: all temporary variables are modified and used to traverse the abstraction in consistent orders.
+      This leads to the reachability ordering through linked pointers
+   NEED: another analysis pass to check the consistency of the locking orders.
+      : need to additionally check: 
+          . what if the above two orders conflict with each other?
+          may need to sort the member variables based on their reachability relations
+
+==== Main components:
+A  Eligibility Analysis: analysis of input code to determine its eligibility to transformation:
+ 1.  Need to be able identify
+ 2. To be able to relocate or log modifications to shared data:
+       need to be able to identisy the def-use relations of all shared variables or objects that may be modified.   --- data flow analysis
+ 3. To decide which objects can or cannot be relocated:
+  need to be able to identify the aliasing and connectivity of all objects reachable through  member variables of the abstraction. --- shape analysis
+ 4  To avoid deadlock and  ensure no nested synchronizations: that is, each data access is locked at most once, and no nested compare&swap operations.
+   :  need to check any of these cases that cannot be resolved : disallow synchronized operations from invoking one another.
+     need to have access to the source code of all the functions being included or invoked by the  abstraction to be converted. 
+     Need to forbid synchronized abstractions from being mutually recursive:e.g., a to-be-synchronized member function invokes a non-member global functions, which again call another member function to be synchronized, resulting in nested locking??
+ 5. To ensure safety of concurrency: cannot allow the outside to hold addresses of internal shared data which may be relocated or modified concurrent through logging.
+     need to have meaningful operations that do not violate the constraint. 
+ 6. check for  boundary  conditions (optimizations):
+   no synchronization if no modification is made to shared data
+
+B: Preprocessing Transformation: normalization of input code to satisfy eligibility constraints
+  1 remove all delete statements ==>  use garbage collection
+  2 no nested synchronizations: for each function that is called inside another function that accesses shared data:
+      either inline the function call, or in the case of recursive function calls, 
+        make a private copy of the original sequential implmentation of the callee and direct the calls to the unsynchronized copy. Then treat the private copy as part of the body of the caller.
+     class inheritance: inline all the base classes vs. locks in the base classes?
+  3 selection of synchornized interface operations that can be safely invoked concurrently by outside.
+     Elimination of unsafe interface functions by making them private
+
+
+C: Synchronization Transformation: implement the overall strategy mentioned before.
+
+D. Optimizations: garbage collection of new objects created; also since 
+
+
+==== Workflow
+
+    Eligibility Analysis ---> Preprocessing Transformations ---> Synchrnoization Transformation ---> D Performance Optimizations
+
+   Use an overall workflow to connect all the analysis and transformation components:
+
+     have access to all source code ?  -yes-> identify shared member variables and shared objects --> identify functions operating on shared data ---> 
+     eliminate functions that return addresses of shared data
+    ---> enough safe interface functions left? ---yes--->  inline function calls ---> still contains calls that cannot be inlined? --yes--> apply function cloning --> all function calls resolved? --yes--> categorize objects into relocatable or not (connectivity analysis) ---> perform dataflow analysis (construct def-use chain) ---> has unresolved object references? --- no --> synchronization transformation --> performance optimization (put more details here?)
+
+  The above is only a rough draft. It needs to be extended with the alternative yes/no edges. Also, anything missing? 
+
+
+
+algorithm for supporting multiple synchronzation mechanisms
+ driver(input, syn\_spec) 
+     lock\_map = empty;
+     for each abstraction definition $c \in input$ do 
+         make\_shared(c, syn\_spec, lock\_map);
+     endfor
+     for each $(classname,syn\_id) \in lock\_map$ do 
+        classbody = find\_class(classname, input);
+        insert\_before(gen\_lock\_decl(syn\_id),classbody);
+     endfor
+
+   (1) <** identify non-local operations and modifications**>
+      (shared_ops, succ) = can\_be\_automatically\_synchronized(c); \\
+      if (!succ) return false;
+
+/** implementation ***/
+     shared\_ops = $\emptyset$; has\_mod = false; 
+     for each $f \in member\_functions(abstraction)$ do
+       (mod,read) = nonlocal\_accesses(function\_body(f)); 
+       if (mod != empty) then has\_mod = true; endif
+       if ( mod != empty || read != empty) then
+          if $\exists$ function call $g(args) \in body$ 
+                     where $g \not \in member_functions(abstraction)$ then
+             warning(cannot process unknown function call g(args) in f); 
+          else  shared\_ops $\cup = $ f;
+          endif
+       endif 
+     endfor
+     if (has_mod == false) return;
+   (2) <* identify calls to external classes/functions**> 
+     for each function $f \in shared\_ops$ do 
+            inline all calls to f with its definiition
+/**** old version */
+     for each $f \in shared\_ops$ do 
+       if $\exists$ function call $f(args) \in shared\_ops$ do
+          new\_name[f] = concat("unsynchronized_",f);
+          add\_class\_member(abstraction, gen\_private\_copy(f, new\_name[f]));
+       endif
+     endfor
+     for each function $f \in shared\_ops$ do
+         for each function g called in f
+             make the definition of g private/protected.
+     
+   (3) <* modify the class body *>
+      initialize\_syn(c, syn\_spec, lock\_map);
+      for each $op \in shared\_ops$ do 
+        new\_op=synchronize\_method(op, syn\_spec, lock\_map); 
+        for each function call $f(args) \in op$ do 
+          if (new\_name[f] != empty) then
+             replace(new\_op, f, new\_name[f]);
+          endif
+        endfor
+        replace(c, op, new\_op);
+     endfor
+
+ =====
+    return whether class c can be automatically converted. 
+ ===
+    can\_be\_automatically\_synchronized(c) \\
+     shared\_ops = $\emptyset$; has\_mod = false; has\_unknown=false;
+     for each $f \in member\_functions(c)$ do
+       (mod,read) = nonlocal\_accesses(function\_body(f)); 
+       if (mod != empty) then has\_mod = true; endif
+       if ( mod != empty || read != empty) then
+          if $\exists$ function call $g(args) \in body$ 
+                     where $g \not \in member_functions(c)$ then
+             warning(cannot process unknown function call g(args) in f); 
+             has_unknown = true;
+          else  shared\_ops $\cup = $ f;
+          endif
+       endif 
+     endfor
+     if (has_mod == false || has_unknown == true) return false;
+    end
+
+    synchronize\_method(op, syn\_spec, lock\_map)
+       (before,synread,synmod,after)=split_statements_by_syn(syn\_vars(op),body\_of(op));
+        
+       if (syn\_spec == empty) /* use default global lock synchronization*/
+          return before::gen_atomic_modify(synread::synmod,lock\_map)::after;
+       else  /* use body of the synchronization specifcation*/
+         res = after;
+         if (synmod != empty) then 
+            (decl,body) = synchronize\_block(syn\_param(syn\_spec),syn\_mod\_spec(syn\_spec), synmod);
+            res = body :: res; before = decl :: before;
+         endif
+         if (synread != empty) then 
+            (decl,body) = synchronize\_block(get\_syn\_param(syn\_spec),syn\_read\_spec(syn\_spec), synread);
+            res = body :: res; before = decl :: before;
+         endif
+        return before::res;
+     end
+
+  synchronize\_block (syn\_var, syn\_op, block) 
+    (decl,res) = get\_syn\_body(syn\_op); 
+    if (is\_atomic\_variable(syn\_var)) then
+        res=replace($lock(syn\_var) \rightarrow gen\_lock\_global(syn\_id)$, res);
+    else if (is\_subscripted\_variable(syn\_var)) then 
+       for each f(syn\_var[i--j]) \in syn\_spec do 
+       (initlocks,block) = gen\_fine\_grained\_locking(block);
+       replace($lock(syn\_var[i--j]) \rightarrow initlocks$, res);
+    else if (is\_pntr\_variable(syn\_var)) then
+       if (get\_syn\_var(syn\_op)!=syn\_var) then
+          block=replace(syn\_var $\rightarrow$ get\_syn\_var(syn\_op),block);  
+       endif
+       replace(get\_type(syn\_var) $\rightarrow$ syn\_obj\_type(get\_class\_of(block)), res); 
+       replace(get\_type(syn\_var) $\rightarrow$ syn\_obj\_type(get\_class\_of(block)), decl); 
+    endif
+    replace(get\_syn\_param(syn\_op) $\rightarrow$ block, res);
+    return (decl,res);
+
+   initialize\_syn(syn\_spec, c, lock\_map)
+      if (syn\_spec == empty) then
+         lock\_map[name\_of(c)] = new\_lock\_id(); 
+         return;
+      endif
+
+      syn\_var = get\_syn\_param(syn\_spec);
+      if  (is\_atomic\_variable(syn\_var)) then
+         if (\exists Lock(syn\_var) \in get\_syn\_modify(syn\_spec)) then
+            /* global lock synchronization*/
+            lock\_map[name\_of(c)] = new\_lock\_id();
+         endif
+      else if (is\_pointer\_variable(syn\_var)) then
+         mod\_vars = analyze\_modified\_variables($c$);
+         obj\_type = gen\_struct\_type(mod\_vars);
+         outline_variable_decls(c,mod\_vars,obj\_type,syn\_var); 
+      else  if (is\_array\_variable(syn\_var)) then 
+         if (\exists Lock(syn\_var[i--j]) \in get\_syn\_modify(syn\_spec) then\\
+            /* fine-grained locking*/
+            for each member variable $x$ modified in $c$ 
+                if ($x$ is a pointer to class t1) {
+                   if (lock\_map[t1] == empty) then 
+                      lock\_map[t1] = new\_lock\_id(); endif 
+                }
+                else insert\_decl(c, gen\_lock\_decl(x));
+                endif
+            endfor
+         endif
+      endif
+========
+
+   gen\_fine\_grained\_locking (block) 
+     init\_locks = empty; /* a list of locks to acquire initially */
+     incr\_lock = empty;
+     (mod,read) = non\_local\_accesses(block)); 
+     classvars = class\_member\_variables(mod $\cup$ read);
+     for each $x \in classvars$ in their layout order do 
+        append(init\_locks, gen\_lock\_acq(x));
+     endfor
+     for each $x \in classvars$ in their layout order do 
+       if $\exist dereferene(x) \in block$ then 
+           append(init\_locks, gen\_deref\_lock\_acq(x));
+       endif
+     endfor
+     params = function\_parameters(mod $\cup$ read);
+     for each $x \in params$ in their traversal order do 
+       if $\exist dereferene(x) \in block$ then 
+          append(init\_locks, gen\_deref\_lock\_acq(x));
+       endif
+     endfor
+     processed = empty;     
+     for each $x \in temporary\_variables(mod)$ do 
+       if $\exist dereferene(x) \in block$ then 
+         values = analyze\_data\_flow(x, block); 
+         /* if x is a replicate of other variables, skip it*/
+         if (values \in processed) continue; endif
+         processed = processed $\cup$ \{values\}; 
+         init\_locks $\cup = $gen\_incr_lock\_acq(x);
+         incr\_locks $\cup = $\gen\_incr\_lock\_modify(x, incr);
+     endfor
+     return (init\_locks, incr\_locks)
+
+   outline_var_decls(c, ptrtype,ptrname) 
+         insert\_decl(c, gen\_pointer\_decl(syn\_obj\_type, $syn\_var));
+         for each variable reference $r$ in $c$ 
+              let x = variable\_of(r);
+              if ($x \in mod\_vars$) then 
+                replace r with gen\_ptr\_member\_ref(syn\_var,x) in c \\
+             endfor
+         endfor
+         for each constructor f of c \\
+            init = gen\_ptr\_initialization(syn\_var, syn\_obj\_type);
+            for each member initialization$x=v$ where $x \in mod\_vars$ do \\
+               append syn\_var.x=v to init; 
+               remove $x=v$ from f
+            endfor
+            insert init at beginning of f
+         endfor;
+         remove variable\_declarations(mod\_vars) from c
+:: note: in the above, no tempoerary variables should be aliased (point to the same object) when they are modified;
+
+   ::todo relocking of dynamically traversal of linked lists
+

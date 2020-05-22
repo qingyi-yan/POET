@@ -1,0 +1,345 @@
+#include "TATAS.h"
+#include <vector>
+
+#include <string>
+#include <climits>
+template <class T,class D>
+class rb_node  
+  {
+    public:
+    T key;
+    D data;
+    typedef std::pair<T,D> V;
+    bool isRed;
+    rb_node<T,D>* parent;
+    rb_node<T,D>* left;
+    rb_node<T,D>* right;
+  };
+template <class T,class D>
+class rb_tree  
+  {
+    rb_node<T,D>* root;
+    ;
+    struct rb_tree_synobj{
+      rb_node<T,D>* nil;
+      struct ModifyLog 
+      {
+        rb_node<T,D>** m_root;
+        rb_node<T,D>* m_root_new;
+        rb_node<T,D>* m_root_old;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      
+      rb_tree_synobj() : modlog(0) { }
+      void insert_mod(rb_node<T,D>** m_root, rb_node<T,D>* m_root_old, rb_node<T,D>* m_root_new) 
+      {
+        struct ModifyLog tmp;
+        tmp.m_root = m_root; 
+        tmp.m_root_new = m_root_new; 
+        tmp.m_root_old = m_root_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) {
+           cur = new std::vector<struct ModifyLog>;
+           modlog = cur;
+        }
+        cur->push_back(tmp);
+      }
+      void apply_mod() 
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog& tmp = (*p);
+          std::atomic<rb_node<T,D>*> * tmp_atomic = reinterpret_cast<std::atomic<rb_node<T,D>*> *>(tmp.m_root);
+          std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_root_old, tmp.m_root_new);
+        }
+        modlog.compare_exchange_weak(cur, 0);
+        
+      }
+      rb_tree_synobj& operator =(rb_tree_synobj& that)
+      {
+        that.apply_mod();
+        nil=that.nil;
+        modlog=0;
+        return *this;
+      }
+    };
+    std::atomic <struct rb_tree_synobj*> state;
+    public:
+    typedef std::pair<T,D> V;
+    public:
+    rb_tree ()  {
+       struct rb_tree_synobj* state_tmp=new rb_tree_synobj ();
+       state_tmp->nil = new rb_node<T,D> ();
+       state_tmp->nil->left = state_tmp->nil->right = state_tmp->nil->parent = state_tmp->nil;
+       state_tmp->nil->isRed = false;
+       state_tmp->nil->key = INT_MIN;
+       root = new rb_node<T,D> ();
+       root->parent = root->left = root->right = state_tmp->nil;
+       root->key = INT_MAX;
+       root->isRed = false;
+       state = state_tmp;
+    }
+    std::pair<bool,rb_node<TD>*> insert(V value) {
+       struct rb_tree_synobj* oldstate;
+       struct rb_tree_synobj* newstate;
+       std::pair<bool,rb_node<TD>*> __ret__13(-1,(rb_node<TD>*)(-1));
+       state.load()->apply_mod();
+       T key=value.first;
+       D data=value.second;
+       rb_node<T,D>* y;
+       rb_node<T,D>* x;
+       rb_node<T,D>* newNode;
+       x = new rb_node<T,D> ();
+       x->key = key;
+       x->data = data;
+       std::pair<bool,rb_node<TD>*> res(-1,(rb_node<TD>*)(-1));
+       rb_node<T,D>* _b26_z=x;
+       rb_node<T,D>* _b26_x;
+       rb_node<T,D>* _b26_y;
+       if (res.first==false)  
+         {
+            __ret__13 = res;
+         }
+       newstate = new struct rb_tree_synobj();
+       while (true) 
+       {
+         oldstate=state.load();
+         *newstate = *oldstate;
+         rb_node<T,D>* _b26_y_left_copy=0;
+         rb_node<T,D>* _b26_y_right_copy=0;
+         bool root_left_isRed_copy=0;
+         _b26_z->left = _b26_z->right = newstate->nil;
+         _b26_y = root;
+         _b26_x = root->left;
+         while (_b26_x!=newstate->nil&&res==(-1,(rb_node<TD>*)(-1)))  
+           {
+              _b26_y = _b26_x;
+              if (_b26_x->key==_b26_z->key)  
+                {
+                   
+                   res = std::make_pair(false,_b26_x);
+                }
+              else if (_b26_x->key>_b26_z->key)  
+                {
+                   _b26_x = _b26_x->left;
+                }
+              else  
+                {
+                   _b26_x = _b26_x->right;
+                }
+           }
+         if (res!=std::make_pair(false,_b26_x))  
+           {
+              _b26_z->parent = _b26_y;
+              if (_b26_y==root||_b26_y->key>_b26_z->key)  
+                {
+                   _b26_y_left_copy = _b26_z;
+                   newstate->insert_mod(&(_b26_y->left),_b26_y->left,_b26_y_left_copy);
+                }
+              else  
+                {
+                   _b26_y_right_copy = _b26_z;
+                   newstate->insert_mod(&(_b26_y->right),_b26_y->right,_b26_y_right_copy);
+                }
+              res = std::make_pair(true,_b26_z);
+           }
+         if (__ret__13!=res)  
+           {
+              newNode = x;
+              x->isRed = true;
+              while (x->parent->isRed)  
+                {
+                   if (x->parent==x->parent->parent->left)  
+                     {
+                        y = x->parent->parent->right;
+                        if (y->isRed)  
+                          {
+                             x->parent->isRed = false;
+                             y->isRed = false;
+                             x->parent->parent->isRed = true;
+                             x = x->parent->parent;
+                          }
+                        else  
+                          {
+                             if (x==x->parent->right)  
+                               {
+                                  x = x->parent;
+                                  {
+                                     rb_node<T,D>* y;
+                                     y = x->right;
+                                     x->right = y->left;
+                                     if (y->left!=newstate->nil)  
+                                       {
+                                          y->left->parent = x;
+                                       }
+                                     y->parent = x->parent;
+                                     if (x==x->parent->left)  
+                                       {
+                                          x->parent->left = y;
+                                       }
+                                     else  
+                                       {
+                                          x->parent->right = y;
+                                       }
+                                     y->left = x;
+                                     x->parent = y;
+                                  }
+                               }
+                             x->parent->isRed = false;
+                             x->parent->parent->isRed = true;
+                             {
+                                rb_node<T,D>* y=x->parent->parent;
+                                rb_node<T,D>* x;
+                                x = y->left;
+                                y->left = x->right;
+                                if (newstate->nil!=x->right)  
+                                  {
+                                     x->right->parent = y;
+                                  }
+                                x->parent = y->parent;
+                                if (y==y->parent->left)  
+                                  {
+                                     y->parent->left = x;
+                                  }
+                                else  
+                                  {
+                                     y->parent->right = x;
+                                  }
+                                x->right = y;
+                                y->parent = x;
+                             }
+                          }
+                     }
+                   else  
+                     {
+                        y = x->parent->parent->left;
+                        if (y->isRed)  
+                          {
+                             x->parent->isRed = false;
+                             y->isRed = false;
+                             x->parent->parent->isRed = true;
+                             x = x->parent->parent;
+                          }
+                        else  
+                          {
+                             if (x==x->parent->left)  
+                               {
+                                  x = x->parent;
+                                  {
+                                     rb_node<T,D>* y=x;
+                                     rb_node<T,D>* x;
+                                     x = y->left;
+                                     y->left = x->right;
+                                     if (newstate->nil!=x->right)  
+                                       {
+                                          x->right->parent = y;
+                                       }
+                                     x->parent = y->parent;
+                                     if (y==y->parent->left)  
+                                       {
+                                          y->parent->left = x;
+                                       }
+                                     else  
+                                       {
+                                          y->parent->right = x;
+                                       }
+                                     x->right = y;
+                                     y->parent = x;
+                                  }
+                               }
+                             x->parent->isRed = false;
+                             x->parent->parent->isRed = true;
+                             {
+                                rb_node<T,D>* x=x->parent->parent;
+                                rb_node<T,D>* y;
+                                y = x->right;
+                                x->right = y->left;
+                                if (y->left!=newstate->nil)  
+                                  {
+                                     y->left->parent = x;
+                                  }
+                                y->parent = x->parent;
+                                if (x==x->parent->left)  
+                                  {
+                                     x->parent->left = y;
+                                  }
+                                else  
+                                  {
+                                     x->parent->right = y;
+                                  }
+                                y->left = x;
+                                x->parent = y;
+                             }
+                          }
+                     }
+                }
+              root_left_isRed_copy = false;
+              newstate->insert_mod(&(root->left->isRed),root->left->isRed,root_left_isRed_copy);
+              __ret__13 = std::make_pair(true,newNode);
+           }
+         if (state.compare_exchange_strong(oldstate,newstate)) 
+         {
+          state.load()->apply_mod();
+          break;
+         }
+       }
+       return __ret__13;
+    }
+    ~rb_tree() {
+       struct rb_tree_synobj* state_tmp=state;
+       delete_tree(root);
+       delete state_tmp->nil;
+    }
+    rb_node<T,D>* find_node(T key) {
+       struct rb_tree_synobj* oldstate;
+       struct rb_tree_synobj* newstate;
+       rb_node<T,D>* __ret__14=(rb_node<T,D>*)(-1);
+       state.load()->apply_mod();
+       rb_node<T,D>* x;
+       newstate = new struct rb_tree_synobj();
+       while (true) 
+       {
+         oldstate=state.load();
+         *newstate = *oldstate;
+         x = root->left;
+         return __ret__14;
+         while (x!=newstate->nil&&__ret__14==(rb_node<T,D>*)(-1))  
+           {
+              if (x->key==key)  
+                {
+                   __ret__14 = x;
+                }
+              else if (x->key>key)  
+                {
+                   x = x->left;
+                }
+              else  
+                {
+                   x = x->right;
+                }
+           }
+         if (__ret__14!=x)  
+           {
+              __ret__14 = x;
+           }
+         if (state.compare_exchange_strong(oldstate,newstate)) 
+         {
+          state.load()->apply_mod();
+          break;
+         }
+       }
+    }
+    private:
+    void delete_tree(rb_node<T,D>* curr) {
+       struct rb_tree_synobj* state_tmp=state;
+       if (curr==state_tmp->nil)  
+         {
+            return ;
+         }
+       delete_tree(curr->left);
+       delete_tree(curr->right);
+       delete curr;
+    }
+  };

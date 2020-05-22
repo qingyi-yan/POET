@@ -1,0 +1,536 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <stdio.h>
+#include <iostream>
+#include <cstring>
+template <class T>
+class deque  
+  {
+    struct deque_synobj{
+      T* list_base;std::size_t curr_max_size;std::size_t counter;
+      struct ModifyLog
+      {
+        T* m_list_base;
+        T  m_list_base_old;
+        T  m_list_base_new;
+      };
+      std::atomic<std::vector<struct ModifyLog> *> modlog;
+      std::vector<struct ModifyLog> * old_modlog;
+      
+      deque_synobj() : modlog(0) {
+        old_modlog = new std::vector<struct ModifyLog>;
+      }
+      void insert_mod(T* m_list_base, T m_list_base_old, T m_list_base_new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_list_base = m_list_base;
+        tmp.m_list_base_new = m_list_base_new;
+        tmp.m_list_base_old = m_list_base_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      void reclaim_wrapper () {}
+      void apply_mod ()
+      {
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        if (cur == 0) return;
+        for (typename std::vector<struct ModifyLog>::iterator p = cur->begin();
+             p != cur->end(); p++) {
+          struct ModifyLog tmp = (*p);
+          std::atomic<T>* tmp_atomic = reinterpret_cast<std::atomic<T>*>(tmp.m_list_base);
+          std::atomic_compare_exchange_weak(tmp_atomic, &tmp.m_list_base_old, tmp.m_list_base_new);
+        }
+        if(modlog.compare_exchange_weak(cur, 0)) {
+            old_modlog = cur;
+        }
+      }
+      
+      ;
+      deque_synobj& operator =(deque_synobj& that)
+      {
+        that.apply_mod();
+          list_base=that.list_base;
+          curr_max_size=that.curr_max_size;
+          counter=that.counter;
+        if (modlog.load()!=0) {
+          modlog.load()->clear();
+        } else {
+          old_modlog->clear();
+          modlog = old_modlog;
+          old_modlog = 0;
+        }
+        return *this;
+      }
+    };
+    std::atomic <struct deque_synobj*> state;
+    ;
+    std::atomic<int> thread_count;
+    std::queue<struct deque_synobj *> *synobj_lists[1000];
+    std::atomic<pthread_t> synobj_list_ids[1000];
+    std::atomic<struct deque_synobj *> occupied_synobj_array[1000];
+    int local_idx_array[1000];
+    inline bool is_synobj_free(struct deque_synobj *target_synobj) {
+        bool res = true;
+        int cur_thread_count = thread_count.load();
+        for (int i = 0; i < cur_thread_count; i++) {
+            if (target_synobj == occupied_synobj_array[i].load()) {
+                res = false;
+                break;
+            }
+        }
+        return res;
+    }
+    inline int find_synobj_list_id() {
+        pthread_t mytid = pthread_self();
+        pthread_t null_tid = 0;
+        int synobj_list_id = -1;
+        int local_idx = -1;
+        std::queue<struct deque_synobj *> *synobj_list;
+        int mytid_mod = mytid%1000;
+        for (int i = mytid_mod; i != (mytid_mod - 1 + 1000)%1000; i = (i + 1)%1000) {
+            if (synobj_list_ids[i] == mytid) {
+                synobj_list_id = i;
+                break;
+            }
+        }
+        if (synobj_list_id == -1) {
+            synobj_list = new std::queue<struct deque_synobj *>;
+            struct deque_synobj *new_synobj = new struct deque_synobj();
+            synobj_list->push(new_synobj);
+            for (int i = mytid_mod; i != (mytid_mod - 1 + 1000); i = (i+1)%1000) {
+                null_tid = 0;
+                if (synobj_list_ids[i].compare_exchange_strong(null_tid, mytid)) {
+                    local_idx = thread_count.fetch_add(1);
+                    synobj_list_id = i;
+                    synobj_lists[i] = synobj_list;
+                    local_idx_array[i] = local_idx;
+                    break;
+                }
+            }
+            if (synobj_list_id == -1) {
+                printf("Failed to allocate synobj list\n");
+            }
+        }
+        return synobj_list_id;
+    }
+    public:
+    ;
+    ;
+    ;
+    typedef T value_type;
+    typedef T& reference;
+    typedef T* iterator;
+    typedef std::size_t size_type;
+    public:
+    deque ()  {
+       struct deque_synobj* state_tmp=new deque_synobj ();
+       state_tmp->counter = 0;
+       state_tmp->curr_max_size = 4-1;
+       state_tmp->list_base = new T [4];
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ~deque() {
+       struct deque_synobj* state_tmp=state;
+       delete state_tmp->list_base;
+    }
+    iterator begin() {
+       struct deque_synobj* __res;
+       iterator it=(T*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         it = __res->list_base;
+         break;
+        } catch(...){}
+       }
+       return it;
+    }
+    iterator end() {
+       struct deque_synobj* __res;
+       iterator it=(T*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         it = __res->list_base+__res->counter;
+         break;
+        } catch(...){}
+       }
+       return it;
+    }
+    std::size_t size() {
+       struct deque_synobj* __res;
+       std::size_t __ret__4=0;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__4 = __res->counter;
+         break;
+        } catch(...){}
+       }
+       return __ret__4;
+    }
+    bool empty() {
+       struct deque_synobj* __res;
+       bool __ret__6=-1;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__6 = __res->counter<1;
+         break;
+        } catch(...){}
+       }
+       return __ret__6;
+    }
+    reference operator [](std::size_t n) {
+       struct deque_synobj* __res;
+       T __ret__8;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__8 = __res->list_base[n];
+         break;
+        } catch(...){}
+       }
+       return __ret__8;
+    }
+    reference front() {
+       struct deque_synobj* __res;
+       T __ret__10;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__10 = __res->list_base[0];
+         break;
+        } catch(...){}
+       }
+       return __ret__10;
+    }
+    reference back() {
+       struct deque_synobj* __res;
+       T __ret__12;
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__12 = __res->list_base[__res->counter-1];
+         break;
+        } catch(...){}
+       }
+       return __ret__12;
+    }
+    void push_front(T x) {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         T newstate_list_base__copy=0;
+         if (newstate->counter==newstate->curr_max_size) 
+           {
+              std::size_t new_vector_size=newstate->curr_max_size+1<<1;
+              T* new_base=new T [new_vector_size];
+              std::memcpy(new_base+1,newstate->list_base,newstate->counter*sizeof(T));
+              
+              newstate->list_base = new_base;
+              newstate_list_base__copy = x;
+              newstate->insert_mod(&(newstate->list_base[0]),newstate->list_base[0],newstate_list_base__copy);
+              newstate->curr_max_size = new_vector_size-1;
+           }
+         else 
+           {
+              for (int i=0; i<newstate->counter; i+=1)
+                {
+                   newstate->insert_mod(&((newstate->list_base+1)[i]),(newstate->list_base+1)[i],newstate->list_base[i]);
+                }
+              newstate_list_base__copy = x;
+              newstate->insert_mod(&(newstate->list_base[0]),newstate->list_base[0],newstate_list_base__copy);
+           }
+         newstate->counter++;
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+    }
+    void push_back(T x) {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         T newstate_list_base_newstate_counter_copy=0;
+         if (newstate->counter==newstate->curr_max_size) 
+           {
+              std::size_t new_vector_size=newstate->curr_max_size+1<<1;
+              T* new_base=new T [new_vector_size];
+              std::memcpy(new_base,newstate->list_base,newstate->counter*sizeof(T));
+              
+              newstate->list_base = new_base;
+              newstate_list_base_newstate_counter_copy = x;
+              newstate->insert_mod(&(newstate->list_base[newstate->counter]),newstate->list_base[newstate->counter],newstate_list_base_newstate_counter_copy);
+              newstate->curr_max_size = new_vector_size-1;
+           }
+         else 
+           {
+              newstate_list_base_newstate_counter_copy = x;
+              newstate->insert_mod(&(newstate->list_base[newstate->counter]),newstate->list_base[newstate->counter],newstate_list_base_newstate_counter_copy);
+           }
+         newstate->counter++;
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+    }
+    void pop_front() {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         if (newstate->counter>0) 
+           {
+              for (int i=0; i<newstate->counter-1; i+=1)
+                {
+                   newstate->insert_mod(&(newstate->list_base[i]),newstate->list_base[i],(newstate->list_base+1)[i]);
+                }
+              newstate->counter--;
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+    }
+    T pop_back() {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       T r;
+       T __ret__17;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         r = newstate->list_base[newstate->counter-1];
+         __ret__17 = r;
+         newstate->counter--;
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+       return __ret__17;
+    }
+    iterator insert(iterator pos,T x) {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       std::size_t pos_distance=0;
+       iterator it=(T*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         T newstate_list_base_pos_distance_copy=0;
+         pos_distance = pos-newstate->list_base;
+         it = newstate->list_base+pos_distance;
+         if (newstate->counter==newstate->curr_max_size) 
+           {
+              std::size_t new_vector_size=newstate->curr_max_size+1<<1;
+              T* new_list_base=new T [new_vector_size];
+              if (pos_distance>0) 
+                {
+                   std::memcpy(new_list_base,newstate->list_base,pos_distance*sizeof(T));
+                }
+              new_list_base[pos_distance] = x;
+              std::memcpy(new_list_base+pos_distance+1,newstate->list_base+pos_distance,(newstate->counter-pos_distance)*sizeof(T));
+              
+              newstate->list_base = new_list_base;
+              newstate->curr_max_size = new_vector_size-1;
+              newstate->counter++;
+           }
+         else 
+           {
+              for (int i=0; i<newstate->counter-pos_distance; i+=1)
+                {
+                   newstate->insert_mod(&((newstate->list_base+pos_distance+1)[i]),(newstate->list_base+pos_distance+1)[i],(newstate->list_base+pos_distance)[i]);
+                }
+              newstate_list_base_pos_distance_copy = x;
+              newstate->insert_mod(&(newstate->list_base[pos_distance]),newstate->list_base[pos_distance],newstate_list_base_pos_distance_copy);
+              newstate->counter++;
+           }
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+       return it;
+    }
+    iterator erase(iterator pos) {
+       struct deque_synobj* oldstate;
+       struct deque_synobj* newstate;
+       std::size_t pos_distance=0;
+       T* __ret__20=(T*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct deque_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct deque_synobj();
+       }
+       newstate->reclaim_wrapper();
+       while (true) 
+       {
+        try{
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         pos_distance = pos-newstate->list_base;
+         __ret__20 = &newstate->list_base[pos_distance];
+         for (int i=0; i<newstate->counter-pos_distance-1; i+=1)
+           {
+              newstate->insert_mod(&((newstate->list_base+pos_distance)[i]),(newstate->list_base+pos_distance)[i],(newstate->list_base+pos_distance+1)[i]);
+           }
+         newstate->counter--;
+         if (state.compare_exchange_strong(oldstate,newstate))
+         {
+          newstate->apply_mod();
+          occupied_synobj_array[local_idx] = newstate;
+          synobj_list->push(newstate);
+          break;
+         }
+        } catch(...){}
+       }
+       return __ret__20;
+    }
+  };
