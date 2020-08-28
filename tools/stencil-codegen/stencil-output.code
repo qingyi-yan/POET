@@ -1,18 +1,180 @@
 include Cfront.code
 
+<* max of n1 or n2 *>
+<xform max pars=(n1, n2)>
+ res = n2;
+ if(n1 > n2) {
+    res = n1;
+ }
+ print("n1 is " n1 " and n2 is " n2);
+ res
+</xform>
+
+<* helper for getting the timestep max *>
+<xform tmax pars=(to)>
+  res = max(2, to+1)
+</xform>
+
+
+<* get index or limit variable name for a given dimension  *>
+<xform get_index_var pars=(which_dim) limit=0>
+  res = "i"^which_dim;
+  if(limit) res = "N"^which_dim;
+  res
+</xform>
+
+
+<* Essentially a map between index t and the corresponding name (0 = tnew, 1 = tm1, etc)*>
+<xform get_timestep_varname pars=(t)>
+  res = "tnew";
+  if(t > 0) res = "tm"^t;
+  res
+</xform>
+
+<* Get the timestep number index for the corresponding timestep*>
+<xform get_timestep_value pars=(to, tvar, t, tidx)>
+  tcount = tmax(to);
+  res = "("tidx"+("tcount"-1)) % "tcount;
+  if(t > 0) res = "("tidx"+("tcount"-1-"t")) % "tcount;
+  res
+</xform>
+
+
+<* Create variables for timestep indices *>
+<xform gen_stencil_timestep_indices pars=(to, tidx) decl_only=0>
+  res = "";
+  val_builder = "";
+  for(t = 0; t < tmax(to); t=t+1) {
+    tvar = get_timestep_varname(t);
+    if(decl_only) {
+      val_builder = val_builder :: DeclStmt#(TypeInfo#(IntType#"int", tvar, ""));
+    } else {
+      val_builder = val_builder :: ExpStmt#(Assign#(tvar, get_timestep_value(to, tvar, t,tidx)));
+    }
+  }
+  if(decl_only == 0)
+    res = StmtList#(val_builder);
+  else
+    res = val_builder;
+  res
+</xform>
+
+<* generate stencil body *>
+<xform gen_stencil_init pars=(arrayvar, dim, to)>
+  access_builder = "";
+
+  for(t = 0; t < tmax(to); t=t+1) {
+    internal_builder = ArrayAccess#(arrayvar, t);
+    for(id = 0; id < dim; id=id+1) {
+        internal_builder = ArrayAccess#(internal_builder, get_index_var(id));
+    }
+
+    internal_builder = ExpStmt#(Assign#(internal_builder, "rand()"));
+    access_builder = access_builder :: internal_builder;
+  }
+
+  res = access_builder
+</xform>
+
+<* Get coefficient to weigh a point *>
+<xform get_coefficient pars=(order, oa, oa_i, coeftype)>
+  res = "";
+  depth = (oa * order)/4;
+  oa_shifted = oa_i + depth;
+
+  if(coeftype == 0) {
+    coef_weights = NULL;
+    <* Constant coefficients, isotropic discretization *>
+    if(oa == 2) {
+      coef_weights = ("1","-2","1");
+    } else if(oa == 4) {
+      coef_weights = ("-1/12", "4/3", "-5/2", "4/3", "-1/12");
+    }
+
+    print("weights are " coef_weights);
+
+    for(i = 0; i <= depth*2; i=i+1) {
+      if(i == oa_shifted) {
+        weight = coef_weights[i];
+        res = weight;
+        BREAK;
+      }
+    }
+  }
+
+  res
+</xform>
+
+<* create access for a specific term, considering coefficient type and place.
+  ivar of 0 is temporal, 1 is x, 2 is y, 3 is z
+  Put ivars in ascending order
+*>
+<xform gen_neighbor_stencil_access pars=(arrayvar, dim, order, oa, to, coeftype, ivars_list)>
+  access_builder = "";
+  depth = (oa*order)/4;
+
+  first = 1;
+  for(ivars_iter = ivars_list; ivars_iter != NULL; ivars_iter = TAIL(ivars_iter)) {
+    ivars = HEAD(ivars_iter);
+
+    for(t = 1; t < tmax(to); t=t+1) {
+      internal_builder = ArrayAccess#(arrayvar, t);
+      
+      ivar_builder = "";
+
+      <*starts at 1 for spatial comparisons, where x is 1*>
+      for(oa_i = -depth; oa_i <= depth; oa_i=oa_i+1) {
+
+        loc = ArrayAccess#(arrayvar, get_timestep_varname(t));
+
+        for(d = 1; d <= dim; d=d+1) {
+
+          deriv_here = 0;
+
+          <* go through each dimension at each depth and see who needs to be brought in *>
+          for(ivars_i = ivars; ivars_i != NULL; ivars_i = TAIL(ivars_i)) {
+            ivar = HEAD(ivars_i);
+            if(ivar == d) {
+              <*We take a derivative WRT this dim*> 
+              deriv_here = 1;
+            }
+          }
+          if(deriv_here) {
+            loc = ArrayAccess#(loc, get_index_var(d-1)+oa_i)
+          } else {
+            loc = ArrayAccess#(loc, get_index_var(d-1))
+          }
+        }
+
+        c = get_coefficient(order, oa, oa_i, coeftype);
+
+        if(first) {
+          first = 0;
+          access_builder = Bop#("*", c, loc);
+        } else {
+          access_builder = Bop#("+", access_builder, Bop#("*",c, loc));
+        }
+      }
+    }
+  }
+
+
+  res = access_builder
+</xform>
+
 <* generate various code from stencil dimension *>
-<xform gen_stencil_dim pars=(dim) macro=0 size=0 index=0 body="" >
+<xform gen_stencil_dim pars=(dim) macro=0 size=0 index=0 bc_size=1 body="" >
  res=(body=="")? NULL : body;
  for (i = 0; i < dim; i=i+1) {
    if (body != "") {
-       res=Nest#(Loop#("i"^i,1,"N"^i-1,1), res);
+       res=Nest#(Loop#(get_index_var(i),bc_size,get_index_var[limit=1](i)-bc_size,1), res);
    }
    else if (size > 0) {
       var = "N"^i;
       if (macro != 0) var = MacroDef#(var, 100);
       res = var :: res;
    }
-   else if (index > 0) { var = "i"^i; res = var :: res; }
+   else if (index > 0) { var = get_index_var(i); res = var :: res; }
    else { "" = "Error: nothing is generated"; }
  }
 res
@@ -44,7 +206,26 @@ res
  res = ExpStmt#(Assign#(ArrayAccess#(new_array,cur_pos), rhs / points));
 </xform>
 
-<code stencil_main pars=(elem, old_array, new_array, dim, time, points)>
+
+<* generate the code to declare the stencil arrays *>
+<xform gen_stencil_arrays pars=(dim, to, elemtype)>
+  size_builder = "";
+  decl_builder = "";
+  for(i = 0; i < dim; i=i+1) {
+    if(i == 0) {
+      decl_builder = ArrayDim#(get_index_var[limit=1](i));
+      size_builder = Bop#("*", get_index_var[limit=1](i), SizeOf#(SizeOfArg#(FloatType#"double","")));
+
+    } else {
+      decl_builder = decl_builder :: ArrayDim#(get_index_var[limit=1](i));
+      size_builder = Bop#("*", get_index_var[limit=1](i), size_builder);
+    }
+  }
+
+  res = DeclStmt#((TypeInfo#(ArrayType#(FloatType#"double",(decl_builder)),FunctionPtr#"u", VarInit#(CastExp#(PtrType#(FloatType#"double"),FunctionCall#("malloc",Bop#("*",max((to+1),2), size_builder)))))))
+</xform>
+
+<code stencil_main pars=(elem, old_array, new_array, dim, oa, to, div, coeftype, time, points)>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -74,28 +255,28 @@ double GetWallTime(void)
 
 int main(int argc, char ** argv) 
 {
-@StmtList#(gen_stencil_dim[size=1;macro=1](dim))@
-  @elem@* @old_array@, *@old_array@_tmp;
-  @elem@* @new_array@, *@new_array@_tmp;
+  @StmtList#(gen_stencil_dim[size=1;macro=1](dim))@
+
+  @gen_stencil_arrays(dim,to,elem)@;
+  
   unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t;
   double __timer_begin, __timer_end, __timer_diff, __pt_flops;
+  @gen_stencil_timestep_indices[decl_only=1](to,"")@ 
 
   unsigned stencil_size = @CODE.Multiply#(gen_stencil_dim[size=1](dim))@;
   @old_array@ = calloc(stencil_size,sizeof(@elem@));
   @new_array@ = calloc(stencil_size,sizeof(@elem@));
   srand(RANDSEED);
-  for (i=0; i<stencil_size; ++i)
-  {
-      @old_array@[i] = rand();;
-      @new_array@[i] = rand();;
-  }
+
+  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", dim, to)](dim)@
 
   __timer_begin = GetWallTime();
   for (t = 0; t < TS; t++) {
-      if (t%2 == 0) 
-           { @old_array@_tmp = @old_array@; @new_array@_tmp = @new_array@; }
-      else { @old_array@_tmp = @new_array@; @new_array@_tmp = @old_array@; }
-      @gen_stencil_dim[body=gen_stencil_stmt(old_array"_tmp",new_array"_tmp",dim,points)](dim)@
+    @gen_stencil_timestep_indices(to,"t")@ 
+    @gen_stencil_dim[body=gen_stencil_stmt(old_array"_tmp",new_array"_tmp",dim,points)](dim)@
+
+    @gen_stencil_dim[body=gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2))) ](dim)@
+
   }
   __timer_end = GetWallTime();
   __timer_diff = (__timer_end-__timer_begin);
@@ -106,4 +287,5 @@ int main(int argc, char ** argv)
   printf("MFLOPS:  %.15f\n", __pt_flops/1000000);
   return 0;
 }
+
 </code>
