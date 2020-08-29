@@ -208,7 +208,8 @@ top_srcdir = ../..
 dim = 1
 oa=2
 to=1
-div=1
+div=0
+mi=0
 coeftype=0
 time = 20
 elem = float
@@ -397,7 +398,7 @@ uninstall-am:
 
 
 now:
-	$(top_srcdir)/src/pcg $(debug) -pto=$(to) -poa=$(oa) -pdiv=$(div) -pcoeftype=$(coeftype) -pdim=$(dim) -ptime=$(time) -pelem=$(elem) -ppoints=$(points) $(srcdir)/stencil-gen.pt > out.c
+	$(top_srcdir)/src/pcg $(debug) -pto=$(to) -poa=$(oa) -pdiv=$(div) -pmi=$(mi) -pcoeftype=$(coeftype) -pdim=$(dim) -ptime=$(time) -pelem=$(elem) -ppoints=$(points) $(srcdir)/stencil-gen.pt > out.c
 
 check:
 	make now

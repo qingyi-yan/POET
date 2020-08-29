@@ -6,7 +6,7 @@ include Cfront.code
  if(n1 > n2) {
     res = n1;
  }
- print("n1 is " n1 " and n2 is " n2);
+
  res
 </xform>
 
@@ -39,6 +39,28 @@ include Cfront.code
   res
 </xform>
 
+<* Include division (or via multiplicative inversion) on an operation *>
+<xform add_div pars=(div, divvar, on_oper, mi) decl=0>
+  res = "";
+
+  if(div) {
+    if(decl) {
+      
+      decl_builder =Bop#("+",FunctionCall#("floor",FunctionCall#("fmod", (FunctionCall#("rand",NULL) 1))), 2);
+      if(mi) decl_builder = Bop#("/", 1, decl_builder);
+
+      res = DeclStmt#(TypeInfo#(FloatType#"double", divvar, VarInit#(CastExp#(FloatType#"double",decl_builder))));
+    } else {
+      op = "/";
+      if(mi) op = "*";
+      res = Bop#(op, "("on_oper")", divvar);
+    }
+  } else {
+    res = on_oper;
+  }
+  res
+</xform>
+
 
 <* Create variables for timestep indices *>
 <xform gen_stencil_timestep_indices pars=(to, tidx) decl_only=0>
@@ -60,7 +82,7 @@ include Cfront.code
 </xform>
 
 <* generate stencil body *>
-<xform gen_stencil_init pars=(arrayvar, dim, to)>
+<xform gen_stencil_init pars=(arrayvar, coefvar, dim, oa, to, coeftype)>
   access_builder = "";
 
   for(t = 0; t < tmax(to); t=t+1) {
@@ -73,7 +95,26 @@ include Cfront.code
     access_builder = access_builder :: internal_builder;
   }
 
-  res = access_builder
+  if(coeftype == 1) {
+    <* Need to initialize variable coefficients *>
+    ncoefs = dim*oa+1;
+    coefiter = "l";
+
+    for(l = 0; l < ncoefs; l=l+1) {
+      coef_builder = ArrayAccess#(coefvar, coefiter);
+      for(id = 0; id < dim; id=id+1) {
+        coef_builder = ArrayAccess#(coef_builder, get_index_var(id));
+      }
+
+      coef_builder = ExpStmt#(Assign#(coef_builder, CastExp#(FloatType#"double",FunctionCall#("fmod", (CastExp#(FloatType#"double","rand()") 2)))));
+    }
+
+    res=StmtList#(access_builder Nest#(Loop#(coefiter,0,dim*oa+1,1), coef_builder));
+  } else {
+    res = access_builder;
+  }
+
+  res
 </xform>
 
 <* Get coefficient to weigh a point *>
@@ -102,11 +143,10 @@ include Cfront.code
       if(oa == 2) {
         coef_weights = ("1","-2","1");
       } else if(oa == 4) {
-        coef_weights = ("-1/12", "4/3", "-5/2", "4/3", "-1/12");
+        <* reps ("-1/12", "4/3", "-5/2", "4/3", "-1/12") *>
+        coef_weights = ("-0.083", "1.33", "-2.5", "1.33", "-0.083");
       }
     }
-
-    print("weights are " coef_weights);
 
     for(i = 0; i < LEN(coef_weights); i=i+1) {
       if(i == oa_shifted) {
@@ -141,7 +181,6 @@ include Cfront.code
     }
   }
 
-
   res
 </xform>
 
@@ -150,7 +189,7 @@ include Cfront.code
   ivar of 0 is temporal, 1 is x, 2 is y, 3 is z
   Put ivars in ascending order
 *>
-<xform gen_neighbor_stencil_access pars=(arrayvar, dim, order, oa, to, coeftype, ivars_list)>
+<xform gen_neighbor_stencil_access pars=(arrayvar, dim, order, oa, to, coeftype, ivars_list, div, divvar, mi)>
   access_builder = "";
   depth = (oa*order)/4;
   center_used = 0;
@@ -219,6 +258,8 @@ include Cfront.code
     }
   }
 
+  if(div) access_builder = add_div(div, divvar, access_builder, mi);
+
   <* temporal *>
   if(to >= 1) {
     for(t = 1; t < tmax(to); t=t+1) {
@@ -239,7 +280,7 @@ include Cfront.code
   }
 
 
-  res = Assign#(tnew_builder, access_builder)
+  res = ExpStmt#(Assign#(tnew_builder, access_builder))
 </xform>
 
 <* generate various code from stencil dimension *>
@@ -314,11 +355,40 @@ res
   res
 </xform>
 
-<code stencil_main pars=(elem, old_array, new_array, dim, oa, to, div, coeftype, time, points)>
+<xform get_problem_size pars=(ts, dim)>
+  res = "";
+
+  for(d = 0; d < dim; d=d+1) {
+    if(d == 0) {
+      res = get_index_var[limit=1](d);
+    } else {
+      res = res^", "^ get_index_var[limit=1](d);
+    }
+  }
+  for(d = dim; d < 3; d=d+1) {
+    res = res^", 0";
+  }
+
+  res
+</xform>
+
+<xform do_free pars=(varname, depends_on)> 
+  res = "";
+  if(depends_on) {
+    res = ExpStmt#(FunctionCall#("free", varname));
+  }
+  res
+</xform>
+
+<code stencil_main pars=(elem, dim, oa, to, div, mi, coeftype, time, points )>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+
+#include <stencil_config.h>
+
 double GetWallTime(void)
    {
       struct timeval tp;
@@ -338,42 +408,53 @@ double GetWallTime(void)
 #define RANDSEED 1
 #endif
 
-#ifndef TS
-#define TS 100
-#endif
-
 int main(int argc, char ** argv) 
 {
-  @StmtList#(gen_stencil_dim[size=1;macro=1](dim))@
+  if (argc != 5) {
+    printf ("Wrong number of parameters.\n", argv[0]);
+    exit (-1);
+  }
+
+  int N0 = atoi (argv[1]); 
+  int N1 = atoi (argv[2]);
+  int N2 = atoi (argv[3]);
+  int TS = atoi (argv[4]);
 
   @gen_stencil_arrays(dim,oa,to,elem,coeftype)@;
   
-  unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t;
-  double __timer_begin, __timer_end, __timer_diff, __pt_flops;
+  unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t,l;
   @gen_stencil_timestep_indices[decl_only=1](to,"")@ 
 
-  unsigned stencil_size = @CODE.Multiply#(gen_stencil_dim[size=1](dim))@;
-  @old_array@ = calloc(stencil_size,sizeof(@elem@));
-  @new_array@ = calloc(stencil_size,sizeof(@elem@));
+  @add_div[decl=1](div, "divvar", NULL, mi)@
+
   srand(RANDSEED);
 
-  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", dim, to)](dim)@
+  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", "c", dim, oa, to, coeftype)](dim)@
 
-  __timer_begin = GetWallTime();
+  benchInit();
+  benchBeginStencil();
+
+#pragma scop
   for (t = 0; t < TS; t++) {
     @gen_stencil_timestep_indices(to,"t")@ 
-    @gen_stencil_dim[body=gen_stencil_stmt(old_array"_tmp",new_array"_tmp",dim,points)](dim)@
 
-    @gen_stencil_dim[body=gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3))) ](dim)@
-
+    @gen_stencil_dim[body=gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi) ](dim)@
   }
-  __timer_end = GetWallTime();
-  __timer_diff = (__timer_end-__timer_begin);
-  __pt_flops = @points@ * TS;
-  __pt_flops =  __pt_flops * @Multiply#(gen_stencil_dim[size=1](dim))@;
-  __pt_flops = __pt_flops / __timer_diff;
-  printf("time in seconds:  %.15f\n", __timer_diff);
-  printf("MFLOPS:  %.15f\n", __pt_flops/1000000);
+#pragma endscop
+
+  benchEndStencil();
+  benchSetEnv();
+  benchSetDomain(@dim@,@oa@,@to@);
+  benchSetProblemSize(@get_problem_size(time,dim)@, TS);
+  benchSetArithProps(@((dim*oa)+1+to-1)@, 0, @((dim*oa)+1+to+mi)@, @(div-mi)@);
+  benchSetMemProps(@((dim-1)*oa+1+to+(coeftype*((dim*oa)+1)))@, 1);
+  benchSetMatProps(@tmax(to)@, 1);
+  benchSetFpSize(sizeof(double));
+  benchFinalize();
+
+  @do_free("u", 1)@
+  @do_free("c", coeftype)@
+
   return 0;
 }
 
