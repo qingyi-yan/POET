@@ -1,0 +1,23 @@
+
+<parameter dim default=2 type=INT message="dimension of stencil"/>
+<parameter oa default=2 type=INT message="order of accuracy"/>
+<parameter to default=1 type=INT message="temporal order"/>
+<parameter div default=0 type=INT message="include division in the generated stencil"/>
+<parameter mi default=0 type=INT message="perform multiplicaive inversion on the division"/>
+<parameter coeftype default=0 type=INT message="coefficient type, 0 for constant, 1 for variable"/>
+
+<parameter time default=1 type=INT message="timesteps of stencil"/>
+<parameter elem default="double" type="float"|"double"|"int" 
+                message="element type of stencil"/>
+<parameter old_array default="A" type=ID 
+                     message="array being read in stencil"/>
+<parameter new_array default="B" type=ID 
+                     message="array being modified in stencil"/>
+<parameter points default=(dim*2+1) type=INT message="number of points involved in the computation per iteration"/>
+<parameter out message="output file name"/>
+
+<eval
+  target=CODE.stencil_main#(elem, dim, oa, to, div, mi, coeftype, time,points) 
+/>
+
+<output from=(target) syntax="stencil-pochoir.code" to=out/>

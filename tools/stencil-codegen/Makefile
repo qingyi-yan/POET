@@ -400,6 +400,9 @@ uninstall-am:
 now:
 	$(top_srcdir)/src/pcg $(debug) -pto=$(to) -poa=$(oa) -pdiv=$(div) -pmi=$(mi) -pcoeftype=$(coeftype) -pdim=$(dim) -ptime=$(time) -pelem=$(elem) -ppoints=$(points) $(srcdir)/stencil-gen.pt > out.c
 
+pochoir:
+	$(top_srcdir)/src/pcg $(debug) -pto=$(to) -poa=$(oa) -pdiv=$(div) -pmi=$(mi) -pcoeftype=$(coeftype) -pdim=$(dim) -ptime=$(time) -pelem=$(elem) -ppoints=$(points) $(srcdir)/stencil-gen-pochoir.pt > out.cpp
+
 check:
 	make now
 	$(comp) out.c stencil-3.c

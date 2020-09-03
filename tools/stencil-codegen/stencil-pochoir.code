@@ -1,0 +1,642 @@
+include Cfront.code
+
+<* max of n1 or n2 *>
+<xform max pars=(n1, n2)>
+ res = n2;
+ if(n1 > n2) {
+    res = n1;
+ }
+
+ res
+</xform>
+
+<* helper for getting the timestep max *>
+<xform tmax pars=(to)>
+  res = max(2, to+1)
+</xform>
+
+
+<* get index or limit variable name for a given dimension  *>
+<xform get_index_var pars=(which_dim) limit=0>
+  res = "i"^which_dim;
+  if(limit) res = "N"^which_dim;
+  res
+</xform>
+
+
+<* Essentially a map between index t and the pochoir relative timestep  (0 = 1, 1 = 0, 2 = -1)*>
+<xform get_timestep_varname pars=(t)>
+  rel = "1";
+  if(t > 0) rel = -t+1;
+  res = "t";
+  if(rel != 0) res = Bop#("+", res, rel);
+  res
+</xform>
+
+<* Get the timestep number index for the corresponding timestep*>
+<xform get_timestep_value pars=(to, tvar, t, tidx)>
+  tcount = tmax(to);
+  res = "("tidx"+("tcount"-1)) % "tcount;
+  if(t > 0) res = "("tidx"+("tcount"-1-"t")) % "tcount;
+  res
+</xform>
+
+<* Include division (or via multiplicative inversion) on an operation *>
+<xform add_div pars=(div, divvar, on_oper, mi) decl=0>
+  res = "";
+
+  if(div) {
+    if(decl) {
+      
+      decl_builder =Bop#("+",FunctionCall#("floor",FunctionCall#("fmod", (FunctionCall#("rand",NULL) 1))), 2);
+      if(mi) decl_builder = Bop#("/", 1, decl_builder);
+
+      res = DeclStmt#(TypeInfo#(FloatType#"double", divvar, VarInit#(CastExp#(FloatType#"double",decl_builder))));
+    } else {
+      op = "/";
+      if(mi) op = "*";
+      res = Bop#(op, "("on_oper")", divvar);
+    }
+  } else {
+    res = on_oper;
+  }
+  res
+</xform>
+
+
+<* Create variables for timestep indices *>
+<xform gen_stencil_timestep_indices pars=(to, tidx) decl_only=0>
+  res = "";
+  val_builder = "";
+  for(t = 0; t < tmax(to); t=t+1) {
+    tvar = get_timestep_varname(t);
+    if(decl_only) {
+      val_builder = val_builder :: DeclStmt#(TypeInfo#(IntType#"int", tvar, ""));
+    } else {
+      val_builder = val_builder :: ExpStmt#(Assign#(tvar, get_timestep_value(to, tvar, t,tidx)));
+    }
+  }
+  if(decl_only == 0)
+    res = StmtList#(val_builder);
+  else
+    res = val_builder;
+  res
+</xform>
+
+<* generate stencil body *>
+<xform gen_stencil_init pars=(arrayvar, coefvar, dim, oa, to, coeftype)>
+  access_builder = "";
+
+  for(t = 0; t < tmax(to); t=t+1) {
+    params = t;
+    for(id = 0; id < dim; id=id+1) {
+        params = params :: get_index_var(id);
+    }
+
+    point = FunctionCall#("u", params);
+    set = ExpStmt#(Assign#(point, "rand()"));
+    access_builder = access_builder :: set;
+  }
+
+  res = access_builder
+</xform>
+
+<* Get coefficient to weigh a point *>
+<xform get_coefficient pars=(dim, d, order, oa, oa_i, coeftype) temporal=0>
+  res = "";
+  depth = (oa * order)/4;
+  oa_shifted = oa_i + depth;
+  coef_weights = NULL;
+  ncoefs = "";
+
+   if(coeftype == 0) {
+    <* Constant coefficients, isotropic discretization *>
+    if(temporal) {
+      oa_shifted = oa_i; 
+  
+      <*For temporal orders, the first coef will always be ignored (it's the new timestep)*>
+      if(order == 1) {
+        coef_weights = ("-1", "1");
+        ncoefs = 2;
+      } else if(order == 2) {
+        coef_weights = ("-1", "2", "-1");
+        ncoefs = 3;
+      }
+    } else {
+      ncoefs = depth*2 + 1;
+      if(oa == 2) {
+        coef_weights = ("1","-2","1");
+      } else if(oa == 4) {
+        <* reps ("-1/12", "4/3", "-5/2", "4/3", "-1/12") *>
+        coef_weights = ("-0.083", "1.33", "-2.5", "1.33", "-0.083");
+      }
+    }
+
+    for(i = 0; i < LEN(coef_weights); i=i+1) {
+      if(i == oa_shifted) {
+        weight = coef_weights[i];
+        res = weight;
+        BREAK;
+      }
+    }
+  } else if(coeftype == 1) {
+    <* Variable coefs, anisotropic discretization *>
+    if(temporal) {
+      <*not supported*>
+    } else {
+      dim_idx = 0;
+      if(oa_i < 0) {
+        <* we are left of center, use absolute value *>
+        dim_idx = -oa_i;
+      } else if(oa_i > 0) {
+        dim_idx = oa_i + depth; 
+      }
+
+      val = 0;
+      if(dim_idx != 0) {
+        val = (d-1)*(depth*2) + dim_idx
+      }
+
+      vaccess = ArrayAccess#("c", val);
+      for(i = 0; i < dim; i = i+1) {
+        vaccess = ArrayAccess#(vaccess, get_index_var(i));
+      }
+      res = vaccess;
+    }
+  }
+
+  res
+</xform>
+
+<* Generate a tuple representing an access in the pochoir shape *>
+<xform gen_shape_access pars=(time, d, dim, depth)>
+  res = "{"^time;
+
+  for(i = 0; i < dim; i=i+1) {
+    if(i == d) res = res ^ "," ^ depth;
+    else res = res ^ ",0";
+  }
+
+  return res^"}";
+</xform>
+
+<* Initialize the Pochoir_Shape *>
+<xform gen_pochoir_shape pars=(arrayvar, dim, order, oa, to, coeftype, ivars_list, div, divvar, mi)>
+  access_builder = "";
+  depth = (oa*order)/4;
+  center_used = 0;
+
+  first = 1;
+  for(ivars_iter = ivars_list; ivars_iter != NULL; ivars_iter = TAIL(ivars_iter)) {
+    ivars = HEAD(ivars_iter);
+
+    if(HEAD(ivars) > dim) {
+      <* derivative is for a dimension we don't have set *>
+      CONTINUE;
+    }
+
+    timesteps_to_consider = 1;
+    if(HEAD(ivars) == 0) {
+      <* This derivative is mixed WRT time (e.g. d^2/dtdx) *>
+      <*   also note mixed derivates aren't supported yet *>
+      timesteps_to_consider = tmax(to);
+    }
+
+    for(t = 1; t <= timesteps_to_consider; t=t+1) {
+      ivar_builder = "";
+
+      <* Spatial derivatives: 
+        starts at 1 for spatial comparisons, where x is 1*>
+      for(oa_i = -depth; oa_i <= depth; oa_i=oa_i+1) {
+        if(oa_i == 0) CONTINUE;
+
+        loc = -t+1;
+        loc = ", {"^loc;
+
+        if(oa_i == 0 && coeftype == 1) {
+
+          <* Only use the center point once when using variable coefficients *>
+          if(center_used == 0) {
+            center_used = 1;
+          } else {
+            CONTINUE;
+          }
+        }
+        for(d = 1; d <= dim; d=d+1) {
+
+          deriv_here = 0;
+
+          <* go through each dimension at each depth and see who needs to be brought in *>
+          for(ivars_i = ivars; ivars_i != NULL; ivars_i = TAIL(ivars_i)) {
+            ivar = HEAD(ivars_i);
+            if(ivar == d) {
+              <*We take a derivative WRT this dim*> 
+              deriv_here = 1;
+            }
+          }
+        
+          if(deriv_here) {
+            loc = loc ^ "," ^ oa_i;
+          } else {
+            loc = loc ^ ",0";
+          }
+        }
+        loc = loc ^ "}";
+
+        if(first) {
+          first = 0;
+          access_builder = loc;
+        } else {
+          access_builder = access_builder :: loc;
+        }
+      }
+    }
+  }
+
+  <* temporal *>
+  if(to >= 1) {
+    for(t = 1; t < tmax(to); t=t+1) {
+      loc = -t+1;
+      loc = ", {"^loc;
+      for(d = 0; d < dim; d=d+1) {
+        loc = loc :: ",0";
+      }
+      loc = loc :: "}";
+      access_builder = access_builder :: loc;
+    }
+  }
+
+  tnew = gen_shape_access(1, 0, dim, 0);
+  shape = "{"::tnew::access_builder::"}";
+  res = "Pochoir_Shape_" :: dim :: "D stencil_shape = " :: shape
+</xform>
+
+<* create access for a specific term, considering coefficient type and place.
+  ivar of 0 is temporal, 1 is x, 2 is y, 3 is z
+  Put ivars in ascending order
+*>
+<xform gen_neighbor_stencil_access pars=(arrayvar, dim, order, oa, to, coeftype, ivars_list, div, divvar, mi)>
+  access_builder = "";
+  depth = (oa*order)/4;
+  center_used = 0;
+
+  first = 1;
+  for(ivars_iter = ivars_list; ivars_iter != NULL; ivars_iter = TAIL(ivars_iter)) {
+    ivars = HEAD(ivars_iter);
+
+    if(HEAD(ivars) > dim) {
+      <* derivative is for a dimension we don't have set *>
+      CONTINUE;
+    }
+
+    timesteps_to_consider = 1;
+    if(HEAD(ivars) == 0) {
+      <* This derivative is mixed *>
+      timesteps_to_consider = tmax(to);
+    }
+
+    for(t = 1; t <= timesteps_to_consider; t=t+1) {
+      ivar_builder = "";
+
+      <* Spatial derivatives: 
+        starts at 1 for spatial comparisons, where x is 1*>
+      for(oa_i = -depth; oa_i <= depth; oa_i=oa_i+1) {
+
+        loc = get_timestep_varname(t);
+
+        if(oa_i == 0 && coeftype == 1) {
+
+          <* Only use the center point once when using variable coefficients *>
+          if(center_used == 0) {
+            center_used = 1;
+          } else {
+            CONTINUE;
+          }
+        }
+        for(d = 1; d <= dim; d=d+1) {
+
+          deriv_here = 0;
+
+          <* go through each dimension at each depth and see who needs to be brought in *>
+          for(ivars_i = ivars; ivars_i != NULL; ivars_i = TAIL(ivars_i)) {
+            ivar = HEAD(ivars_i);
+            if(ivar == d) {
+              <*We take a derivative WRT this dim*> 
+              deriv_here = 1;
+            }
+          }
+          if(deriv_here) {
+            loc = loc :: (get_index_var(d-1)+oa_i);
+          } else {
+            loc = loc :: get_index_var(d-1);
+          }
+        }
+
+        c = get_coefficient(dim,HEAD(ivars), order, oa, oa_i, coeftype);
+
+        point = FunctionCall#(arrayvar, loc);
+
+        if(first) {
+          first = 0;
+          access_builder = Bop#("*", c, point);
+        } else {
+          access_builder = Bop#("+", access_builder, Bop#("*",c, point));
+        }
+      }
+    }
+  }
+
+  if(div) access_builder = add_div(div, divvar, access_builder, mi);
+
+  <* temporal *>
+  if(to >= 1) {
+    for(t = 1; t < tmax(to); t=t+1) {
+      loc = get_timestep_varname(t);
+      for(d = 0; d < dim; d=d+1) {
+        loc = loc :: get_index_var(d);
+      }
+      point = FunctionCall#(arrayvar, loc);
+      loc = Bop#("*", get_coefficient[temporal=1](dim,NULL,to, 2, t, 0), point);
+      access_builder = Bop#("+",access_builder,loc);
+    }
+  }
+
+  <* build the array access to write into *>
+  tvar = get_timestep_varname(0);
+  tnew_builder = tvar;
+  for(d = 0; d < dim; d=d+1) {
+    tnew_builder = tnew_builder :: get_index_var(d);
+  }
+  point = FunctionCall#(arrayvar, tnew_builder);
+
+
+  res = Assign#(point, access_builder)
+</xform>
+
+<* generate various code from stencil dimension *>
+<xform gen_stencil_dim pars=(dim) macro=0 size=0 index=0 bc_size=1 body="" >
+ res=(body=="")? NULL : body;
+ for (i = 0; i < dim; i=i+1) {
+   if (body != "") {
+       res=Nest#(Loop#(get_index_var(i),bc_size,get_index_var[limit=1](i)-bc_size,1), res);
+   }
+   else if (size > 0) {
+      var = "N"^i;
+      if (macro != 0) var = MacroDef#(var, 100);
+      res = var :: res;
+   }
+   else if (index > 0) { var = get_index_var(i); res = var :: res; }
+   else { "" = "Error: nothing is generated"; }
+ }
+res
+</xform>
+
+<* generate subscript reference with dim sizes and index variable *>
+<xform gen_stencil_subscript pars=(size, index) >
+  res = 0;
+  for (p = index; p != NULL; p = cdr(p)) {
+    size=cdr(size);
+    res = res + Multiply#((car p):: size);
+  }
+  res
+</xform>
+
+<* generate stencil body *>
+<xform gen_stencil_stmt pars=(old_array, new_array, dim, points)>
+ sizes = gen_stencil_dim[size=1](dim);
+ index = gen_stencil_dim[index=1](dim);
+ cur_pos = gen_stencil_subscript(sizes, index);
+ rhs = ArrayAccess#(old_array,cur_pos); 
+ p_index=index; cur_pts = 1;
+ for (i = 0; i < dim; i=i+1) {
+   cur_index = REPLACE((car(p_index)), (car(p_index))+1, index);
+   rhs = rhs + ArrayAccess#(old_array, gen_stencil_subscript(sizes,cur_index));
+   cur_index = REPLACE((car(p_index)), (car(p_index))-1, index);
+   rhs = rhs + ArrayAccess#(old_array, gen_stencil_subscript(sizes,cur_index));
+ }
+ res = ExpStmt#(Assign#(ArrayAccess#(new_array,cur_pos), rhs / points));
+</xform>
+
+
+<* generate the code to declare the stencil arrays *>
+<xform gen_stencil_arrays pars=(dim, oa, to, elemtype,coeftype)>
+  size_builder = "";
+  decl_builder = "";
+
+  if(dim == 1) {
+    res = "Pochoir_Array_1D(double) u(N0)";
+  } else if(dim == 2) {
+    res = "Pochoir_Array_2D(double) u(N0, N1)";
+  } else if(dim == 3) {
+    res = "Pochoir_Array_3D(double) u(N0, N1, N2)";
+  }
+
+  res
+</xform>
+
+
+<* Generate a *>
+<xform build_kernel_point pars=(time, d, dim, depth)>
+  timevar = "t";
+  if(time != 0) timevar = Bop#("+", timevar, time);
+  params = timevar;
+  for(i = 0; i < dim; i=i+1) {
+    var = "i";
+    if(i == 1) var = "j";
+    if(i == 2) var = "k";
+
+    if(i == d && depth != 0) var = Bop#("+",var,depth); 
+    params = params :: var;
+  }
+
+  res = FunctionCall#("u", params)
+</xform>
+
+<* generate the shape for pochoir *>
+<xform gen_stencil_shape pars=(dim, oa, to, elemtype,coeftype)>
+  depth = oa/2; 
+
+  shape_builder = "{"^build_point_access(1,0,dim,0); <* For the new timestep value *>
+  for(t = 0; t > -tmax(to)+1; t=t-1) {
+    for(d = 0; d < dim; d=d+1) {
+      for(o = -depth; o <= depth; o=o+1) {
+        if(o == 0) CONTINUE; <* Skip center pt *>
+        shape_builder = shape_builder ^ ","^build_point_access(t, d, dim, o);
+      }
+    }
+  }
+  shape_builder = shape_builder ^ ", "^build_point_access(0,0,dim,0)^"}";
+  res = "Pochoir_Shape_"^dim^"D stencil_shape[] = "^ shape_builder;
+</xform>
+
+<* Call the pochoir kernel corresponding to this dimension *>
+<xform pochoir_kernel_begin pars=(dim)>
+  fname = "Pochoir_Kernel_"^dim^"D";
+  params = ("stencil_fn" "t");
+
+  for(d = 0; d < dim; d=d+1) {
+    if(d == 0) params = params :: "i0";
+    else if(d == 1) params = params :: "i1";
+    else if(d == 2) params = params :: "i2";
+  }
+
+  res = FunctionCall#(fname, params)
+</xform>
+
+<* Call the pochoir kernel corresponding to this dimension *>
+<xform pochoir_boundary_begin pars=(dim, stencil_var)>
+  fname = "Pochoir_Boundary_"^dim^"D";
+  params = ("stencil_bv" stencil_var "t");
+
+  for(d = 0; d < dim; d=d+1) {
+    if(d == 0) params = params :: "i0";
+    else if(d == 1) params = params :: "i1";
+    else if(d == 2) params = params :: "i2";
+  }
+
+  res = FunctionCall#(fname, params)
+</xform>
+
+<xform gen_pochoir_kernel pars=(dim, oa, to)>
+  depth = oa/2; 
+
+  kernel_builder = "";
+  for(t = 0; t > -tmax(to)+1; t=t-1) {
+    for(d = 0; d < dim; d=d+1) {
+      for(o = -depth; o <= depth; o=o+1) {
+        
+        coef = get_coefficient(dim, d, 2, oa, o, 0);
+        point = build_kernel_point(t, d, dim, o);
+        point = Bop#("*", coef, point);
+
+        if(kernel_builder == "") { 
+          kernel_builder = point;
+        } else {
+          kernel_builder = Bop#("+", kernel_builder, point);
+        }
+      }
+    }
+  }
+  
+  res = Assign#(build_kernel_point(1,0,dim,0), kernel_builder)
+
+</xform>
+
+<xform get_problem_size pars=(ts, dim)>
+  res = "";
+
+  for(d = 0; d < dim; d=d+1) {
+    if(d == 0) {
+      res = get_index_var[limit=1](d);
+    } else {
+      res = res^", "^ get_index_var[limit=1](d);
+    }
+  }
+  for(d = dim; d < 3; d=d+1) {
+    res = res^", 0";
+  }
+
+  res
+</xform>
+
+<xform do_free pars=(varname, depends_on)> 
+  res = "";
+  if(depends_on) {
+    res = ExpStmt#(FunctionCall#("free", varname));
+  }
+  res
+</xform>
+
+<xform gen_pochoir_decl pars=(dim)>
+  res = "Pochoir_"^dim^"D stencil(stencil_shape)"
+</xform>
+
+<xform gen_bv_vals pars=(varname, initv, dim)>
+  res = Bop#("+", initv, Bop#("*","i","0.1"));
+  for(d = 1; d < dim; d=d+1) {
+    dvar = "j";
+    mval="0.01";
+    if(d == 2) {dvar = "k";mval="0.001";}
+    res = Bop#("+", res, Bop#("*", dvar, mval));
+  }
+
+  res = ExpStmt#(Assign#(varname, res))
+</xform>
+
+<code stencil_main pars=(elem, dim, oa, to, div, mi, coeftype, time, points )>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
+#include <stencil_config.h>
+
+using namespace std;
+
+#ifndef RANDSEED
+#define RANDSEED 1
+#endif
+
+@pochoir_boundary_begin(dim, "u")@
+  double val;
+
+  if(t%2 == 0) {
+    @gen_bv_vals("val", 1, dim)@
+  } else {
+    @gen_bv_vals("val", 2, dim)@
+  }
+
+  return val;
+Pochoir_Boundary_End
+
+int main(int argc, char ** argv) 
+{
+  if (argc != 5) {
+    printf ("Wrong number of parameters.\n", argv[0]);
+    exit (-1);
+  }
+
+  int N0 = atoi (argv[1]); 
+  int N1 = atoi (argv[2]);
+  int N2 = atoi (argv[3]);
+  int TS = atoi (argv[4]);
+
+  srand(RANDSEED);
+
+  @gen_stencil_arrays(dim,oa,to,elem,coeftype)@;
+  @gen_pochoir_shape("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi)@;
+  @gen_pochoir_decl(dim)@;
+
+  @pochoir_kernel_begin(dim)@
+  @gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi)@
+  Pochoir_Kernel_End
+
+  u.Register_Boundary(stencil_bv);
+  stencil.Register_Array(u);
+  
+  unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t,l;
+
+  @add_div[decl=1](div, "divvar", NULL, mi)@
+
+  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", "c", dim, oa, to, coeftype)](dim)@
+
+  benchInit();
+  benchBeginStencil();
+
+  stencil.Run(TS, stencil_fn);
+
+  benchEndStencil();
+  benchSetEnv();
+  benchSetDomain(@dim@,@oa@,@to@);
+  benchSetProblemSize(@get_problem_size(time,dim)@, TS);
+  benchSetArithProps(@((dim*oa)+1+to-1)@, 0, @((dim*oa)+1+to+mi)@, @(div-mi)@);
+  benchSetMemProps(@((dim-1)*oa+1+to+(coeftype*((dim*oa)+1)))@, 1);
+  benchSetMatProps(@tmax(to)@, 1);
+  benchSetFpSize(sizeof(double));
+  benchFinalize();
+
+  return 0;
+}
+
+</code>
