@@ -53,7 +53,10 @@ include Cfront.code
     } else {
       op = "/";
       if(mi) op = "*";
-      res = Bop#(op, "("on_oper")", divvar);
+      res = on_oper;
+      for(nd = 0; nd < div; nd = nd+1) {
+        res = Bop#(op, "("res")", divvar);
+      }
     }
   } else {
     res = on_oper;
@@ -286,7 +289,7 @@ include Cfront.code
 <* generate various code from stencil dimension *>
 <xform gen_stencil_dim pars=(dim) macro=0 size=0 index=0 bc_size=1 body="" >
  res=(body=="")? NULL : body;
- for (i = 0; i < dim; i=i+1) {
+ for (i = dim-1; i >= 0; i=i-1) {
    if (body != "") {
        res=Nest#(Loop#(get_index_var(i),bc_size,get_index_var[limit=1](i)-bc_size,1), res);
    }
@@ -438,7 +441,7 @@ int main(int argc, char ** argv)
   for (t = 0; t < TS; t++) {
     @gen_stencil_timestep_indices(to,"t")@ 
 
-    @gen_stencil_dim[body=gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi) ](dim)@
+    @gen_stencil_dim[bc_size=(oa/2);body=gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi) ](dim)@
   }
 #pragma endscop
 
@@ -446,16 +449,16 @@ int main(int argc, char ** argv)
   benchSetEnv();
   benchSetDomain(@dim@,@oa@,@to@);
   benchSetProblemSize(@get_problem_size(time,dim)@, TS);
-  benchSetArithProps(@((dim*oa)+1+to-1)@, 0, @((dim*oa)+1+to+mi)@, @(div-mi)@);
+  benchSetArithProps(@((dim*oa)+1+to-1)@, 0, @((dim*oa)+1+to+(mi*div))@, @(div-(mi*div))@);
   benchSetMemProps(@((dim-1)*oa+1+to+(coeftype*((dim*oa)+1)))@, 1);
-  benchSetMatProps(@tmax(to)@, 1);
+  benchSetMatProps(@coeftype@, 1); //Fix for (long distance mats, immediate mats)
   benchSetFpSize(sizeof(double));
   benchFinalize();
 
   @do_free("u", 1)@
   @do_free("c", coeftype)@
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 </code>

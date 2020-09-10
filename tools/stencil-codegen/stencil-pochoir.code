@@ -268,7 +268,7 @@ include Cfront.code
 
   tnew = gen_shape_access(1, 0, dim, 0);
   shape = "{"::tnew::access_builder::"}";
-  res = "Pochoir_Shape_" :: dim :: "D stencil_shape = " :: shape
+  res = "Pochoir_Shape_" :: dim :: "D stencil_shape[] = " :: shape
 </xform>
 
 <* create access for a specific term, considering coefficient type and place.
@@ -552,11 +552,11 @@ res
 </xform>
 
 <xform gen_bv_vals pars=(varname, initv, dim)>
-  res = Bop#("+", initv, Bop#("*","i","0.1"));
+  res = Bop#("+", initv, Bop#("*","i0","0.1"));
   for(d = 1; d < dim; d=d+1) {
-    dvar = "j";
+    dvar = "i1";
     mval="0.01";
-    if(d == 2) {dvar = "k";mval="0.001";}
+    if(d == 2) {dvar = "i2";mval="0.001";}
     res = Bop#("+", res, Bop#("*", dvar, mval));
   }
 
@@ -564,13 +564,16 @@ res
 </xform>
 
 <code stencil_main pars=(elem, dim, oa, to, div, mi, coeftype, time, points )>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstdio>
+#include <cstddef>
+#include <iostream>
+#include <iomanip>
+#include <cstdlib>
 #include <sys/time.h>
-#include <sys/resource.h>
+#include <cmath>
 
 #include <stencil_config.h>
+#include <pochoir.hpp>
 
 using namespace std;
 
@@ -593,7 +596,7 @@ Pochoir_Boundary_End
 int main(int argc, char ** argv) 
 {
   if (argc != 5) {
-    printf ("Wrong number of parameters.\n", argv[0]);
+    printf ("Wrong number of parameters.\n");
     exit (-1);
   }
 
@@ -601,6 +604,7 @@ int main(int argc, char ** argv)
   int N1 = atoi (argv[2]);
   int N2 = atoi (argv[3]);
   int TS = atoi (argv[4]);
+  @add_div[decl=1](div, "divvar", NULL, mi)@
 
   srand(RANDSEED);
 
@@ -609,7 +613,7 @@ int main(int argc, char ** argv)
   @gen_pochoir_decl(dim)@;
 
   @pochoir_kernel_begin(dim)@
-  @gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi)@
+  @gen_neighbor_stencil_access("u",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi)@;
   Pochoir_Kernel_End
 
   u.Register_Boundary(stencil_bv);
@@ -617,7 +621,6 @@ int main(int argc, char ** argv)
   
   unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t,l;
 
-  @add_div[decl=1](div, "divvar", NULL, mi)@
 
   @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", "c", dim, oa, to, coeftype)](dim)@
 
