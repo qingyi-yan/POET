@@ -1,0 +1,2 @@
+<parameter infile type=STRING default="ast_generator.c" message="input file name" />
+<input from=infile syntax="Cfront.code" to=inputCode />

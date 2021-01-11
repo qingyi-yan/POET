@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+
+#include <stencil_config.h>
+
 double GetWallTime(void)
    {
       struct timeval tp;
@@ -21,46 +25,69 @@ double GetWallTime(void)
 #define RANDSEED 1
 #endif
 
-#ifndef TS
-#define TS 100
-#endif
-
 int main(int argc, char ** argv) 
 {
-#ifndef N0
-#define N0 100
-#endif
-  float* A, *A_tmp;
-  float* B, *B_tmp;
-  unsigned i0,i,t;
-  double __timer_begin, __timer_end, __timer_diff, __pt_flops;
+  if (argc != 5) {
+    printf ("Wrong number of parameters.\n", argv[0]);
+    exit (-1);
+  }
 
-  unsigned stencil_size = N0;
-  A = calloc(stencil_size,sizeof(float));
-  B = calloc(stencil_size,sizeof(float));
+  int N0 = atoi (argv[1]); 
+  int N1 = atoi (argv[2]);
+  int N2 = atoi (argv[3]);
+  int TS = atoi (argv[4]);
+
+  double (*u)[N0][N1]=(double*)malloc(2*(N1*(N0*sizeof (double))));;
+  
+  unsigned i0,i1,i,t,l;
+  int tnew;int tm1; 
+
+  
+
   srand(RANDSEED);
-  for (i=0; i<stencil_size; ++i)
-  {
-      A[i] = rand();;
-      B[i] = rand();;
-  }
 
-  __timer_begin = GetWallTime();
+  for (i0=0; i0<N0; i0+=1)
+    {
+       for (i1=0; i1<N1; i1+=1)
+         {
+            
+            u[0][i0][i1] = rand();
+            u[1][i0][i1] = rand();
+         }
+    }
+
+  benchInit();
+  benchBeginStencil();
+
+#pragma scop
   for (t = 0; t < TS; t++) {
-      if (t%2 == 0) 
-           { A_tmp = A; B_tmp = B; }
-      else { A_tmp = B; B_tmp = A; }
-      for (i0=1; i0<-1+N0; i0+=1)
-        {
-           B_tmp[i0] = A_tmp[-1+i0]+(A_tmp[i0]+A_tmp[1+i0])/3;
-        }
+    
+    tnew = (t+(2-1)) % 2;
+    tm1 = (t+(2-1-1)) % 2; 
+
+    for (i0=1; i0<-1+N0; i0+=1)
+      {
+         for (i1=1; i1<-1+N1; i1+=1)
+           {
+              u[tnew][i0][i1] = 1*u[tm1][-1+i0][i1]+(-2*u[tm1][i0][i1])+(1*u[tm1][1+i0][i1])+(1*u[tm1][i0][-1+i1])+(-2*u[tm1][i0][i1])+(1*u[tm1][i0][1+i1])+(u[tm1][i0][i1]*1);
+           }
+      }
   }
-  __timer_end = GetWallTime();
-  __timer_diff = (__timer_end-__timer_begin);
-  __pt_flops = 3 * TS;
-  __pt_flops =  __pt_flops * N0;
-  __pt_flops = __pt_flops / __timer_diff;
-  printf("time in seconds:  %.15f\n", __timer_diff);
-  printf("MFLOPS:  %.15f\n", __pt_flops/1000000);
-  return 0;
+#pragma endscop
+
+  benchEndStencil();
+  benchSetEnv();
+  benchSetDomain(2,2,1);
+  benchSetProblemSize(N0, N1, 0, TS);
+  benchSetArithProps(5, 0, 6, 0);
+  benchSetMemProps(4, 1);
+  benchSetMatProps(0, 1); //Fix for (long distance mats, immediate mats)
+  benchSetFpSize(sizeof(double));
+  benchFinalize();
+
+  free(u);
+  
+
+  return EXIT_SUCCESS;
 }
+
