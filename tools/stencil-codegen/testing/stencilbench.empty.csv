@@ -1,0 +1,1 @@
+eqId,runId,optId,D,OA,TO,xmax,ymax,zmax,tmax,fpSize,addsLup,subsLup,multsLup,divsLup,readsLup,writesLup,ldMats,immediateMats,nThreads,duration (s)
