@@ -9,8 +9,9 @@ CFLAGS=-O3
 LDFLAGS:=-lm -lstencil_config -lacc_timer -lbenchtool
 LDPARFLAGS:=-fopenmp
 REF_TEST_DIR=#!date +%Y_%m_%d:%H_%M
-PLUTO_HOME=/home/brandon/opt_devel/pluto/target
-PLC=$(PLUTO_HOME)/bin/polycc
+#PLUTO_HOME=/home/brandon/opt_devel/pluto/target
+#PLC=$(PLUTO_HOME)/bin/polycc
+PLC=polycc
 PLCFLAGS=--pet
 PLCPARFLAGS=--parallel --nodiamond-tile
 PLCTILEFLAGS=--noparallel --tile
@@ -85,13 +86,24 @@ endif
 ###################################
 #### Dimensionality Parameters ####
 ###################################
-T_MAX=250
-D1_X = 4096000
-D2_X = 2048
-D2_Y = 2048
-D3_X = 156
-D3_Y = 156
-D3_Z = 156
+T_MAX=128
+D1_X = 1024000
+D2_X = 1024 
+D2_Y = 1024 
+D3_X = 100
+D3_Y = 100
+D3_Z = 100
+#D3_X = 156
+#D3_Y = 156
+#D3_Z = 156
+#D2_X = 2048 
+#D2_Y = 2048 
+#D1_X = 4096000
+
+BLK_T=8
+BLK_X=8
+BLK_Y=8
+BLK_Z=8
 
 ifeq ($(D), 1)
 #DIM_PARAMS=16000 0 0 $(T_MAX)
@@ -125,31 +137,33 @@ TILE_INPUT:= tile.$(D)d
 #TILE_INPUT:=$(TILE_INPUT).spatial
 #endif
 
+TILE_OPT_SUFFIX:=
+
 # partial diamond
 ifeq ($(OPT),$(EXT_ALLOPT))
-TILE_INPUT:=$(TILE_INPUT).pd
+TILE_OPT_SUFFIX:=.pd
 endif
 ifeq ($(OPT),$(EXT_TILE))
-TILE_INPUT:=$(TILE_INPUT).pd
+TILE_OPT_SUFFIX:=.pd
 endif
 
 # full diamond
 ifeq ($(OPT),$(EXT_FULLDIAMOND))
-TILE_INPUT:=$(TILE_INPUT).fd
+TILE_OPT_SUFFIX:=.fd
 endif
 ifeq ($(OPT),$(EXT_FULLDIAMONDPAR))
-TILE_INPUT:=$(TILE_INPUT).fd
+TILE_OPT_SUFFIX:=.fd
 endif
 
 # rect / no diamond tiling
 ifeq ($(OPT),$(EXT_NODIAMOND))
-TILE_INPUT:=$(TILE_INPUT).rect
+TILE_OPT_SUFFIX:=.rect
 endif
 ifeq ($(OPT),$(EXT_NODIAMONDPAR))
-TILE_INPUT:=$(TILE_INPUT).rect
+TILE_OPT_SUFFIX:=.rect
 endif
 
-TILE_INPUT:=$(TILE_INPUT).sizes
+TILE_INPUT:=$(TILE_INPUT)$(TILE_OPT_SUFFIX).sizes
 
 
 # rule names and file names cause conflict in target names, so we don't want any implicit rules
@@ -289,6 +303,10 @@ opt: export BENCHTOOL_RUNID=$(RUN_ID)
 opt: export BENCHTOOL_OPTID=$(OPTID)
 opt: export BENCHTOOL_FILE=$(REPORT_PATH)
 opt: export BENCHTOOL_NTHREADS=$(N_THREADS)
+opt: export BENCHTOOL_TBLK=$(BLK_T)
+opt: export BENCHTOOL_XBLK=$(BLK_X)
+opt: export BENCHTOOL_YBLK=$(BLK_Y)
+opt: export BENCHTOOL_ZBLK=$(BLK_Z)
 opt: export OMP_NUM_THREADS=$(N_THREADS)
 
 #opt: $(SRC).c prepare $(SRC).$(OPT).c build
@@ -307,10 +325,58 @@ stencil_id="generic"
 generic: 
 	@$(MAKE) opt
 
+
+write_1d_tilefile: 
+	printf "$(BLK_T)\n$(BLK_X)" > $(TILE_INPUT)
+
+write_2d_tilefile: 
+	printf "$(BLK_T)\n$(BLK_X)\n$(BLK_Y)" > $(TILE_INPUT)
+
+write_3d_tilefile: 
+	printf "$(BLK_T)\n$(BLK_X)\n$(BLK_Y)\n$(BLK_Z)" > $(TILE_INPUT)
+
+
+proxy_1d: write_1d_tilefile
+	@$(MAKE) generic	
+
+proxy_2d: write_2d_tilefile
+	@$(MAKE) generic	
+
+proxy_3d: write_3d_tilefile
+	@$(MAKE) generic	
+
+
+blk1d_sweep:
+	@$(MAKE) BLK_T=8  BLK_X=4096 proxy_1d
+	@$(MAKE) BLK_T=1  BLK_X=4096 proxy_1d
+	@$(MAKE) BLK_T=16 BLK_X=4096 proxy_1d
+	@$(MAKE) BLK_T=8  BLK_X=2048 proxy_1d
+	@$(MAKE) BLK_T=8  BLK_X=8192 proxy_1d
+
+blk2d_sweep:
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=128 proxy_2d
+	@$(MAKE) BLK_T=1  BLK_X=8  BLK_Y=128 proxy_2d
+	@$(MAKE) BLK_T=16 BLK_X=8  BLK_Y=128 proxy_2d
+	@$(MAKE) BLK_T=8  BLK_X=4  BLK_Y=128 proxy_2d
+	@$(MAKE) BLK_T=8  BLK_X=16 BLK_Y=128 proxy_2d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=64  proxy_2d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=256 proxy_2d
+
+blk3d_sweep:
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=8  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=1  BLK_X=8  BLK_Y=8  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=16 BLK_X=8  BLK_Y=8  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=4  BLK_Y=8  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=16 BLK_Y=8  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=4  BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=16 BLK_Z=128 proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=8  BLK_Z=64  proxy_3d
+	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=8  BLK_Z=256 proxy_3d
+
 dim_sweep:
-	@$(MAKE) dim=1 D=1 generic 
-	@$(MAKE) dim=2 D=2 generic 
-	@$(MAKE) dim=3 D=3 generic 
+	@$(MAKE) dim=1 D=1 blk1d_sweep 
+	@$(MAKE) dim=2 D=2 blk2d_sweep 
+	@$(MAKE) dim=3 D=3 blk3d_sweep 
 	
 oa_sweep:
 	@$(MAKE) oa=2 dim_sweep 
@@ -376,4 +442,5 @@ input_params_sweep:
 	@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=128 runid_sweep
 
 do_test:
-	@$(MAKE) TEST_MODE=1 input_params_sweep
+	@$(MAKE) TEST_MODE=1 runid_sweep
+#	@$(MAKE) TEST_MODE=1 input_params_sweep
