@@ -72,7 +72,7 @@ include Cfront.code
   for(t = 0; t < tmax(to); t=t+1) {
     tvar = get_timestep_varname(t);
     if(decl_only) {
-      val_builder = val_builder :: DeclStmt#(TypeInfo#(IntType#"int", tvar, ""));
+      val_builder = val_builder :: DeclStmt#(TypeInfo#(IntType#"long", tvar, ""));
     } else {
       val_builder = val_builder :: ExpStmt#(Assign#(tvar, get_timestep_value(to, tvar, t,tidx)));
     }
@@ -85,17 +85,25 @@ include Cfront.code
 </xform>
 
 <* generate stencil body *>
-<xform gen_stencil_init pars=(arrayvar, coefvar, dim, oa, to, coeftype)>
+<xform gen_stencil_init pars=(arrayvar, test_arrayvar, coefvar, dim, oa, to, coeftype)>
   access_builder = "";
 
   for(t = 0; t < tmax(to); t=t+1) {
-    internal_builder = ArrayAccess#(arrayvar, t);
+    arr_builder = ArrayAccess#(arrayvar, t);
+    test_arr_builder = ArrayAccess#(test_arrayvar, t);
     for(id = 0; id < dim; id=id+1) {
-        internal_builder = ArrayAccess#(internal_builder, get_index_var(id));
+        arr_builder = ArrayAccess#(arr_builder, get_index_var(id));
+        test_arr_builder = ArrayAccess#(test_arr_builder, get_index_var(id));
     }
 
-    internal_builder = ExpStmt#(Assign#(internal_builder, "rand()"));
-    access_builder = access_builder :: internal_builder;
+    internal_builder = ExpStmt#(Assign#(arr_builder, "rand()"));
+
+    ifdef_builder = "#ifdef VALIDATE";
+    test_arr_builder = ExpStmt#(Assign#(test_arr_builder, arr_builder));
+    endif_builder = "#endif";
+    test_arr_builder = ifdef_builder :: test_arr_builder :: endif_builder;
+
+    access_builder = access_builder :: internal_builder :: test_arr_builder;
   }
 
   if(coeftype == 1) {
@@ -116,6 +124,31 @@ include Cfront.code
   } else {
     res = access_builder;
   }
+
+  res
+</xform>
+
+<* generate stencil body *>
+<xform gen_stencil_compare pars=(arrayvar1, arrayvar2, dim, oa, to, coeftype)>
+  access_builder = "";
+
+  lhs_builder = ArrayAccess#(arrayvar1, "tlast");
+  rhs_builder = ArrayAccess#(arrayvar2, "tlast");
+  for(id = 0; id < dim; id=id+1) {
+      lhs_builder = ArrayAccess#(lhs_builder, get_index_var(id));
+      rhs_builder = ArrayAccess#(rhs_builder, get_index_var(id));
+  }
+
+
+  cond_builder = Bop#("!=", lhs_builder, rhs_builder);
+  body_builder = ExpStmt#(FunctionCall#("fprintf", ("stderr", "\"Comparison Failed at index %d (%lf!=%lf)\\n\"",get_index_var(0), lhs_builder, rhs_builder)));
+  err_builder = ExpStmt#(FunctionCall#("exit",("EXIT_FAILURE") ));
+
+  checker = Nest#(If#(cond_builder), body_builder :: err_builder);
+
+  access_builder = access_builder :: checker;
+
+  res = access_builder;
 
   res
 </xform>
@@ -332,7 +365,7 @@ res
 
 
 <* generate the code to declare the stencil arrays *>
-<xform gen_stencil_arrays pars=(dim, oa, to, elemtype,coeftype)>
+<xform gen_stencil_arrays pars=(arr_name, dim, oa, to, elemtype,coeftype)>
   size_builder = "";
   decl_builder = "";
   for(i = 0; i < dim; i=i+1) {
@@ -346,7 +379,7 @@ res
     }
   }
   
-  res = DeclStmt#((TypeInfo#(ArrayType#(FloatType#"double",(decl_builder)),FunctionPtr#"u", VarInit#(CastExp#(PtrType#(FloatType#"double"),FunctionCall#("malloc",Bop#("*",max((to+1),2), size_builder)))))));
+  res = DeclStmt#((TypeInfo#(ArrayType#(FloatType#"double",(decl_builder)),FunctionPtr#arr_name, VarInit#(CastExp#(PtrType#(FloatType#"double"),FunctionCall#("malloc",Bop#("*",max((to+1),2), size_builder)))))));
 
   coefs = NULL;
   if(coeftype == 1) {
@@ -386,6 +419,7 @@ res
 <code stencil_main pars=(elem, dim, oa, to, div, mi, coeftype, time, points )>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <math.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -418,21 +452,25 @@ int main(int argc, char ** argv)
     exit (-1);
   }
 
-  int N0 = atoi (argv[1]); 
-  int N1 = atoi (argv[2]);
-  int N2 = atoi (argv[3]);
-  int TS = atoi (argv[4]);
+  long N0 = atoi (argv[1]); 
+  long N1 = atoi (argv[2]);
+  long N2 = atoi (argv[3]);
+  long TS = atoi (argv[4]);
 
-  @gen_stencil_arrays(dim,oa,to,elem,coeftype)@;
+  @gen_stencil_arrays("u",dim,oa,to,elem,coeftype)@;
+#ifdef VALIDATE
+  int tlast = 0;
+  @gen_stencil_arrays("u_test",dim,oa,to,elem,coeftype)@;
+#endif
   
-  unsigned @ExpList#(gen_stencil_dim[index=1](dim))@,i,t,l;
+  long @ExpList#(gen_stencil_dim[index=1](dim))@,i,t,l;
   @gen_stencil_timestep_indices[decl_only=1](to,"")@ 
 
   @add_div[decl=1](div, "divvar", NULL, mi)@
 
   srand(RANDSEED);
 
-  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", "c", dim, oa, to, coeftype)](dim)@
+  @gen_stencil_dim[bc_size=0;body=gen_stencil_init("u", "u_test", "c", dim, oa, to, coeftype)](dim)@
 
   benchInit();
   benchBeginStencil();
@@ -454,6 +492,20 @@ int main(int argc, char ** argv)
   benchSetMatProps(@coeftype@, 1); //Fix for (long distance mats, immediate mats)
   benchSetFpSize(sizeof(double));
   benchFinalize();
+
+
+#ifdef VALIDATE
+  for (t = 0; t < TS; t++) {
+    @gen_stencil_timestep_indices(to,"t")@ 
+
+    @gen_stencil_dim[bc_size=(oa/2);body=gen_neighbor_stencil_access("u_test",dim, 2,oa,to,coeftype, ((1 1) (2 2) (3 3)), div, "divvar", mi) ](dim)@
+
+    tlast = tnew;
+  }
+
+  @gen_stencil_dim[bc_size=0;body=gen_stencil_compare("u", "u_test", dim, oa, to, coeftype)](dim)@
+  @do_free("u_test", 1)@
+#endif
 
   @do_free("u", 1)@
   @do_free("c", coeftype)@
