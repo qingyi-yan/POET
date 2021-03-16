@@ -5,7 +5,8 @@ PCGFLAGS=-L..
 DBG=
 
 CC=gcc
-CFLAGS=-O3
+#CFLAGS=-O3 -DVALIDATE
+CFLAGS=-O3 
 LDFLAGS:=-lm -lstencil_config -lacc_timer -lbenchtool
 LDPARFLAGS:=-fopenmp
 REF_TEST_DIR=#!date +%Y_%m_%d:%H_%M
@@ -374,9 +375,18 @@ blk3d_sweep:
 	@$(MAKE) BLK_T=8  BLK_X=8  BLK_Y=8  BLK_Z=256 proxy_3d
 
 dim_sweep:
-	@$(MAKE) dim=1 D=1 blk1d_sweep 
-	@$(MAKE) dim=2 D=2 blk2d_sweep 
-	@$(MAKE) dim=3 D=3 blk3d_sweep 
+	@$(MAKE) dim=1 D=1 OPT=par proxy_1d
+	@$(MAKE) dim=1 D=1 OPT=nodiamondpar BLK_T=1 BLK_X=8192 BLK_Y= BLK_Z= proxy_1d
+	@$(MAKE) dim=1 D=1 OPT=all BLK_T=2 BLK_X=8192 BLK_Y= BLK_Z= proxy_1d
+	@$(MAKE) dim=1 D=1 OPT=fulldiamondpar BLK_T=32 BLK_X=8192 BLK_Y= BLK_Z= proxy_1d
+	@$(MAKE) dim=2 D=2 OPT=par proxy_2d
+	@$(MAKE) dim=2 D=2 OPT=nodiamondpar BLK_T=1 BLK_X=4 BLK_Y=256 BLK_Z= proxy_2d
+	@$(MAKE) dim=2 D=2 OPT=all BLK_T=2 BLK_X=4 BLK_Y=256 BLK_Z= proxy_2d
+	@$(MAKE) dim=2 D=2 OPT=fulldiamondpar BLK_T=32 BLK_X=4 BLK_Y=256 BLK_Z= proxy_2d
+	@$(MAKE) dim=3 D=3 OPT=par proxy_3d
+	@$(MAKE) dim=3 D=3 OPT=nodiamondpar BLK_T=1 BLK_X=4 BLK_Y=4 BLK_Z=256 proxy_3d
+	@$(MAKE) dim=3 D=3 OPT=all BLK_T=2 BLK_X=4 BLK_Y=16 BLK_Z=256 proxy_3d
+	@$(MAKE) dim=3 D=3 OPT=fulldiamondpar BLK_T=32 BLK_X=16 BLK_Y=16 BLK_Z=256 proxy_3d
 	
 oa_sweep:
 	@$(MAKE) oa=2 dim_sweep 
@@ -410,11 +420,11 @@ opt_sweep:
 #	@$(MAKE) CC=gcc OPT=nodiamondpar div_sweep
 
 thread_sweep:
-	@$(MAKE) N_THREADS=1 opt_sweep 
-	@$(MAKE) N_THREADS=2 opt_sweep 
-	@$(MAKE) N_THREADS=4 opt_sweep 
-	@$(MAKE) N_THREADS=8 opt_sweep 
-	@$(MAKE) N_THREADS=16 opt_sweep
+	@$(MAKE) N_THREADS=12 div_sweep
+	@$(MAKE) N_THREADS=8  div_sweep 
+	@$(MAKE) N_THREADS=4  div_sweep 
+	@$(MAKE) N_THREADS=2  div_sweep 
+	@$(MAKE) N_THREADS=1  div_sweep 
 #	@$(MAKE) N_THREADS=1 opt_sweep 
 #	@$(MAKE) N_THREADS=4 opt_sweep 
 #	@$(MAKE) N_THREADS=8 opt_sweep 
@@ -428,19 +438,32 @@ thread_sweep:
 runid_sweep:
 	@$(MAKE) RUN_ID=1 thread_sweep 
 	@$(MAKE) RUN_ID=2 thread_sweep
-#	@$(MAKE) RUN_ID=3 thread_sweep
-#	@$(MAKE) RUN_ID=4 thread_sweep
+	@$(MAKE) RUN_ID=3 thread_sweep
+	@$(MAKE) RUN_ID=4 thread_sweep
 
 input_params_sweep:
-	@$(MAKE) T_MAX=16 runid_sweep
 	@$(MAKE) T_MAX=32 runid_sweep
 	@$(MAKE) T_MAX=64 runid_sweep
 	@$(MAKE) T_MAX=128 runid_sweep
-	@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=16 runid_sweep
-	@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=32 runid_sweep
-	@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=64 runid_sweep
-	@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=128 runid_sweep
+	@$(MAKE) D1_X=2048000 D2_X=1431 D2_Y=1431 D3_X=127 D3_Y=127 D3_Z=127 T_MAX=32 runid_sweep
+	@$(MAKE) D1_X=2048000 D2_X=1431 D2_Y=1431 D3_X=127 D3_Y=127 D3_Z=127 T_MAX=64 runid_sweep
+	@$(MAKE) D1_X=2048000 D2_X=1431 D2_Y=1431 D3_X=127 D3_Y=127 D3_Z=127 T_MAX=128 runid_sweep
+#@$(MAKE) T_MAX=16 runid_sweep
+#@$(MAKE) D1_X=8192000 D2_X=4096 D2_Y=4096 D3_X=216 D3_Y=216 D3_Z=216 T_MAX=16 runid_sweep
+#D3_X = 156
+#D3_Y = 156
+#D3_Z = 156
+#D2_X = 2048 
+#D2_Y = 2048 
+#D1_X = 4096000
+
+#D1_X = 1024000
+#D2_X = 1024 
+#D2_Y = 1024 
+#D3_X = 100
+#D3_Y = 100
+#D3_Z = 100
 
 do_test:
-	@$(MAKE) TEST_MODE=1 runid_sweep
-#	@$(MAKE) TEST_MODE=1 input_params_sweep
+	@$(MAKE) TEST_MODE=1 input_params_sweep
+#	@$(MAKE) TEST_MODE=1 runid_sweep
