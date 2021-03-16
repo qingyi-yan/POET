@@ -459,7 +459,7 @@ int main(int argc, char ** argv)
 
   @gen_stencil_arrays("u",dim,oa,to,elem,coeftype)@;
 #ifdef VALIDATE
-  int tlast = 0;
+  long tlast = 0;
   @gen_stencil_arrays("u_test",dim,oa,to,elem,coeftype)@;
 #endif
   
