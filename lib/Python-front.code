@@ -1,0 +1,76 @@
+include utils.incl
+include ExpStmt.incl
+
+<code Comment2 pars=(content:CODE.UnknownUntilEOL) rebuild=""> #@content@ </code>
+<code DONE output="\n" parse="__DONE__" > @""@</code>
+
+<define TOKEN (CODE.String ("=""=") ("+" "="))/>
+<define PARSE CODE.Program/>
+<define PREP XFORM.ParseIndent />
+<define EXP_BASE CODE.Dict | CODE.List | CODE.ScopedName | INT | String />
+<define EXP_BOP (("=" "+=") "==" "," ("+" "-")  ("*" "/") ".")/>
+<define EXP_UOP (":") />
+<define KEYWORDS ("return" "while" "for" "print" "__DONE__") />
+<define PARSE_ARRAY CODE.ArrayAccess/>
+
+<code ArrayAccess pars=(array, subscript:LIST(CODE.ArraySubscript,""))> @array subscript@ </code>
+
+<code ArraySubscript pars=(value) > [@value@] </code>
+<code FunctionCall pars=(function,args:LIST(EXP,","))> @function@(@args@) </code>
+
+<code Program parse=LIST(CODE.FunctionDef|CODE.Import|CODE.While|CODE.For|CODE.Print|CODE.Return|CODE.SEMI|EXP, "\n")/>
+
+<code Return pars=(exp:LIST(EXP,","))> return @exp@ </code>
+
+<code Print pars=(exp:LIST(EXP,","))> print @exp@ </code>
+
+<code SEMI parse=";" rebuild=""/>
+
+<code Assign pars=(lhs:EXP, rhs:EXP) > @lhs@ = @rhs@ </code>
+
+<code Dict pars=(content:LIST(ID,","))> { @content@ } </code>
+
+<code List pars=(content:LIST(EXP,","))> [ @content@ ] </code>
+
+
+<code Subscript pars=(sub:EXP)> [@sub@] </code>
+
+<code Import pars=(lib:ID, name : ID)>
+import @lib@ as @name@
+</code>
+
+<code FunctionDef pars=(name:ID, param : LIST(ID,","), body:CODE.Program)>
+def @name@(@param@):
+  @body@
+@CODE.DONE@
+</code>
+
+
+<code While pars=(c : EXP, body : CODE.Program)> 
+while @c@ : 
+  @body@ 
+@CODE.DONE@ 
+</code>
+
+<code For pars=(var : ID, from : EXP, body : CODE.Program)> 
+for @var@ in @from@ : 
+  @body@ 
+@CODE.DONE@ 
+</code>
+
+<xform ParseIndent pars=(input)>
+ res = NULL;
+ indent = 0;
+ for ( (curline,input) = SplitList("\n",input); curline!=NULL ;
+       (curline,input) = SplitList("\n",input)) {
+   curline = FlattenList(curline);
+   cur_indent = 0;
+   for (p = curline; car(p) == " "; p = cdr(p)) cur_indent=cur_indent+1;
+   if (cur_indent < car(indent)) { res = "__DONE__" :: res; indent = cdr(indent); }
+   res = curline :: res;
+   if (cur_indent > car(indent)) { indent = cur_indent :: indent; }
+ } 
+ res = ReverseList(res);
+ res
+</xform>
+

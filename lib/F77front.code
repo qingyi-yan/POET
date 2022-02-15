@@ -1,0 +1,7 @@
+include Ffront.code
+
+<define PREP ParseLine[comment_col=1;continue_col=6;text_len=66] />
+<define PARSE NoParse/>
+<define UNPARSE UnparseLine[start_col=7;label_col=2; cont_col=6;text_len=66;is_omp=1]/>
+
+<code Precision pars=(i:EXP)> *@i@ </code>
