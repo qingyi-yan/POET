@@ -49,7 +49,7 @@ or apply transformations to the input,  and then output the result.
 The POET language was designed and implemented by the research group lead by Dr. Qing Yi
 at the University of Texas at San Antonio during 2007-2012. The project has been moved to 
 the University of  Colorado, Colorado Springs since 2012. 
-Please directed all questions and feedbacks to her at qyi@uccs.edu. 
+Please direct all questions and feedback to her at qyi@uccs.edu. 
 
 \vspace{.2in}
 Qing Yi 
@@ -134,16 +134,20 @@ Usage: pcg [-bhv] {-L<dir>} {-p<name>=<val>} <poet_file1> ... <poet_filen>
 options:
      -h:      print out help info
      -v:      print out version info
-     -c<i>:   verify the first i conditions only (exit without evaluating the program)
+     -c<i>:   verify the first i conditions only 
+              (exit without evaluating the rest of the program)
+     -t:      print out tracing handles in optimized code
      -L<dir>: search for POET libraries in the specified directory
      -p<name>=<val>: set POET parameter <name> to have value <val>
      -dp:     print out debugging info for parsing operations
+     -du:     print out debugging info for unparsing operations
+     -da:     print out debugging info for lookahead computation
      -dl:     print out debugging info for lexical analysis
      -dx:     print out debugging info for xform routines
      -dm:     print out debugging info for pattern matching
-     -md:     allow global names to be multiply-defined (overwritte)
+     -md:     allow global names to be multiply-defined (overwritten)
      -dt:     print out timing information for various components of the POET interpreter
-     -dy:   print out debugging info from yacc parsing
+     -dy:     print out debugging info from yacc parsing
 \end {verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,7 +157,8 @@ This chapter goes over some  example POET translators in the POET/examples direc
 \newcounter {note}
 \newcommand {\note} {\addtocounter{note}{1} \vspace{2mm} \noindent {\bf NOTE\thenote}: }
 \section {Hello World}
-The following simple POET program (POET/exampls/helloworld.pt) prints out the string ``hello world" to standard output.
+%%%%%%TODO: ADD HELLOWORLD.PT FILE TO EXAMPLES FOLDER%%%%%%
+The following simple POET program (POET/examples/helloworld.pt) prints out the string ``hello world" to standard output.
 \begin {verbatim}
 <************* Hello World Script *********>
 <output from="hello world"/>
@@ -166,16 +171,15 @@ and all strings following $<<*$ until the end of line will be ignored.
 
 \section{The Identity Translator}
 \label {sec-identity-translator}
-
 First and foremost, POET is designed to build translators. The easiest kind of translator
 is an identity translator, which reads the input code from an arbitrary file, does nothing, and then writes the input code to a different file. The following POET code (POET/examples/IdentityTranslator.pt) does exactly this.
 \begin {verbatim}
 <********** The Identity Translator ****************>
-<parameter inputFile default="" message="input file name" />
-<parameter outputFile default="" message="output file name" />
+<parameter infile default="" message="input file name" />
+<parameter outfile default="" message="output file name" />
 
-<input from=inputFile annot=0 to=inputCode/>
-<output to=outputFile from=inputCode/>
+<input from=infile annot=0 to=inputCode/>
+<output to=outfile from=inputCode/>
 <********** The Identity Translator ****************>
 \end {verbatim}
 
@@ -183,7 +187,7 @@ is an identity translator, which reads the input code from an arbitrary file, do
 Each {\it parameter} declaration  declares a global 
 variable whose value can be modified via command-line options. 
 For example, the identity translator can be invoked using the following command. \\
-{\it $>$ pcg -pinputFile=myFile1 -poutputFile=myFile2 IdentityTranslator.pt }\\
+{\it $>$ pcg -pinfile=myFile1 -poutfile=myFile2 IdentityTranslator.pt }\\
 The command-line options are optional as long as a default value (declared using the $default$ keyward) is given for each parameter. 
 
 \note
@@ -220,12 +224,12 @@ output the transformed code. The following POET program (POET/examples/StringTra
 serves to substitute a pre-defined set of strings with other strings.
 \begin {verbatim}
 <********** The String Translator ****************>
-<parameter inputFile default="" message="input file name" />
-<parameter outputFile default="" message="output file name" />
+<parameter infile default="" message="input file name" />
+<parameter outfile default="" message="output file name" />
 <parameter inputString type=(STRING...) default="" message="string to replace" />
 <parameter outputString type=(STRING...) default="" message="string to replace with" />
 
-<input from=inputFile annot=0 to=inputCode/>
+<input from=infile annot=0 to=inputCode/>
 
 <eval 
 res = inputCode;
@@ -234,7 +238,7 @@ for ((p_input = inputString,p_output=outputString); p_input != NULL;
    { res = REPLACE(HEAD(p_input), HEAD(p_output), res);}
 />
 
-<output to=outputFile from=res/>
+<output to=outfile from=res/>
 \end {verbatim}
 \note  The $type$ attribute within a parameter declaration ensures that only a value of proper type
 can be assigned to the parameter. In particular,  the type $(STRING...)$ specifies a list of strings.
@@ -276,21 +280,21 @@ in either C syntax or Fortran syntax.
 
 \begin {verbatim}
 <*************** C to C Translator *************>
-<parameter inputFile type=STRING default="" message="input file name" />
-<parameter outputFile type=STRING default="" message="output file name" />
+<parameter infile type=STRING default="" message="input file name" />
+<parameter outfile type=STRING default="" message="output file name" />
 
-<input from=inputFile syntax="Cfront.code" to=inputCode/>
+<input from=infile syntax="Cfront.code" to=inputCode/>
 <* You can add transformations to the inputCode here *>
-<output to=outputFile syntax="Cfront.code" from=inputCode/>
+<output to=outfile syntax="Cfront.code" from=inputCode/>
 \end {verbatim}
 
 \begin {verbatim}
 <*************** C to Fortran Translator *************>
-<parameter inputFile type=STRING default="" message="input file name" />
-<parameter outputFile type=STRING default="" message="output file name" />
+<parameter infile type=STRING default="" message="input file name" />
+<parameter outfile type=STRING default="" message="output file name" />
 
-<input from=inputFile syntax="Cfront.code" to=inputCode/>
-<output to=outputFile syntax="C2F.code" from=inputCode/>
+<input from=infile syntax="Cfront.code" to=inputCode/>
+<output to=outfile syntax="C2F.code" from=inputCode/>
 \end {verbatim}
 
 \note The {\em syntax} attribute in the $input$ and $output$ commands specifies what language syntax 
@@ -878,7 +882,7 @@ By default, the value of $lookahead$ is $1$ for all code templates.
 This attribute specifies a set of parent code template types which can be viewed as a base type of the current code template.
 During pattern matching operations (see Section~\ref{sec-pattern}), if 
 the code template fails to match against a given pattern, the POET interpreter
-uses the value of it's $match$ attribute as an alternative target and tries again.
+uses the value of its $match$ attribute as an alternative target and tries again.
 For example, the following code template definition
 \begin {verbatim}
 <code Loop pars=(i:CODE.Name,start:EXP, stop:EXP, step:EXP) match=CODE.Ctrl />
@@ -1584,10 +1588,10 @@ a special keyword,
 
 The following are two example input commands which read  input codes file external files.
 \begin {verbatim}
-<input from=inputFile to=inputCode syntax=(inputLang)/>
+<input from=infile to=inputCode syntax=(inputLang)/>
 <input from=xformFile cond=(xformFile!="") parse=POET />
 \end {verbatim}
-In the first example, the file name that contains the input code is contained in a global variable $inputFile$, 
+In the first example, the file name that contains the input code is contained in a global variable $infile$, 
 the file name that contains syntax definitions of the input language is contained in a global variable $inputLang$, 
 and the parsing result will be saved as the value of global variable $inputCode$. 
 In the second example, the file named contained in $xformFile$ is parsed iff 
@@ -1638,10 +1642,10 @@ required to unparse the result;
 \end {itemize}
  The following are two examples demonstrating the use of the output command.
 \begin {verbatim}
-<output cond=(inputLang=="") to=outputFile from=inputCode/>
-<output cond=(inputLang!="") syntax=inputLang to=outputFile from=inputCode/> 
+<output cond=(inputLang=="") to=outfile from=inputCode/>
+<output cond=(inputLang!="") syntax=inputLang to=outfile from=inputCode/> 
 \end {verbatim}
-Here the code contained in $inputCode$ is unparsed to the file whose name is defined by $outputFile$. 
+Here the code contained in $inputCode$ is unparsed to the file whose name is defined by $outfile$. 
 The file names that contain the syntax definitions of the output language are contained in the global variable $inputLang$.
 If an empty string is specified as the output name (or when no name is specified), the resulting computation
 will be unparsed to standard output.
