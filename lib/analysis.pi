@@ -2,6 +2,8 @@
 <define ARRAY_TYPES NULL/>
 
 
+<code AbstractionDataType pars=(varDecls) symtab="" />
+
 <code BookKeeping pars=(content)> @content@ </code>
 
 <xform insert_typeInfo pars=(type,vars) tab=GLOBAL.SymTable/>
