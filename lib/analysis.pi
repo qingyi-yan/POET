@@ -2,7 +2,7 @@
 <define ARRAY_TYPES NULL/>
 
 
-<code AbstractionDataType pars=(varDecls) symtab="" />
+<code AbstractionBlock pars=(varDecls) symtab="" />
 
 <code BookKeeping pars=(content)> @content@ </code>
 
