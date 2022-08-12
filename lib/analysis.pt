@@ -78,7 +78,7 @@ switch (vars)
         (type,vars)
  case CODE.FunctionPtr#(name) : tab[name]=type; (type,vars)
  case ""|NULL : (type,NULL)
- case CODE.Uop|CODE.TypeName|CODE.EnumType|CODE.DeclarationBlock|CODE.AbstractionDataType|CODE.UnionType|CODE.RegisterType|CODE.FloatType|CODE.VoidType|CODE.StaticType|CODE.VolatileType|CODE.InlineType|CODE.ConstType|CODE.IntType|CODE.IntType1|CODE.Comment|CODE.BookKeeping|CODE.EmptyStmt|CODE.Macro|CODE.AtomicModify|CODE.Return|CODE.AccessControl|CODE.FriendDecl|CODE.ExpStmt|CODE.Nest|CODE.StmtBlock|CODE.SwitchStmt : vars
+ case CODE.Uop|CODE.TypeName|CODE.EnumType|CODE.DeclarationBlock|CODE.UnionType|CODE.RegisterType|CODE.FloatType|CODE.VoidType|CODE.StaticType|CODE.VolatileType|CODE.InlineType|CODE.ConstType|CODE.IntType|CODE.IntType1|CODE.Comment|CODE.BookKeeping|CODE.EmptyStmt|CODE.Macro|CODE.AtomicModify|CODE.Return|CODE.AccessControl|CODE.FriendDecl|CODE.ExpStmt|CODE.Nest|CODE.StmtBlock|CODE.SwitchStmt : vars
 }
 
 </xform>
