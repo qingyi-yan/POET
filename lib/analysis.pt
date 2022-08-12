@@ -11,6 +11,7 @@ include analysis.pi
    case CODE.ClassBody: newtab=block[ClassBody.symtab];
    case CODE.TemplateDecl#(_,d) : return enter_block(d);
    case CODE.Constructor : newtab = block[Constructor.symtab];
+   case MAP : newtab = block;
    case "NEW": newtab=MAP{}; 
    }
    GLOBAL.SymTable=newtab :: tab;
