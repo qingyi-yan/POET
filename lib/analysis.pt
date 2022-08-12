@@ -7,7 +7,7 @@ include analysis.pi
    case CODE.FunctionDecl: newtab=block[FunctionDecl.symtab];
    case CODE.StmtBlock: newtab=block[StmtBlock.symtab];
    case CODE.DeclarationBlock: newtab=block[DeclarationBlock.symtab];
-   case CODE.AbstractionDataType: newtab=block[AbstractionDataType.symtab];
+   case CODE.Abstraction: newtab=block[Abstraction.symtab];
    case CODE.ClassBody: newtab=block[ClassBody.symtab];
    case CODE.TemplateDecl#(_,d) : return enter_block(d);
    case CODE.Constructor : newtab = block[Constructor.symtab];
