@@ -1,0 +1,230 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#include <stdio.h>
+#include <iostream>
+template <class T>
+class list_seq  
+  ;
+template <class T>
+class list_node  
+  {
+    private:
+    T value;
+    list_node<T>* prev;
+    list_node<T>* next;
+    friend class list_seq<T>;
+  };
+template <class T>
+class list_seq  
+  {
+    public:
+    list_node<T>* headp;
+    list_node<T>* tailp;
+    list_node<T>* nil;
+    std::size_t counter;
+    typedef T value_type;
+    typedef T& reference;
+    typedef std::size_t size_type;
+    public:
+    list_seq ()  {
+       nil = new list_node<T> ();
+       nil->prev = nil->next = nil;
+       headp = tailp = nil;
+       counter = 0;
+    }
+    ~list_seq() {
+       list_node<T>* p=headp;list_node<T>* q;
+       while (p!=nil)
+         {
+            q = p;
+            p = p->next;
+            delete q;
+         }
+       delete p;
+    }
+    std::size_t size() {
+       std::size_t __ret__3;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__3 = counter;
+        }
+       return __ret__3;
+    }
+    bool empty() {
+       bool __ret__6;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__6 = counter<1;
+        }
+       return __ret__6;
+    }
+    reference operator [](std::size_t n) {
+       int i;
+       list_node<T>* p;
+       for (i = 0,p = headp; i<n&&p!=nil; i++,p = p->next)
+         {
+            
+         }
+       T __ret__8;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__8 = p->value;
+        }
+       return __ret__8;
+    }
+    reference front() {
+       T __ret__11;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__11 = headp->value;
+        }
+       return __ret__11;
+    }
+    reference back() {
+       T __ret__14;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__14 = tailp->value;
+        }
+       return __ret__14;
+    }
+    void push_front(T x) {
+       list_node<T>* new_node=new list_node<T> ();
+       
+       {
+         AcquireLock acq(lock1);
+       
+       new_node->value = x;
+       new_node->next = headp;
+       new_node->prev = new_node;
+       headp->prev = new_node;
+       headp = new_node;
+       if (counter==0) 
+         {
+            tailp = new_node;
+         }
+       counter++;
+        }
+    }
+    void push_back(T x) {
+       list_node<T>* new_node=new list_node<T> ();
+       
+       {
+         AcquireLock acq(lock1);
+       
+       new_node->value = x;
+       if (counter==0) 
+         {
+            headp = tailp = new_node;
+            new_node->prev = new_node;
+            new_node->next = nil;
+            nil->prev = new_node;
+         }
+       else 
+         {
+            new_node->next = nil;
+            new_node->prev = tailp;
+            nil->prev = new_node;
+            tailp->next = new_node;
+            tailp = new_node;
+         }
+       counter++;
+        }
+    }
+    T pop_front() {
+       T res;
+       T __ret__19;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__19 = res;
+       if (counter>1) 
+         {
+            res = headp->value;
+            list_node<T>* tmp_headp=headp;
+            headp = headp->next;
+            headp->prev = headp;
+            
+            counter--;
+         }
+       else if (counter==1) 
+         {
+            list_node<T>* tmp_headp=headp;
+            headp = tailp = nil;
+            nil->prev = nil;
+            res = tmp_headp->value;
+            
+            counter--;
+         }
+        }
+       return __ret__19;
+    }
+    T pop_back() {
+       T res;
+       T __ret__22;
+       
+       {
+         AcquireLock acq(lock1);
+       
+       __ret__22 = res;
+       if (counter>1) 
+         {
+            res = tailp->value;
+            list_node<T>* tmp_tailp=tailp;
+            tailp = tailp->prev;
+            tailp->next = nil;
+            nil->prev = tailp;
+            
+            counter--;
+         }
+       else if (counter==1) 
+         {
+            res = tailp->value;
+            list_node<T>* tmp_tailp=tailp;
+            headp = tailp = nil;
+            nil->prev = nil;
+            
+            counter--;
+         }
+        }
+       return __ret__22;
+    }
+    bool find(T x) {
+       bool res;
+       list_node<T>* e=(list_node<T>*)(-1);
+       {
+         AcquireLock acq(lock1);
+       
+       e = headp;
+       while (e!=tailp&&e->value!=x)
+         {
+            e = e->next;
+         }
+       if (e->value==x) 
+         {
+            res = true;
+         }
+       else 
+         {
+            res = false;
+         }
+        }
+       return res;
+    }
+    private:
+    mutable TATAS lock1;
+  };

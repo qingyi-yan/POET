@@ -1,0 +1,550 @@
+include ExpStmt.incl
+
+<define THREADS 2/>
+<define MAX_STEPS 5/>
+<define ARRAY_SIZE 20/>
+<define symTab MAP{}/>
+<define LOOP_IDX 0/>
+
+<code Type parse=CODE.PtrType | CODE.AtomicType | ID/>
+<code PtrType pars=(base : Type) > ref(@base@) </code>
+<code AtomicType pars=(base : Type) > atomic(@base@) </code>
+
+<xform insert_variable pars=(name:ID, type:CODE.Type)>
+GLOBAL.symTab[name] = type;
+</xform>
+
+<code RangeType pars=(lo : ID|INT, hi : ID|INT) > SHOULDN'T BEHERE [@lo@--@hi@] </code>
+
+<xform get_type pars=(x : EXP)>
+switch (x)
+{
+ case CODE.ValExp#(y) : t = get_type(y); 
+       if (! (t : PtrType#(t1))) ERROR("dereferencing variable:" y ", which has type :" t);
+       t1
+ case ID: t = GLOBAL.symTab[x]; if (t == "") ERROR("Variable undefined:" x " in " GLOBAL.symTab); t
+ case (first second) : (get_type(first) get_type(second))
+ case ArrayAccess#(a,s) : get_type(a) <<*CODE.ArrayType#(get_type(a), get_type(s))
+ case CODE.Subscript#e : get_type(e)
+ case CODE.RangeType|CODE.SkipExp|"..." : x
+}
+</xform>
+
+<code Program parse=LIST(CODE.SYN,"\n")/>
+
+
+<code SYN pars=(name:ID, vardecl : LIST(CODE.TypeInfo,","), modify:CODE.SYN_Modify, read : CODE.SYN_Read|"")>
+@CODE.TypeInfo#(type,var,_) = car(vardecl);
+ insert_variable(var, type);
+ XFORM.insert_varDecls(modify::read);
+ switch (type) {
+  case CODE.PtrType: modify_target=CODE.ValExp#(var);
+  case CODE.ArrayType#(_,r): modify_target=CODE.ArrayAccess#(var,r);
+  default : modify_target=var;
+ }
+ insert_variable("modify_target", modify_target);
+ mod_space=CODE.ReadSpace#"read"::"begin"::XFORM.gen_modifySpace("mod","");
+ insert_variable("modify_space", mod_space);
+@mtype = {@ExpList#(mod_space)@};
+mtype linearization[@(GLOBAL.THREADS*2+1)@];
+byte linearization_index=0;
+byte done = 0;
+@(XFORM.gen_modDecls(var,type))@
+@(CODE.ReadResultDecl#type)@
+@(XFORM.gen_lockDecls(modify::read))@
+@(XFORM.gen_contentDecls(modify::read))@
+@car(vardecl)@
+@(CODE.SYN_Modify#(OpDecl#(op,_),vars,body) = modify;
+ REPLACE(op,"modify",modify)) @
+@(CODE.SYN_Read#(OpDecl#(op,_),vars,body) = read;
+ REPLACE(op,"read",read)) @
+
+init {
+  @((type:CODE.PtrType#(t1))?CODE.PmlModifyContentInit#(XFORM.gen_typename(t1)):"")@
+  @(XFORM.gen_modInits(type))@
+  atomic {
+    @(thread_inits=XFORM.gen_thread_init(modify_target))@
+  }
+}
+
+never {
+  @CODE.Linearization_wait@;
+  @CODE.Linearization_never#(XFORM.gen_scenarios(thread_inits))@;
+}
+
+</code>
+
+<xform insert_varDecls pars=(body) >
+foreach (body : CODE.TypeInfo#(CLEAR type, CLEAR name,_) : TRUE) {
+  for (p = name; p != NULL; p = cdr(p)) 
+      insert_variable(car(p), type);
+}
+</xform>
+ 
+<xform list_insert pars=(elem, i, input)>
+ if (input == NULL || input == "") { elem }
+ else if (i<=0)  { elem :: input }
+ else { car(input) :: (list_insert(elem, i-1, cdr(input))) }
+</xform>
+
+<code Action pars=(op, label)>
+atomic {
+ @op@
+ @label@
+}
+</code>
+
+<code ArrayIndex pars=(arrname)> @arrname@_index </code>
+<code ModTypeName pars=(modname)> @modname@_type </code>
+<code TypeDef pars=(name, members : LIST(CODE.TypeInfo,"\n"))>
+typedef @name@ {
+   @members@
+};
+
+</code>
+
+<code ReadSpace pars=(read) index=0> 
+@if (index < GLOBAL.THREADS) {
+ res=((read^(index+1))::ReadSpace[index=index+1]#read);
+ (index == 0)? res : ("," res) } 
+else { "" }@
+</code>
+
+<code ReadResultDecl pars=(type) >
+mtype read_content[@((type : CODE.ArrayType)? GLOBAL.THREADS*GLOBAL.ARRAY_SIZE+1 : (GLOBAL.THREADS+1))@];
+</code>
+
+
+<code ModRangeInit pars=(lo,hi)>
+byte @lo@1,@lo@2;
+byte @hi@1,@hi@2;
+</code>
+
+<xform gen_modInits pars=(mod) >
+   res=""; 
+   for (p=mod; p != NULL; p = cdr(p)) {
+        switch (car(p)) {
+          case ID | CODE.ValType | CODE.PtrType : ""
+          case ArrayType#(CLEAR arr,CODE.RangeType#(CLEAR lo,CLEAR hi)):
+              res = BuildList(CODE.ModRangeInit#(lo,hi),res);
+        }
+   }
+   res
+</xform>
+
+<xform gen_modDecls pars=(mod, type) >
+  switch (type) {
+       case ID | CODE.ValType | CODE.PtrType : ""
+       case ArrayType#(CLEAR arr,CODE.RangeType#(CLEAR lo,CLEAR hi)):
+              res = TypeInfo#("Range",CODE.ArrayIndex#(mod),_);
+              members = TypeInfo#( (type type) ,"mod","") :: TypeInfo#("Range",lo,"") :: TypeInfo#("Range",hi,""); 
+              CODE.TypeDef#( CODE.ModTypeName#("mod"),members)::res
+   }
+</xform>
+<xform gen_scenarios pars=(threads_inits)>
+if (threads_inits : ""|NULL) RETURN "";
+CODE.RunEvent#(_,first) = car(threads_inits);
+first = car(first);
+prev = gen_scenarios(cdr(threads_inits));
+if (prev : ""|NULL) RETURN  (CODE.Scenario#(first));
+res = NULL; 
+for (p1 = prev; p1 != NULL; p1 = cdr(p1)) {
+     CODE.Scenario#(cur) = car(p1);
+     for ( i = 0; i <= LEN(cur); i=i+1) {
+           res = CODE.Scenario#(list_insert(first, i, cur)) :: res; 
+     }
+}
+res
+</xform>
+
+<xform gen_modifySpace pars=(mod, seq) index=0 sep="" recur=0>
+if (index == GLOBAL.THREADS) { NULL }
+else {
+  if (recur) { name = mod; }
+  else {name = NULL;
+        foreach_r (mod : (modname=ID) : TRUE) {
+           name = BuildList(modname, name);
+        }
+  }
+  recur = 1;
+  tmp=NULL;
+  for (i= GLOBAL.THREADS; i > 0; i=i-1) {
+     if (seq != "") cur = seq ^ sep ^ i;
+     else cur = name ^ sep ^ i;
+     tmp = AppendList(gen_modifySpace[index=index+1;sep="and"](name,cur),tmp);
+  }
+  for (i= GLOBAL.THREADS; i > 0; i=i-1) {
+     cur = CODE.ModType#(BuildList(seq,BuildList(sep,(name i))));
+     tmp=cur :: tmp;
+  }
+  tmp
+ 
+}
+</xform>
+
+
+<xform gen_thread_init pars=(modify_target) >
+init=NULL;
+for (thread = THREADS; thread > 0; thread=thread-1) {
+      curmod="mod";
+      switch (modify_target) 
+         { 
+           case CODE.ArrayAccess#(_,CODE.RangeType#(CLEAR lo,CLEAR hi)):
+                     cur_init=ExpList#((curmod^thread) :: (lo^thread) :: (hi^thread)); 
+           default:  cur_init=(curmod^thread); 
+         }
+     init = CODE.RunEvent#("modify_container", cur_init) :: init; 
+     init = CODE.RunEvent#("read_container", thread) :: init; 
+}
+init
+</xform> 
+
+
+<xform gen_atomicModify pars=(lhs)>
+ space=GLOBAL.symTab["modify_space"];
+ res = NULL;
+ foreach_r (space : (cur=ID|CODE.ModType) : TRUE) {
+    switch (cur) {
+    case "begin":
+        res = CODE.PmlModifyBegin#(lhs, lhs, "mod") :: res;
+    case ModType#((CLEAR name) "and" (CLEAR i)) : 
+        res = CODE.PmlModifySequence#(lhs, name, "mod", i, cur, lhs) :: res;
+    default: ""
+    } 
+ }
+ CODE.If#res
+</xform>
+
+<xform gen_typename pars=(input)>
+switch (input) {
+case CODE.PtrType#(contentType) : "ref_" ^ gen_typename(contentType)
+case CODE.AtomicType#(contentType) : gen_typename(contentType)
+case (first second) : (gen_typename(first) gen_typename(second))
+default: input
+}
+</xform>
+
+<xform gen_lockDecls pars=(input)>
+types = MAP{}; res=NULL;
+foreach_r (input: (cur=CODE.LockVar#(CLEAR name)) : TRUE) {
+   if (name : ArrayAccess#(CLEAR arr,_)) name = arr; else arr="";
+   if (types[name] == "") {
+      if (arr == "")
+          curdecl = CODE.LockDecl#(name); 
+      else curdecl=CODE.LockArrayDecl#(name);
+      res = curdecl :: res; types[name] = curdecl; 
+   }
+}
+((res == NULL)? "" : res)
+</xform>
+
+<xform gen_contentDecls pars=(input)>
+types = MAP{}; res=NULL;
+foreach_r (input: (cur=CODE.PtrType#(CLEAR contentType)) : TRUE) {
+   if (types[cur] == "") {
+      curdecl = CODE.ContentDecl#(gen_typename(contentType));
+      res = curdecl :: res; types[cur] = curdecl; 
+   }
+}
+((res == NULL)? "" : res)
+</xform>
+
+<code Linearization_wait >
+do
+ :: done == @(GLOBAL.THREADS*2)@ -> break
+ :: else -> skip
+od
+</code>
+
+<code Linearization_never pars=(scenarios : LIST(CODE.Scenario_never,"\n"))>
+if
+ @scenarios@
+ :: else -> accept: skip
+fi
+</code> 
+
+<code Linearization_set pars=(mod, index)>
+linearization[@index@]==@
+(switch (car(mod)) {
+ case ExpList#(more): (car more)
+ case INT : ("read" (car mod))
+ default : mod })@
+</code>
+
+<code Linearization_order pars=(mods,index) >
+@if (cdr(mods) == NULL) { Linearization_set#(mods,index) }
+else { Linearization_set#(car(mods),index) "&&" Linearization_order#(cdr(mods),index+1) }@
+</code>
+
+<code Linearization_res pars=(mods) index=0 stop=(-1) > 
+@if (mods : ""|NULL || index == stop) { "" }
+else if ((car mods) : INT) { (Linearization_res[index=index]#(cdr(mods))) } 
+else {
+  cur = car(mods);
+  if (cur : ExpList#(more)) cur = car(more);
+  (index == 0)? (cur Linearization_res[index=index+1]#(cdr(mods))) 
+  : ("and" cur Linearization_res[index=1]#(cdr(mods))) }@
+</code>
+
+<xform  gen_ModifyUnit pars=(v)>
+if (v : ArrayAccess#(a,_)) v = a;
+switch(get_type(v)){
+ case CODE.ArrayType : CODE.ArrayAccess#(v, Subscript#(CODE.ArrayIndex#(v)))
+ case ID | CODE.PtrType: v
+} 
+</xform>
+
+<code CheckReadContent pars=(var,mods) res="begin" index=0>
+@ if (mods : ""|NULL) { "" }
+else if ((car mods) : INT) {
+  cur=(car mods) - 1;
+  rest = ( ("read_content[" ((var : ArrayAccess#(_,Subscript#sub))? (cur * GLOBAL.ARRAY_SIZE)+sub : cur) "]!=" res) CheckReadContent[res=res;index=index+1]#(var,cdr mods));
+  (index == 0)? rest : ("||" rest) }
+else { 
+  cur = car(mods); if (cur : ExpList#(more)) cur = car(more);
+  CODE.CheckReadContent[index=index;res=((res=="begin")? cur : (res "and" cur))]#(var,cdr mods) } @
+</code>
+
+<code Scenario_never pars=(scenario)>
+@CODE.Scenario#(mods)=scenario;@::@Linearization_order#(mods,0)@ -> @(var=gen_ModifyUnit(get_type("modify_target")))@!=@Linearization_res#mods@||@CODE.CheckReadContent#(var,mods)@
+</code>
+
+<code PmlModifyContentInit pars=(type)>
+@type@_content[0]=begin;
+
+</code>
+
+<code RunEvent pars=(name, inits)>
+run @name@(@((inits : INT)? ("read"^inits) : inits)@);
+
+</code>
+
+<code PmlType pars=(t : Type)>
+@switch (t) { 
+ case (first second): "mtype" 
+ case "int"|ID|CODE.PtrType:  "byte"
+ case CODE.ModTypeName: t
+ case CODE.ArrayType#(e,dim): PmlType#e
+}@
+</code>
+
+<code PmlInit pars=(t, v)>
+@switch(t,v) {
+ case (_,ArrayIndex) : ""
+ case ((_ _),_) : ""
+ case ("Range",_) : ""
+ case (CODE.ArrayType|CODE.PtrType|ID,_) : "=0";
+}@
+</code>
+
+<code If pars=(branches : LIST(_,"\n"))>
+if
+  @branches@
+fi;
+</code>
+
+<code ModType pars=(content)> @content@ </code>
+
+<code PmlModifyBegin pars=(rhs, lhs, val)>
+:: @rhs@ == begin -> @lhs@ = @CODE.ModValue#val@
+</code>
+
+<code PmlModifySequence pars=(rhs, orig, mod, val1, val2, lhs)>
+:: @rhs@ == @orig@ && @CODE.ModValue#mod@ == @val1@ -> @lhs@ = @val2@
+</code>
+
+<code LockName pars=(var) >
+@switch (var) {
+ case ID : var "_lock"
+ case ArrayAccess#(arr,sub) : LockName#(arr) sub
+ }
+@
+</code>
+
+<code LockDecl pars=(name)>
+bool @CODE.LockName#name@=false;
+
+</code>
+
+<code LockArrayDecl pars=(name)>
+bool @CODE.LockName#name@[@GLOBAL.ARRAY_SIZE@]=false;
+
+</code>
+
+<code PmlArray pars=(arr)> @arr@[@GLOBAL.ARRAY_SIZE@] </code>
+
+<code VarName pars=(var, type)>
+@switch (var,type) {
+ case (""|NULL,_): ""
+ case (_,CODE.ArrayType): 
+            (PmlArray#(car(var)) VarName#(cdr var,type))
+ default: (car(var) VarName#(cdr var,type))
+}@
+</code>
+
+<code TypeInfo pars=(type : CODE.Type, name : ID, init:"")>
+@XFORM.insert_variable(name,type);
+PmlType#(type)@ @VarName#(name,type) PmlInit#(type,name)@;
+</code>
+
+<code DeclStmt pars=(decl)> @decl@ </code>
+
+<code ContentDecl pars=(name : ID)>
+byte @name@_index=1;
+mtype @name@_content[@GLOBAL.MAX_STEPS@];
+</code>
+
+<code CopyObject pars=(from,to) > @ValExp#to@=@ValExp#from@; </code>
+<code FunctionCall pars=(function, args:ExpList)> @function@(@args@) </code>
+<code RefExp pars=(base:EXP)> ref(@base@) </code>
+<code ValExp pars=(base:EXP)> 
+@(PtrType#(basetype)=XFORM.get_type(base);gen_typename(basetype))@_content[@base@]
+</code>
+<code FieldAccess pars=(obj:EXP,fd:ID)> @obj@.@fd@ </code>
+<code SynBreak > break; </code>
+
+<code Loop_fsm pars=(body : LIST(_,"\n"), ctrl)>
+@((ctrl:CODE.LoopIndex#(i,l,h,s))? (@byte @i@=@l@;@):(i="";""))@
+do
+  ::@(if (i!="") { (i "<" h "->") })@
+    @body@
+    @(if (i!="") { (i "=" i "+" s) })@
+  @(if (i!="") { (":: break;") })@
+od;
+</code>
+
+<code LockVar pars=(var)>
+do ::
+  atomic {
+    if 
+      :: ! @CODE.LockName#var@ -> @LockName#var@ = true; break
+      :: @LockName#var@ -> skip
+    fi
+  }
+od;
+</code>
+
+<code UnlockVar pars=(var)> @CODE.LockName#var@=false; </code>
+
+<code LockedBlock pars=(var, label, body : LIST(_,"\n"))>
+@LockVar#var1 = var;
+ if (var1 : ArrayAccess#(arr,CODE.RangeType#(i,j))) { 
+    iv1 = "_idx_"^GLOBAL.LOOP_IDX; GLOBAL.LOOP_IDX=GLOBAL.LOOP_IDX+1;
+    lock1 = CODE.Loop_fsm#(LockVar#(ArrayAccess#(arr,Subscript#iv1)),CODE.LoopIndex#(iv1,i,j,1)); 
+    iv2 = "_idx_"^GLOBAL.LOOP_IDX; GLOBAL.LOOP_IDX=GLOBAL.LOOP_IDX+1;
+    unlock1 = CODE.Loop_fsm#(UnlockVar#(ArrayAccess#(arr,Subscript#iv2)),CODE.LoopIndex#(iv2,j,i,-1));
+ }
+ else { lock1=var; unlock1=(UnlockVar#var1); } 
+lock1@
+@label@
+@body@
+@unlock1@
+</code>
+
+
+<code Transition pars=(from : EXP, to : LIST(CODE.Assign_fsm|CODE.Break," ")) >
+atomic {
+  if
+    :: (@((from=="")?"true":from)@) ->
+         atomic { @to@ }
+    :: else -> skip
+  fi
+}
+</code>
+
+<code CompareSwap pars=(var, oldval, newval, label, body) >
+atomic {
+  if
+    :: (@var@==@oldval@) ->
+         atomic { @var@ = @newval@; @label@ } @body@ 
+    :: else -> skip
+  fi
+}
+</code>
+
+
+<code Assign_fsm pars=(lhs : EXP, rhs : EXP) > 
+@lhs@=@rhs@;
+</code>
+
+<code ModValue pars=(mod)>
+@((car(GLOBAL.symTab[mod]) : CODE.ArrayType)?(mod"."mod) : mod)@
+</code>
+
+<code Linearization pars=(op)>
+linearization[linearization_index]=@CODE.ModValue#((op=="modify")? "mod" : "read")@;
+linearization_index = linearization_index+1;
+
+</code>
+
+<code Invoke pars=(op, var)> 
+@if (var : ArrayAccess#(arr,CODE.RangeType#(i,j))) { 
+    iv = "_idx_"^GLOBAL.LOOP_IDX; GLOBAL.LOOP_IDX=GLOBAL.LOOP_IDX+1;
+    unit = ((op == "modify")? gen_atomicModify(ArrayAccess#(arr,Subscript#iv)) :
+                    CODE.PmlReadUnit#(ArrayAccess#(arr,Subscript#iv)));
+    CODE.Loop_fsm#(unit,CODE.LoopIndex#(iv,i,j,1)) 
+ }
+ else if (op == "modify") {
+    gen_atomicModify(var)
+ }
+ else {
+    CODE.If#(CODE.PmlReadUnit#(var))
+ }@
+</code> 
+
+<code PmlReadUnit pars=(var) index=0>
+@if (index < GLOBAL.THREADS) { index1=index + 1;
+(@:: read == read@index1@ -> read_content[@((var : CODE.ArrayAccess#(_,Subscript#sub))?index*GLOBAL.ARRAY_SIZE+sub : index)@] = @var@
+@)::PmlReadUnit[index=index+1]#var }
+else {"" }@
+</code>
+
+
+<code Allocate pars=(var : EXP, t : CODE.Type)>
+@ name = gen_typename(t);
+@atomic { @var@=@name@_index; @name@_index=@name@_index+1; }
+</code>
+
+<code SYN_event_body pars=(actions : LIST(_,"\n")) >
+@actions@
+</code>
+
+<code ModDecl pars=(mod,var) > 
+@ ((var : CODE.ArrayAccess)? CODE.ModTypeName#(mod) : PmlType#(get_type(mod)))@ @mod@ 
+</code>
+
+<code takeout_modTypeMember pars=(var)>
+@ if (var : ArrayAccess#(arr,CODE.RangeType#(i,j))) {
+   ( @byte @i@=mod.@i@, @j@=mod.@j@;@) 
+ }
+ else { "" } @
+</code>
+
+<code SYN_Modify pars=(mod, vars,  body : CODE.SYN_event_body) >
+proctype modify_container(@((mod[OpDecl.var] : CODE.ArrayAccess)? "mod_type" : "mtype")@ mod)
+{
+  @CODE.takeout_modTypeMember#(mod[OpDecl.var])@
+  @vars@
+  @body@
+  done=done+1;
+}
+</code>
+
+<code SYN_Read pars=(read, vars,  body : CODE.SYN_event_body) >
+proctype read_container(mtype read)
+{
+  @CODE.takeout_modTypeMember#(get_type("modify_target"))@
+  @vars@
+  @body@
+  done=done+1;
+}
+</code>
+
+<code LocalVarDecl pars=(content : LIST(CODE.DeclStmt,"\n"))>
+@content@
+</code>
+
+
+<code SkipExp> @""@ </code>
+<code Subscript pars=(sub:EXP) > [@sub@] </code>
+<code ArrayAccess pars=(array,subscript) > @array subscript@ </code>

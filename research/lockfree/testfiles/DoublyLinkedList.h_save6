@@ -1,0 +1,771 @@
+#include "TATAS.h"
+#include <vector>
+#include <queue>
+#include <cstring>
+
+#ifndef DOUBLYLINKEDLIST_H
+#define DOUBLYLINKEDLIST_H
+#include <stdlib.h>
+#include <assert.h>
+#include <iostream>
+template <class T>
+class DoublyLinkedListWrap  
+  ;
+template <class T>
+class DoublyLinkedEntryWrap  
+  {
+    T* o;
+    DoublyLinkedEntryWrap<T>* next;DoublyLinkedEntryWrap<T>* prev;
+    public:
+    DoublyLinkedEntryWrap () : o(0),next(0),prev(0) {
+       
+    }
+    DoublyLinkedEntryWrap (const T& _o) : o(new T (_o)),next(0),prev(0) {
+       
+    }
+    ~DoublyLinkedEntryWrap() {
+       if (o!=0)
+         {
+            delete o;
+         }
+    }
+    T& GetEntry() {
+       return *o;
+    }
+    friend class DoublyLinkedListWrap<T>;
+  };
+template <class T>
+class DoublyLinkedListWrap  
+  {
+    DoublyLinkedEntryWrap<T> head;
+    ;
+    struct DoublyLinkedListWrap_synobj{
+      unsigned count;
+      ;void insert_mod(DoublyLinkedEntryWrap<T>*** m_head, DoublyLinkedEntryWrap<T>** m_head_old, DoublyLinkedEntryWrap<T>* m_head_new)
+      {
+        struct ModifyLog tmp;
+        tmp.m_head = m_head;
+        tmp.m_head_new = m_head_new;
+        tmp.m_head_old = m_head_old;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      void insert_mod(DoublyLinkedEntryWrap<T>*** m_head, DoublyLinkedEntryWrap<T>** m_head_old, DoublyLinkedEntryWrap<T>* m_head_new, std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*>*private_table)
+      {
+        struct ModifyLog tmp;
+        tmp.m_head = m_head;
+        tmp.m_head_new = m_head_new;
+        tmp.m_head_old = m_head_old;
+        (*private_table)[m_head] = m_head_new;
+        std::vector<struct ModifyLog> * cur = modlog.load();
+        cur->push_back(tmp);
+      }
+      ;
+      ;
+    };
+    std::atomic <struct DoublyLinkedListWrap_synobj*> state;
+    inline DoublyLinkedEntryWrap<T>* read_wrapper(DoublyLinkedEntryWrap<T>** &param, std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*>* private_table)
+    {
+        typename std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*>::iterator res = private_table->find(&param);
+        if (res != private_table->end()) return res->second;
+        return (param?(*param):0);
+    }
+    inline DoublyLinkedEntryWrap<T>* read_wrapper(DoublyLinkedEntryWrap<T>** param)
+    {
+        return (param?(*param):0);
+    }
+    inline DoublyLinkedEntryWrap<T>*& write_wrapper(DoublyLinkedEntryWrap<T>** &param)
+    {
+        if (!param) {
+            param = new DoublyLinkedEntryWrap<T>* (0);
+        }
+        return *param;
+    }
+    ;
+    public:
+    public:
+    DoublyLinkedListWrap ()  {
+       struct DoublyLinkedListWrap_synobj* state_tmp=new DoublyLinkedListWrap_synobj ();
+       state_tmp->count = 0;
+       write_wrapper(head.prev) = write_wrapper(head.next) = &head;
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    public:
+    DoublyLinkedListWrap (const DoublyLinkedListWrap<T>& that)  {
+       struct DoublyLinkedListWrap_synobj* state_tmp=new DoublyLinkedListWrap_synobj ();
+       state_tmp->count = 0;
+       write_wrapper(head.prev) = write_wrapper(head.next) = &head;
+       for (iterator iter(that) ; !iter.ReachEnd(); iter++)
+         {
+            T& c=iter.Current();
+            AppendLast(c);
+         }
+       state = state_tmp;
+       thread_count = 0;
+       for (int i = 0; i < 1000; i++) {
+           synobj_lists[i] = 0;
+           synobj_list_ids[i] = 0;
+           occupied_synobj_array[i] = 0;
+           local_idx_array[i] = 0;
+       }
+    }
+    ~DoublyLinkedListWrap() {
+       DeleteAll();
+    }
+    DoublyLinkedEntryWrap<T>* AppendLast(const T& o) {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       DoublyLinkedEntryWrap<T>* e=new DoublyLinkedEntryWrap<T> (o);
+       ;
+       DoublyLinkedEntryWrap<T>* _b2_pos=(DoublyLinkedEntryWrap<T>*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* _b2_pos_next_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* _b2_pos_next_copy=0;
+         _b2_pos = read_wrapper(head.prev, &private_table);
+         if(!e) throw "NullPtrExcpt";
+         write_wrapper(e->prev) = _b2_pos;
+         if(!_b2_pos) throw "NullPtrExcpt";
+         write_wrapper(e->next) = read_wrapper(_b2_pos->next, &private_table);
+         ++newstate->count;
+         _b2_pos_next_prev_copy = e;
+         DoublyLinkedEntryWrap<T>* tmp_pointer_0=read_wrapper(_b2_pos->next, &private_table);
+         if(!tmp_pointer_0) throw "NullPtrExcpt";
+         newstate->insert_mod(&(tmp_pointer_0->prev),tmp_pointer_0->prev,_b2_pos_next_prev_copy,&private_table);
+         _b2_pos_next_copy = e;
+         newstate->insert_mod(&(_b2_pos->next),_b2_pos->next,_b2_pos_next_copy,&private_table);
+         ;
+        } catch(...){}
+       }
+       return e;
+    }
+    DoublyLinkedEntryWrap<T>* PushFirst(const T& o) {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       DoublyLinkedEntryWrap<T>* e=new DoublyLinkedEntryWrap<T> (o);
+       ;
+       DoublyLinkedEntryWrap<T>* _b4_pos=(DoublyLinkedEntryWrap<T>*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* _b4_pos_prev_next_copy=0;
+         DoublyLinkedEntryWrap<T>* _b4_pos_prev_copy=0;
+         _b4_pos = read_wrapper(head.next, &private_table);
+         if(!e) throw "NullPtrExcpt";
+         write_wrapper(e->next) = _b4_pos;
+         if(!_b4_pos) throw "NullPtrExcpt";
+         write_wrapper(e->prev) = read_wrapper(_b4_pos->prev, &private_table);
+         ++newstate->count;
+         _b4_pos_prev_next_copy = e;
+         DoublyLinkedEntryWrap<T>* tmp_pointer_1=read_wrapper(_b4_pos->prev, &private_table);
+         if(!tmp_pointer_1) throw "NullPtrExcpt";
+         newstate->insert_mod(&(tmp_pointer_1->next),tmp_pointer_1->next,_b4_pos_prev_next_copy,&private_table);
+         _b4_pos_prev_copy = e;
+         newstate->insert_mod(&(_b4_pos->prev),_b4_pos->prev,_b4_pos_prev_copy,&private_table);
+         ;
+        } catch(...){}
+       }
+       return e;
+    }
+    DoublyLinkedEntryWrap<T>* PopFirst() {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       DoublyLinkedEntryWrap<T>* e=(DoublyLinkedEntryWrap<T>*)(-1);
+       DoublyLinkedEntryWrap<T>* _b8_r=(DoublyLinkedEntryWrap<T>*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* e_prev_next_copy=0;
+         DoublyLinkedEntryWrap<T>* e_next_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* e_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* e_next_copy=0;
+         _b8_r = newstate->count==0?0:read_wrapper(head.next, &private_table);
+         ;
+         e = _b8_r;
+         if (e!=0)
+           {
+              --newstate->count;
+              if (read_wrapper(e->prev, &private_table)!=0)
+                {
+                   e_prev_next_copy = read_wrapper(e->next, &private_table);
+                   DoublyLinkedEntryWrap<T>* tmp_pointer_2=read_wrapper(e->prev, &private_table);
+                   if(!tmp_pointer_2) throw "NullPtrExcpt";
+                   newstate->insert_mod(&(tmp_pointer_2->next),tmp_pointer_2->next,e_prev_next_copy,&private_table);
+                }
+              if (read_wrapper(e->next, &private_table)!=0)
+                {
+                   e_next_prev_copy = read_wrapper(e->prev, &private_table);
+                   DoublyLinkedEntryWrap<T>* tmp_pointer_3=read_wrapper(e->next, &private_table);
+                   if(!tmp_pointer_3) throw "NullPtrExcpt";
+                   newstate->insert_mod(&(tmp_pointer_3->prev),tmp_pointer_3->prev,e_next_prev_copy,&private_table);
+                }
+              e_next_copy = 0;
+              newstate->insert_mod(&(e->next),e->next,e_next_copy,&private_table);
+              e_prev_copy = 0;
+              newstate->insert_mod(&(e->prev),e->prev,e_prev_copy,&private_table);
+           }
+         ;
+        } catch(...){}
+       }
+       return e;
+    }
+    void push_front(const T& o) {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       DoublyLinkedEntryWrap<T>* _b9_e=new DoublyLinkedEntryWrap<T> (o);
+       ;
+       DoublyLinkedEntryWrap<T>* _b9_pos=(DoublyLinkedEntryWrap<T>*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* _b9_pos_prev_next_copy=0;
+         DoublyLinkedEntryWrap<T>* _b9_pos_prev_copy=0;
+         _b9_pos = read_wrapper(head.next, &private_table);
+         if(!_b9_e) throw "NullPtrExcpt";
+         write_wrapper(_b9_e->next) = _b9_pos;
+         if(!_b9_pos) throw "NullPtrExcpt";
+         write_wrapper(_b9_e->prev) = read_wrapper(_b9_pos->prev, &private_table);
+         ++newstate->count;
+         _b9_pos_prev_next_copy = _b9_e;
+         DoublyLinkedEntryWrap<T>* tmp_pointer_4=read_wrapper(_b9_pos->prev, &private_table);
+         if(!tmp_pointer_4) throw "NullPtrExcpt";
+         newstate->insert_mod(&(tmp_pointer_4->next),tmp_pointer_4->next,_b9_pos_prev_next_copy,&private_table);
+         _b9_pos_prev_copy = _b9_e;
+         newstate->insert_mod(&(_b9_pos->prev),_b9_pos->prev,_b9_pos_prev_copy,&private_table);
+         ;
+        } catch(...){}
+       }
+    }
+    void DeleteAll() {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* e_prev_next_copy=0;
+         DoublyLinkedEntryWrap<T>* e_next_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* e_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* e_next_copy=0;
+         while (newstate->count)
+           {
+              DoublyLinkedEntryWrap<T>* e=read_wrapper(head.next, &private_table);
+              {
+                 --newstate->count;
+                 if(!e) throw "NullPtrExcpt";
+                 if (read_wrapper(e->prev, &private_table)!=0)
+                   {
+                      e_prev_next_copy = e_next_copy;
+                      DoublyLinkedEntryWrap<T>* tmp_pointer_5=read_wrapper(e->prev, &private_table);
+                      if(!tmp_pointer_5) throw "NullPtrExcpt";
+                      newstate->insert_mod(&(tmp_pointer_5->next),tmp_pointer_5->next,e_prev_next_copy,&private_table);
+                   }
+                 if (read_wrapper(e->next, &private_table)!=0)
+                   {
+                      e_next_prev_copy = e_prev_copy;
+                      DoublyLinkedEntryWrap<T>* tmp_pointer_6=read_wrapper(e->next, &private_table);
+                      if(!tmp_pointer_6) throw "NullPtrExcpt";
+                      newstate->insert_mod(&(tmp_pointer_6->prev),tmp_pointer_6->prev,e_next_prev_copy,&private_table);
+                   }
+                 e_next_copy = 0;
+                 newstate->insert_mod(&(e->next),e->next,e_next_copy,&private_table);
+                 e_prev_copy = 0;
+                 newstate->insert_mod(&(e->prev),e->prev,e_prev_copy,&private_table);
+              }
+              
+           }
+         ;
+        } catch(...){}
+       }
+    }
+    void clear() {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* _b14_e_prev_next_copy=0;
+         DoublyLinkedEntryWrap<T>* _b14_e_next_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* _b14_e_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* _b14_e_next_copy=0;
+         while (newstate->count)
+           {
+              DoublyLinkedEntryWrap<T>* _b14_e=read_wrapper(head.next, &private_table);
+              {
+                 --newstate->count;
+                 if(!_b14_e) throw "NullPtrExcpt";
+                 if (read_wrapper(_b14_e->prev, &private_table)!=0)
+                   {
+                      _b14_e_prev_next_copy = _b14_e_next_copy;
+                      DoublyLinkedEntryWrap<T>* tmp_pointer_7=read_wrapper(_b14_e->prev, &private_table);
+                      if(!tmp_pointer_7) throw "NullPtrExcpt";
+                      newstate->insert_mod(&(tmp_pointer_7->next),tmp_pointer_7->next,_b14_e_prev_next_copy,&private_table);
+                   }
+                 if (read_wrapper(_b14_e->next, &private_table)!=0)
+                   {
+                      _b14_e_next_prev_copy = _b14_e_prev_copy;
+                      DoublyLinkedEntryWrap<T>* tmp_pointer_8=read_wrapper(_b14_e->next, &private_table);
+                      if(!tmp_pointer_8) throw "NullPtrExcpt";
+                      newstate->insert_mod(&(tmp_pointer_8->prev),tmp_pointer_8->prev,_b14_e_next_prev_copy,&private_table);
+                   }
+                 _b14_e_next_copy = 0;
+                 newstate->insert_mod(&(_b14_e->next),_b14_e->next,_b14_e_next_copy,&private_table);
+                 _b14_e_prev_copy = 0;
+                 newstate->insert_mod(&(_b14_e->prev),_b14_e->prev,_b14_e_prev_copy,&private_table);
+              }
+              
+           }
+         ;
+        } catch(...){}
+       }
+    }
+    unsigned NumberOfEntries() const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       unsigned __ret__23=(unsigned)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__23 = __res->count;
+         break;
+        } catch(...){}
+       }
+       return __ret__23;
+    }
+    unsigned size() const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       unsigned __ret__25=(unsigned)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         __ret__25 = __res->count;
+         break;
+        } catch(...){}
+       }
+       return __ret__25;
+    }
+    DoublyLinkedEntryWrap<T>* First() const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       DoublyLinkedEntryWrap<T>* r=(DoublyLinkedEntryWrap<T>*)(-1);
+       DoublyLinkedEntryWrap<T>* __ret__27=(DoublyLinkedEntryWrap<T>*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         r = __res->count==0?0:read_wrapper(head.next, &private_table);
+         ;
+         __ret__27 = r;
+         break;
+        } catch(...){}
+       }
+       return __ret__27;
+    }
+    DoublyLinkedEntryWrap<T>* Last() const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       DoublyLinkedEntryWrap<T>* r=(DoublyLinkedEntryWrap<T>*)(-1);
+       DoublyLinkedEntryWrap<T>* __ret__29=(DoublyLinkedEntryWrap<T>*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         r = __res->count==0?0:read_wrapper(head.prev, &private_table);
+         ;
+         __ret__29 = r;
+         break;
+        } catch(...){}
+       }
+       return __ret__29;
+    }
+    DoublyLinkedEntryWrap<T>* Next(const DoublyLinkedEntryWrap<T>* cur) const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       DoublyLinkedEntryWrap<T>* r=(DoublyLinkedEntryWrap<T>*)(-1);
+       DoublyLinkedEntryWrap<T>* __ret__31=(DoublyLinkedEntryWrap<T>*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         if(!cur) throw "NullPtrExcpt";
+         r = cur==read_wrapper(head.prev, &private_table)?0:read_wrapper(cur->next, &private_table);
+         ;
+         __ret__31 = r;
+         break;
+        } catch(...){}
+       }
+       return __ret__31;
+    }
+    DoublyLinkedEntryWrap<T>* Prev(DoublyLinkedEntryWrap<T>* cur) const{
+       struct DoublyLinkedListWrap_synobj* __res;
+       DoublyLinkedEntryWrap<T>* r=(DoublyLinkedEntryWrap<T>*)(-1);
+       DoublyLinkedEntryWrap<T>* __ret__33=(DoublyLinkedEntryWrap<T>*)(-1);
+       while(true)
+       {
+        try {
+         __res=state.load();
+         if(!cur) throw "NullPtrExcpt";
+         r = cur==read_wrapper(head.next, &private_table)?0:read_wrapper(cur->prev, &private_table);
+         ;
+         __ret__33 = r;
+         break;
+        } catch(...){}
+       }
+       return __ret__33;
+    }
+    void Reverse() {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       int __ret__34=0;
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* head_next_copy=0;
+         DoublyLinkedEntryWrap<T>* head_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* tmp_next_copy=0;
+         DoublyLinkedEntryWrap<T>* tmp_prev_copy=0;
+         if (newstate->count==0)
+           {
+              __ret__34 = 1;
+           }
+         if (__ret__34!=1)
+           {
+              DoublyLinkedEntryWrap<T>* tmp=&head;
+              if(!tmp) throw "NullPtrExcpt";
+              DoublyLinkedEntryWrap<T>* tmp1=read_wrapper(tmp->next, &private_table);
+              head_next_copy = read_wrapper(head.prev, &private_table);
+              newstate->insert_mod(&(head.next),head.next,head_next_copy,&private_table);
+              head_prev_copy = tmp1;
+              newstate->insert_mod(&(head.prev),head.prev,head_prev_copy,&private_table);
+              while (tmp!=read_wrapper(head.next, &private_table))
+                {
+                   DoublyLinkedEntryWrap<T>* tmp2=tmp;
+                   tmp = tmp1;
+                   if(!tmp1) throw "NullPtrExcpt";
+                   tmp1 = read_wrapper(tmp1->next, &private_table);
+                   tmp_next_copy = tmp2;
+                   if(!tmp) throw "NullPtrExcpt";
+                   newstate->insert_mod(&(tmp->next),tmp->next,tmp_next_copy,&private_table);
+                   tmp_prev_copy = tmp1;
+                   newstate->insert_mod(&(tmp->prev),tmp->prev,tmp_prev_copy,&private_table);
+                }
+           }
+         ;
+        } catch(...){}
+       }
+       return ;
+    }
+    class Iterator  
+      {
+        const DoublyLinkedListWrap<T>* list;
+        DoublyLinkedEntryWrap<T>* cur;
+        public:
+        public:
+        Iterator (const DoublyLinkedListWrap<T>& l) : list(&l) {
+           cur = l.First();
+        }
+        public:
+        Iterator (const DoublyLinkedListWrap<T>& l,DoublyLinkedEntryWrap<T>* c) : list(&l),cur(c) {
+           
+        }
+        bool operator ==(const Iterator& that) const{
+           return list==that.list&&cur==that.cur;
+        }
+        bool operator !=(const Iterator& that) const{
+           return !operator ==(that);
+        }
+        public:
+        Iterator (const Iterator& that) : list(that.list),cur(that.cur) {
+           
+        }
+        public:
+        Iterator () : list(0),cur(0) {
+           
+        }
+        DoublyLinkedEntryWrap<T>* CurrentPtr() const{
+           return cur;
+        }
+        bool ReachEnd() const{
+           return cur==0;
+        }
+        void Reset() {
+           if (list!=0)
+             {
+                cur = (list->First)();
+             }
+        }
+        void Advance() {
+           if (cur!=0)
+             {
+                cur = (list->Next)(cur);
+             }
+        }
+        void operator ++() {
+           Advance();
+        }
+        void operator ++(int) {
+           Advance();
+        }
+      };
+    class const_iterator : public Iterator 
+      {
+        public:
+        using Iterator::CurrentPtr
+        ;
+        public:
+        const_iterator (const Iterator& that) : Iterator(that) {
+           
+        }
+        public:
+        const_iterator () : Iterator() {
+           
+        }
+        public:
+        const_iterator (const DoublyLinkedListWrap<T>& l) : Iterator(l) {
+           
+        }
+        public:
+        const_iterator (const DoublyLinkedListWrap<T>& l,DoublyLinkedEntryWrap<T>* c) : Iterator(l,c) {
+           
+        }
+        bool operator ==(const const_iterator& that) const{
+           return Iterator::operator ==(that);
+        }
+        bool operator !=(const const_iterator& that) const{
+           return !operator ==(that);
+        }
+        const T& Current() const{
+           return CurrentPtr()->GetEntry();
+        }
+        const T& operator *() const{
+           return Current();
+        }
+      };
+    class iterator : public Iterator 
+      {
+        public:
+        using Iterator::CurrentPtr
+        ;
+        public:
+        iterator (const Iterator& that) : Iterator(that) {
+           
+        }
+        public:
+        iterator () : Iterator() {
+           
+        }
+        public:
+        iterator (const DoublyLinkedListWrap<T>& l) : Iterator(l) {
+           
+        }
+        public:
+        iterator (const DoublyLinkedListWrap<T>& l,DoublyLinkedEntryWrap<T>* c) : Iterator(l,c) {
+           
+        }
+        bool operator ==(const iterator& that) const{
+           return Iterator::operator ==(that);
+        }
+        bool operator !=(const iterator& that) const{
+           return !operator ==(that);
+        }
+        T& Current() const{
+           return CurrentPtr()->GetEntry();
+        }
+        T& operator *() const{
+           return Current();
+        }
+      };
+    void push_back(const T& o) {
+       struct DoublyLinkedListWrap_synobj* oldstate;
+       struct DoublyLinkedListWrap_synobj* newstate;
+       DoublyLinkedEntryWrap<T>* _b21_e=new DoublyLinkedEntryWrap<T> (o);
+       ;
+       DoublyLinkedEntryWrap<T>* _b21_pos=(DoublyLinkedEntryWrap<T>*)(-1);
+       int synobj_list_id = find_synobj_list_id();
+       std::queue<struct DoublyLinkedListWrap_synobj *> *synobj_list = synobj_lists[synobj_list_id];
+       int local_idx = local_idx_array[synobj_list_id];
+       
+       newstate = synobj_list->front();
+       if (is_synobj_free(newstate)) {
+           synobj_list->pop();
+       } else {
+           newstate = new struct DoublyLinkedListWrap_synobj();
+       }
+       newstate->reclaim_wrapper();
+       std::unordered_map<DoublyLinkedEntryWrap<T>***,DoublyLinkedEntryWrap<T>*> private_table;
+       while (true) 
+       {
+        try{
+         private_table.clear();
+         occupied_synobj_array[local_idx] = state.load();
+         while (occupied_synobj_array[local_idx].load() != state.load()) {
+             occupied_synobj_array[local_idx] = state.load();
+         }
+         oldstate=occupied_synobj_array[local_idx].load();
+         
+         *newstate = *oldstate;
+         DoublyLinkedEntryWrap<T>* _b21_pos_next_prev_copy=0;
+         DoublyLinkedEntryWrap<T>* _b21_pos_next_copy=0;
+         _b21_pos = read_wrapper(head.prev, &private_table);
+         if(!_b21_e) throw "NullPtrExcpt";
+         write_wrapper(_b21_e->prev) = _b21_pos;
+         if(!_b21_pos) throw "NullPtrExcpt";
+         write_wrapper(_b21_e->next) = read_wrapper(_b21_pos->next, &private_table);
+         ++newstate->count;
+         _b21_pos_next_prev_copy = _b21_e;
+         DoublyLinkedEntryWrap<T>* tmp_pointer_9=read_wrapper(_b21_pos->next, &private_table);
+         if(!tmp_pointer_9) throw "NullPtrExcpt";
+         newstate->insert_mod(&(tmp_pointer_9->prev),tmp_pointer_9->prev,_b21_pos_next_prev_copy,&private_table);
+         _b21_pos_next_copy = _b21_e;
+         newstate->insert_mod(&(_b21_pos->next),_b21_pos->next,_b21_pos_next_copy,&private_table);
+         ;
+        } catch(...){}
+       }
+    }
+  };
+#endif

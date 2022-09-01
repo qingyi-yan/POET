@@ -1,0 +1,150 @@
+
+#ifndef DOUBLY_LINKED_LIST_H
+#define DOUBLY_LINKED_LIST_H
+
+template <class T> class DoublyLinkedListWrap;
+template <class T>
+class DoublyLinkedEntryWrap
+{
+   T o;
+   DoublyLinkedEntryWrap<T>* prev;
+   DoublyLinkedEntryWrap<T>* next;
+ public:
+   DoublyLinkedEntryWrap( const T& _o) : o(_o), next(0), prev(0) {}
+   ~DoublyLinkedEntryWrap() {}
+   T& GetEntry() { return o; }
+ friend class DoublyLinkedListWrap<T>;
+};
+
+template <class T>
+class DoublyLinkedListWrap
+{
+    DoublyLinkedEntryWrap<T>* head, *end;
+    unsigned count;
+    void operator = (const DoublyLinkedListWrap<T> & that) {}
+  public:
+    DoublyLinkedListWrap() : head(0), end(0), count(0) {}
+
+    DoublyLinkedListWrap(const DoublyLinkedListWrap<T> & that)
+    {
+      head = end = 0;
+      count = 0;
+      *this += that;
+    }
+    ~DoublyLinkedListWrap() { DeleteAll(); }
+
+    void operator += (const DoublyLinkedListWrap<T> & that)
+    {
+      for (Iterator iter(that); !iter.ReachEnd(); iter++) {
+         T &c = iter.Current();
+         AppendLast(c);
+      }
+    }
+
+    void Reverse()
+     {  if (count == 0)
+              return;
+        DoublyLinkedEntryWrap<T>* tmp = head, *tmp1 = tmp->next;
+        while (tmp != end) {
+          DoublyLinkedEntryWrap<T>* tmp2 = tmp;
+          tmp = tmp1;
+          tmp1 = tmp->next;
+          tmp->next = tmp2;
+        }
+        head->next = 0;
+        end = head;
+        head = tmp;
+     }
+
+    DoublyLinkedEntryWrap<T>* AppendLast( const T& o )
+     {
+       ++count;
+       DoublyLinkedEntryWrap<T> *e = new DoublyLinkedEntryWrap<T>( o );
+       if (end == 0)
+          head = end = e;
+       else  {
+          e->prev = end;
+          end->next = e;
+          end = e;
+       }
+       return e;
+     }
+     DoublyLinkedEntryWrap<T>* PushFirst( const T& o )
+     {
+       ++count;
+       DoublyLinkedEntryWrap<T> *e = new DoublyLinkedEntryWrap<T>( o );
+       if (head == 0)
+          head = end = e;
+       else {
+          e->next = head;
+          head->prev = e;
+          head = e;
+       }
+       return e;
+     }
+     void PopFirst()
+     {
+        if (count > 0) {
+          --count;
+          DoublyLinkedEntryWrap<T>* e = head;
+          if (head == end)
+             head = end = 0;
+          else
+             head = head->next;
+          delete e;
+        }
+     }
+     void PopLast()
+     {
+        if (count > 0) {
+          --count;
+          DoublyLinkedEntryWrap<T>* e = end;
+          if (head == end)
+             head = end = 0;
+          else
+             end = end->prev;
+          delete e;
+        }
+     }
+     bool Find (const T& o) {
+        bool res;
+        DoublyLinkedEntryWrap<T>* e;
+        e = head;
+        while ((e != 0) && (e->o!=o)) {
+           e = e->next;
+        }
+        res = (e != 0);
+     }
+    void DeleteAll()
+    {
+       while (head != 0)
+           PopFirst();
+    }
+
+    unsigned size() const { return count; }
+    DoublyLinkedEntryWrap<T>* First() const { return head; }
+    DoublyLinkedEntryWrap<T>* Last() const { return end; }
+    DoublyLinkedEntryWrap<T>* Next(DoublyLinkedEntryWrap<T>* cur) const
+          { return cur->next; }
+
+   class Iterator
+    {
+      const DoublyLinkedListWrap<T> *list;
+      DoublyLinkedEntryWrap<T> *cur;
+    public:
+      Iterator(const DoublyLinkedListWrap<T> &l) : list(&l) { cur = l.First(); }
+      Iterator(const Iterator& that) : list(that.list), cur(that.cur) {}
+      Iterator& operator = (const Iterator& that) { list = that.list; cur = that.cur; }
+      Iterator() : list(0), cur(0) {}
+      T& Current() const { return cur->GetEntry(); }
+      T& operator *() const { return Current(); }
+      bool ReachEnd() const { return cur == 0; }
+      void Reset() { if (list != 0) cur = list->First(); }
+      void Advance() { if (cur != 0) cur = list->Next(cur); }
+      void operator++() { Advance(); }
+      void operator ++(int) { Advance(); }
+    };
+   Iterator GetIterator() const { return Iterator(*this); }
+};
+
+#endif

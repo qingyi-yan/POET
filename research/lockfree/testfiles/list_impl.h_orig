@@ -1,0 +1,151 @@
+
+#include <stdio.h>
+#include <iostream>
+
+template <class T> class list_seq;
+
+template<class T>
+class list_node
+{
+ private:
+    T value;
+    list_node<T> *prev;
+    list_node<T> *next;
+ friend class list_seq<T>;
+};
+
+template<class T>
+class list_seq
+{
+public:
+    list_node<T> *headp;
+    list_node<T> *tailp;
+    list_node<T> *nil;
+    std::size_t counter;
+    typedef T              value_type;
+    typedef T&             reference;
+    typedef std::size_t    size_type;
+
+    list_seq(){
+        nil = new list_node<T>;
+        nil->prev = nil->next = nil;
+        headp = tailp = nil;
+        counter = 0;
+    }
+
+    ~list_seq() {
+        list_node<T> *p = headp, *q;
+        while (p!=nil) {
+            q = p;
+            p = p->next;
+            delete q;
+        }
+        delete p;
+    }
+
+    std::size_t size() {return counter;}
+
+    bool empty () {
+        return (counter < 1);
+    }
+
+    reference operator[] (std::size_t n) {
+        int i;
+        list_node<T> *p;
+        for (i = 0, p = headp; (i < n)&&(p!=nil); i++, p = p->next);
+        return p->value;
+    }
+
+    reference front() {
+        return headp->value;
+    }
+
+    reference back() {
+        return tailp->value;
+    }
+
+    void push_front(T x) {
+        list_node<T> *new_node = new list_node<T>;
+        new_node->value = x;
+        new_node->next = headp;
+        new_node->prev = new_node;
+        headp->prev = new_node;
+        headp = new_node;
+        if (counter == 0) tailp = new_node;
+        counter ++;
+    }
+
+    void push_back(T x) {
+        list_node<T> *new_node = new list_node<T>;
+        new_node->value = x;
+        if (counter == 0) {
+            headp = tailp = new_node;
+            new_node->prev = new_node;
+            new_node->next = nil;
+            nil->prev = new_node;
+        } else {
+            new_node->next = nil;
+            new_node->prev = tailp;
+            nil->prev = new_node;
+            tailp->next = new_node;
+            tailp = new_node;
+        }
+        counter ++;
+    }
+
+    T pop_front() {
+        T res;
+        if (counter > 1) {
+            res = headp->value;
+            list_node<T> *tmp_headp = headp;
+            headp = headp->next;
+            headp->prev = headp;
+            delete tmp_headp;
+            counter --;
+        } else if (counter == 1) {
+            list_node<T> *tmp_headp = headp;
+            headp = tailp = nil;
+            nil->prev = nil;
+            res = tmp_headp->value;
+            delete tmp_headp;
+            counter --;
+        }
+        return res;
+    }
+
+    T pop_back() {
+        T res;
+        if (counter > 1) {
+            res = tailp->value;
+            list_node<T> *tmp_tailp = tailp;
+            tailp = tailp->prev;
+            tailp->next = nil;
+            nil->prev = tailp;
+            delete tmp_tailp;
+            counter --;
+        } else if (counter == 1) {
+            res = tailp->value;
+            list_node<T> *tmp_tailp = tailp;
+            headp = tailp = nil;
+            nil->prev = nil;
+            delete tmp_tailp;
+            counter --;
+        }
+        return res;
+    }
+
+    bool find(T x) {
+        bool res;
+        list_node<T>* e = headp;
+        while ((e != tailp)&&(e->value != x)) {
+            e = e->next;
+        }
+        if (e->value == x) {
+            res = true;
+        } else {
+            res = false;
+        }
+        return res;
+    }
+};
+

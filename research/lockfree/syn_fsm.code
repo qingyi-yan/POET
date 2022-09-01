@@ -1,0 +1,129 @@
+include ExpStmt.incl
+
+<define PARSE CODE.Program/>
+<define BACKTRACK FALSE/>
+<define TOKEN (("=""=") ("-" ">") ("-" "-") (".""."".") )/>
+<define KEYWORDS ("OP" "invoke" "new" "break" "linearization" "loop" "local" "compare_and_swap" "ref" "val" "copy") />
+<define EXP_BOP (("*" "/") ("+" "-") ("==" "!=" "<" ">" "<=" ">="))/>
+<define EXP_BASE CODE.SkipExp|ID|INT|CODE.NewAlloc_fsm />
+
+<code SkipExp > ... </code>
+<code CopyObject pars=(from : EXP, to : EXP) > copy(@from@ -> @to@) </code>
+
+<code ID_list pars=(first:ID, rest: CODE.ID_list2|"") rebuild=(first::rest)>
+@first rest@
+</code>
+
+<code ID_list2 pars=(content : LIST(ID|CODE.SkipExp,",")) rebuild=content>
+, @content@
+</code>
+
+<code Program parse=LIST(CODE.SYN,"\n")/>
+<code SYN pars=(name:ID, vardecl : LIST(CODE.TypeInfo,","), modify:CODE.SYN_Modify, read : CODE.SYN_Read|"")>
+SYN @name@(@vardecl@)
+{
+  @modify@
+  @read@
+}
+</code>
+
+<code VarInit pars=(value : EXP)> =@value@ </code>
+
+<code TypeInfo pars=(type : CODE.Type, name : LIST(ID,","), init : CODE.VarInit|"" )>
+@name@ : @type init@
+</code>
+
+<code DeclStmt pars=(decl : CODE.TypeInfo)>
+@decl@;
+</code>
+
+<code LocalVarDecl pars=(content : LIST(CODE.DeclStmt,"\n"))>
+local { @content@ };
+</code>
+
+<code RefExp pars=(base:ID)> ref(@base@) </code>
+<code ValExp pars=(base:ID|CODE.RefExp)> val(@base@) </code>
+<code FieldAccess pars=(obj:EXP,fd:ID)> @obj@.@fd@ </code>
+<code NewAlloc_fsm pars=(t : Type)> new @t@ </code>
+<code SynBreak > break </code>
+
+<code Loop_fsm pars=(body : LIST(CODE.Action,"\n"),ctrl:CODE.LoopIndex|"")>
+loop @ctrl@
+{
+  @body@
+}
+</code>
+
+<code LoopIndex pars=(i:ID, lo : EXP, hi : EXP, incr : EXP)>
+@i@ = (@lo@,@hi@,@incr@)
+</code>
+
+<code ParenType pars=(content:Type) rebuild=content> (@content@) </code>
+
+<code Type parse=CODE.PtrType | CODE.AtomicType | CODE.ArrayType | CODE.RangeType | CODE.ParenType | CODE.OpType />
+<code OpType pars=(base : Type) > OP(@base@) </code>
+<code PtrType pars=(base : Type) > ref(@base@) </code>
+<code AtomicType pars=(base : Type) > atomic(@base@) </code>
+<code RangeType pars=(lo : ID|INT, hi : ID|INT) > [@lo@--@hi@] </code>
+<code ArrayType pars=(base : ID | CODE.ParenType, dim : CODE.RangeType|"")
+                rebuild=((dim=="")? base : ArrayType#(base,dim))>
+@base dim@
+</code>
+
+<code Action pars=(op : CODE.CopyObject|CODE.SynBreak|CODE.LockedBlock|CODE.CompareSwap|CODE.Invoke|CODE.Assign_fsm|CODE.Loop_fsm, label : CODE.Linearization | "")
+              rebuild=((label == "")? op : Action#(op, label))>
+@op label@;
+</code>
+
+<code Linearization pars=(op:ID)> :linearization(@op@) </code>
+<code Allocate pars=(var : EXP, t : CODE.Type)>
+@var@ = new @t@;
+</code>
+
+<code Invoke pars=(op : ID, var : CODE.SYN_VarRef)> invoke(@op@,@var@) </code>
+
+<code SYN_VarRef pars=(name : ID|CODE.ValExp|CODE.RefExp, ref : CODE.RangeType | "")
+             rebuild = ((ref == "")? name : CODE.ArrayAccess#(name,ref)) >
+@name ref@
+</code>
+
+<code LockVar pars=(var : CODE.SYN_VarRef)> lock(@var@) </code>
+
+<code LockedBlock pars=(var : CODE.LockVar, label : CODE.Linearization|"", body : LIST(CODE.Action,"\n"))>
+@var@ @label@ {
+  @body@
+}
+</code>
+
+<code CompareSwap pars=(var : CODE.SYN_VarRef, oldval : EXP, newval : EXP, label : CODE.Linearization|"", body : LIST(CODE.Action,"\n"))>
+compare_and_swap @var@ = (@oldval@->@newval@) @label@
+{
+  @body@
+}
+</code>
+
+<code Assign_fsm pars=(lhs : EXP, rhs : EXP)
+             rebuild=((rhs : CODE.NewAlloc_fsm#(t))? CODE.Allocate#(lhs,t) : Assign_fsm#(lhs,rhs))>
+@lhs@ = @rhs@
+</code>
+
+
+<code OpDecl pars=(op : ID, var : SYN_VarRef)>
+@op@, @var@
+</code>
+
+<code SYN_Modify pars=(mod : CODE.OpDecl, vars : CODE.LocalVarDecl|"", body : LIST(CODE.Action,"\n")) >
+modify(@mod@)
+{
+  @vars@
+  @body@
+}
+</code>
+
+<code SYN_Read pars=(read : CODE.OpDecl, vars : CODE.LocalVarDecl|"", body : LIST(CODE.Action,"\n")) >
+read (@read@)
+{
+  @vars@
+  @body@
+}
+</code>
