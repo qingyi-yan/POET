@@ -258,9 +258,10 @@ switch (vars)
     case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|"": ""
     case CODE.DeclStmt#d :
          if (car(d) : CODE.TypeInfo) { collect_global_read(d) } else { "" }
-    case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|NULL: NULL
+    case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|Continue|NULL: NULL
     case CODE.impl_variant#(_,_,block) : collect_global_read(car block)
     case CODE.VEC#(name,_,_,_,_) : name
+    case Char#(s) : s
    }
 </xform>
 
@@ -275,20 +276,20 @@ switch (vars)
          res
    case (first second) : AppendList[erase_replicate=1](collect_local_vars(first), collect_local_vars(second))
    case CODE.For#(init,test,incr) : collect_local_vars(init)
-   case CODE.Loop#(i,_,_,_)|CODE.Loop_r#(i,_,_,_) : i
+   case CODE.Loop#(i,_,_,_)|CODE.Loop_r#(i,_,_,_)|CODE.SwitchStmt#(i,_)|CODE.DoWhileStmt#(i,_) : i
    case CODE.Nest#(_,s) | CODE.StmtBlock#(s) : collect_local_vars(s)
    case CODE.Assign|INT|ID|CODE.Break|CODE.EmptyStmt|CODE.If|CODE.While|CODE.Bop|CODE.ExpStmt|CODE.Nest|CODE.Else|CODE.Return|""|CODE.DeleteStmt|NULL: NULL
    case CODE.impl_variant#(_,_,block) : collect_local_vars(car block)
    case ID: op
-   case INT|STRING: NULL
+   case INT|STRING|Continue: NULL
   }
 </xform>
-
+    
 
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) >
   switch (op) {
     case CODE.FunctionDecl#(cur_name,params, rtype, body): global_modread(body)
-    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) |CODE.DoWhileStmt#(s,_) | CODE.SwitchStmt#(s,_) :
          global_modread(s);
     case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
         local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
@@ -296,7 +297,7 @@ switch (vars)
         if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
         else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
-    case CODE.Else|"" : (NULL,NULL)
+    case CODE.Else|"" | CODE.GotoStmt : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
     default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
   }
