@@ -255,7 +255,7 @@ switch (vars)
          | (op1,op2) | (op1 op2) | CODE.FunctionParameterDecl#(op1,op2):
        BuildList(collect_global_read(op1), collect_global_read(op2))
     case ID|CODE.Name|CODE.ScopedName: if (Lookup(op, local_vars)) { "" } else {op}
-    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|"": ""
+    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|CODE.GotoStmt|CODE.Char|"": ""
     case CODE.DeclStmt#d :
          if (car(d) : CODE.TypeInfo) { collect_global_read(d) } else { "" }
     case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|NULL: NULL
