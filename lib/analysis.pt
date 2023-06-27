@@ -242,7 +242,7 @@ switch (vars)
            CODE.Uop#("!"|"*"|"++"|"--"|"&",rhs) | CODE.VarRef#(rhs,"++"|"--"):
          collect_global_read(rhs)
      case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.Uop#("*",rhs=_)
-         | CODE.ObjAccess#(rhs=_,_)  | CODE.ArrayAccess#(_,rhs=_) | CODE.Uop#(_,rhs=_):
+         | CODE.ObjAccess#(rhs=_,_)  | CODE.ArrayAccess#(_,rhs=_) | CODE.Uop#(_,rhs=_) | CODE.StructType#(_,rhs=_):
          BuildList(collect_global_read(rhs), op)
      case CODE.Assign#(op1,op2):
          switch (op1) {
@@ -255,8 +255,8 @@ switch (vars)
          | (op1,op2) | (op1 op2) | CODE.FunctionParameterDecl#(op1,op2):
        BuildList(collect_global_read(op1), collect_global_read(op2))
     case ID|CODE.Name|CODE.ScopedName: if (Lookup(op, local_vars)) { "" } else {op}
-    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|CODE.GotoStmt|CODE.Char|"": ""
-    case CODE.DeclStmt#d :
+    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|CODE.GotoStmt|CODE.Char|CODE.Continue|"": ""
+    case CODE.DeclStmt#d|CODE.ExpBlock#d :
          if (car(d) : CODE.TypeInfo) { collect_global_read(d) } else { "" }
     case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|NULL: NULL
     case CODE.impl_variant#(_,_,block) : collect_global_read(car block)
