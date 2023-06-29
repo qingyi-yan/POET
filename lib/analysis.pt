@@ -170,6 +170,34 @@ switch (vars)
   }
 </xform>
 
+<xform get_extra_info pars=(variable, tag)>
+res = NULL;
+scope = exit_block();
+if(scope[tag] == ""){
+  res = "";
+}else{
+  extra = scope[tag];
+  if(extra[variable] == ""){
+    res = "";
+  }else{
+    res = extra[variable];
+  }
+}
+enter_block(scope);
+return res;
+</xform>
+
+<xform set_extra_info pars=(variable, info, tag)>
+scope = exit_block();
+if(scope[tag] == ""){
+  extra = MAP{};
+  scope[tag] = extra;
+}else{
+  extra = scope[tag];
+}
+extra[variable] = info;
+enter_block(scope);
+</xform>
 
 <*******************************************************>
 <xform member_variables pars=(input)>

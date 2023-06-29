@@ -12,6 +12,10 @@
 
 <xform exit_block pars=(block) tab=GLOBAL.SymTable/>
 
+<xform get_extra_info pars=(variable, tag)/>
+
+<xform set_extra_info pars=(variable, info, tag)/>
+
 <xform get_type pars=(exp) tab=GLOBAL.SymTable/>
 
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) />
