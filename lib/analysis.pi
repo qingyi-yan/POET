@@ -12,6 +12,12 @@
 
 <xform exit_block pars=(block) tab=GLOBAL.SymTable/>
 
+<xform get_scope pars=(exp) tab=GLOBAL.SymTable/>
+
+<xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable/>
+
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable/>
+
 <xform get_type pars=(exp) tab=GLOBAL.SymTable/>
 
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) />
@@ -64,4 +70,3 @@
 
 <* return whether exp is linked by an unknown node in edges *>
 <xform is_linked_by_unknown pars=(exp, graphs) /> 
-

@@ -27,6 +27,18 @@ include analysis.pi
    res
 </xform>
 
+<xform get_scope pars=(exp) tab=GLOBAL.SymTable>
+  res = "";
+  for (p = tab; p != NULL; p = cdr(p)){
+    if (car(p) != ""){
+      if ((car(p))[exp] != ""){
+        res = car(p);
+      }
+    }
+  }
+  return res;
+</xform>
+
 <xform insert_typeInfo pars=(type,vars) gtab=GLOBAL.SymTable>
 if (gtab == NULL) { GLOBAL.SymTable=gtab=MAP{}; }
 tab = car(gtab);
@@ -170,6 +182,31 @@ switch (vars)
   }
 </xform>
 
+<xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable>
+  scope = get_scope(variable);
+  assert(scope != "");
+  if(scope[tag] == ""){
+    return "";
+  }else{
+    extra = scope[tag];
+    return extra[variable];
+  }
+</xform>
+
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable>
+  scope = get_scope(variable);
+  assert(scope != "");
+  if(scope[tag] == ""){
+    extra = MAP{};
+    scope[tag] = extra;
+  }
+  extra = scope[tag];
+  if(extra[variable] == ""){
+    extra[variable] = info;
+  }else{
+    extra[variable] =  info :: extra[variable];
+  }
+</xform>
 
 <*******************************************************>
 <xform member_variables pars=(input)>
@@ -255,11 +292,11 @@ switch (vars)
          | (op1,op2) | (op1 op2) | CODE.FunctionParameterDecl#(op1,op2):
        BuildList(collect_global_read(op1), collect_global_read(op2))
     case ID|CODE.Name|CODE.ScopedName: if (Lookup(op, local_vars)) { "" } else {op}
-    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|CODE.GotoStmt|CODE.Char|CODE.Continue|"": ""
-    case CODE.ExpBlock#d : collect_global_read(d);
+    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|INT|CODE.INT_UL|FLOAT|CODE.True|CODE.False|CODE.GotoStmt|CODE.Char|CODE.Continue|CODE.LabelStmt|"": ""
+    case CODE.ExpBlock#d: collect_global_read(d);
     case CODE.DeclStmt#d :
          if (car(d) : CODE.TypeInfo) { collect_global_read(d) } else { "" }
-    case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|CODE.StructType|NULL: NULL
+    case CODE.ArrayInit|CODE.TypeName|CODE.TemplateInstantiation|CODE.StructType|CODE.FunctionDecl|NULL: NULL
     case CODE.impl_variant#(_,_,block) : collect_global_read(car block)
     case CODE.VEC#(name,_,_,_,_) : name
    }
@@ -289,15 +326,15 @@ switch (vars)
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) >
   switch (op) {
     case CODE.FunctionDecl#(cur_name,params, rtype, body): global_modread(body)
-    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.Else#(s=CODE.If,_) | CODE.While#(s) :
          global_modread(s);
-    case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
+    case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_) :
         local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
         (m1,r1)=global_modread(first);
         if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
         else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
-    case CODE.Else|"" : (NULL,NULL)
+    case CODE.Else|CODE.Macro|"" : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
     default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
   }
