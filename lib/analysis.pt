@@ -27,6 +27,18 @@ include analysis.pi
    res
 </xform>
 
+<xform get_scope pars=(exp) tab=GLOBAL.SymTable>
+  res = "";
+  for (p = tab; p != NULL; p = cdr(p)){
+    if (car(p) != ""){
+      if ((car(p))[exp] != ""){
+        res = car(p);
+      }
+    }
+  }
+  return res;
+</xform>
+
 <xform insert_typeInfo pars=(type,vars) gtab=GLOBAL.SymTable>
 if (gtab == NULL) { GLOBAL.SymTable=gtab=MAP{}; }
 tab = car(gtab);
@@ -170,6 +182,31 @@ switch (vars)
   }
 </xform>
 
+<xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable>
+  scope = get_scope(variable);
+  assert(scope != "");
+  if(scope[tag] == ""){
+    return "";
+  }else{
+    extra = scope[tag];
+    return extra[variable];
+  }
+</xform>
+
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable>
+  scope = get_scope(variable);
+  assert(scope != "");
+  if(scope[tag] == ""){
+    extra = MAP{};
+    scope[tag] = extra;
+  }
+  extra = scope[tag];
+  if(extra[variable] == ""){
+    extra[variable] = info;
+  }else{
+    extra[variable] =  info :: extra[variable];
+  }
+</xform>
 
 <*******************************************************>
 <xform member_variables pars=(input)>
