@@ -271,6 +271,34 @@ switch (vars)
    }
 </xform>
 
+<xform collect_all_mod pars=(op) >
+  switch (op) {
+    case CODE.Assign#(lhs, _) | CODE.Uop#("--"|"++",lhs)
+       | CODE.VarRef#(lhs,"++"|"--") | CODE.DeleteStmt#(lhs) : lhs
+    case INT|CODE.Break | CODE.EmptyStmt | NULL | CODE.True | CODE.False |
+         CODE.VariableParse | ID | CODE.Name |
+         CODE.PtrAccess | CODE.ArrayAccess | CODE.Bop | CODE.Uop: NULL
+    <<*collect decleared variables that are also initialized*>
+    case CODE.DeclStmt:
+        res = NULL;
+        foreach (op : CODE.TypeInfo#(t=_,n=_,init=_) : TRUE) {
+           if (!(init : NULL|""))
+              res = n :: res;
+         }
+         res
+    case CODE.FunctionCall#("memset"|"memcpy"|"memmove"|ScopedName#("std" "memset"|"memcpy"|"memmove"),args): car(args)
+    case CODE.FunctionCall#("assert"|CODE.ScopedName#("std" "make_pair"),_) : NULL
+    case CODE.impl_variant#(_,_,block) : collect_all_mod(car block)
+    case CODE.VEC#(name,_,_,_,_) : name
+    case Nest#(first, second)|CODE.CastExp#(first,second)|(first second) : AppendList[erase_replicate=1](collect_all_mod(first), collect_all_mod(second))
+    case If#(exp) : collect_all_mod(exp)
+    <<* cases that were returning "___UNKNOWN___" in collect_mod*>
+    case STRING|CODE.Break|CODE.EmptyStmt|CODE.SizeOf|CODE.String|CODE.ObjAccess|CODE.PtrAccess|CODE.ArrayAccess|CODE.IntType|CODE.IntType1|CODE.PtrType|INT|CODE.INT_UL|CODE.INT_0x|FLOAT|CODE.True|CODE.False
+    |CODE.GotoStmt|CODE.Char|CODE.Return|CODE.Continue|CODE.LabelStmt|"": NULL
+    case CODE.FunctionCall#(name,args): collect_all_mod(args)
+   }
+</xform>
+
 <xform collect_global_read pars=(op) local_vars="">
   switch (op) {
      case  CODE.FunctionCall#(_,rhs) | CODE.FunctionCallParameter#(rhs) | CODE.VarConstructor#rhs | DeleteStmt#(rhs) |
@@ -334,9 +362,31 @@ switch (vars)
         if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
         else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
-    case CODE.Else|CODE.Macro|"" : (NULL,NULL)
+    case CODE.Else|"" : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
     default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
+  }
+</xform>
+
+<xform collect_all_moderead pars=(op) output=(_mod,_read) >
+  switch (op) {
+    case CODE.FunctionDecl#(cur_name,params, rtype, body): collect_all_moderead(body)
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.Else#(s=CODE.If,_) | CODE.While#(s) :
+         collect_all_moderead(s);
+    case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_):
+        (m1,r1)=collect_all_moderead(first);
+        if (rest != NULL) (m2=_,r2=_)=collect_all_moderead(rest);
+        else m2=r2=NULL;
+        (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
+    case  CODE.Loop#(name,start,stop,step) | CODE.Loop_r#(name,start,stop,step) :
+        (m1,r1)=collect_all_moderead(name);
+        (m2,r2)=collect_all_moderead(start);
+        (m3,r3)=collect_all_moderead(stop);
+        (m4,r4)=collect_all_moderead(step);
+        (AppendList[erase_replicate=1](m1::m2,m3::m4),AppendList[erase_replicate=1](r1::r2,r3::r4))
+    case CODE.Else|"" : (NULL,NULL)
+    case CODE.impl_variant#(_,_,s) : collect_all_moderead(car s)
+    default: (collect_all_mod(op),collect_global_read(op))
   }
 </xform>
 
