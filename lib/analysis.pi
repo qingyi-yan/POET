@@ -22,6 +22,8 @@
 
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) />
 
+<xform collect_all_moderead pars=(op) output=(_mod,_read) />
+
 <* collect all dereferences of ptr that may be modified *>
 <xform collect_ptr_mod pars=(ptr,block) />
 
@@ -70,4 +72,3 @@
 
 <* return whether exp is linked by an unknown node in edges *>
 <xform is_linked_by_unknown pars=(exp, graphs) /> 
-
