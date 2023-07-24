@@ -337,7 +337,7 @@ switch (vars)
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) >
   switch (op) {
     case CODE.FunctionDecl#(cur_name,params, rtype, body): global_modread(body)
-        case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
          global_modread(s);
     case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
         local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
