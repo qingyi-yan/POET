@@ -60,7 +60,18 @@ Type Processing
 <code DeclStmt pars=(decl) /> 
 <code StmtBlock pars=(stmts) symtab="" /> 
 <code DeclarationBlock pars=(stmts) symtab="" /> 
-<code FunctionDecl pars=(name,params,ret,body) symtab="" /> 
+<code FunctionDecl pars=(name,params,ret,body) symtab="" 
+rebuild=(
+   if (symtab : "") {
+      enter_block("NEW");
+      foreach p = CODE.TypeInfo \in params do 
+         insert_typeInfo(p);
+      enddo
+      FunctionDecl[symtab=exit_block()]#(name,params,ret,body)
+   } else {
+      FunctionDecl[symtab=symtab]#(name,params,ret,body)
+   })
+/>
 <code StructBody pars=(stmts) symtab="" />
 
 <***** Variables and declarations ***>
