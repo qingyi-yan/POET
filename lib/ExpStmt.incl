@@ -64,8 +64,8 @@ Type Processing
 rebuild=(
    if (symtab : "") {
       enter_block("NEW");
-      foreach p = CODE.TypeInfo \in params do 
-         insert_typeInfo(p);
+      foreach p = CODE.TypeInfo#(t=_,v=_,_) \in (params body) do
+         insert_typeInfo(t,v);
       enddo
       FunctionDecl[symtab=exit_block()]#(name,params,ret,body)
    } else {
