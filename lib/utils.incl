@@ -582,6 +582,7 @@ if (pos == 0 && input == "*")
      if (res == "" && deep_search) res = LookupTable(key, rest);
      res
   }
+  else if(tab : NULL){ return ""; }
   else { tab[key] }
 </xform>
 
