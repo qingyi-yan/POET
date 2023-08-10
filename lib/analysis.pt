@@ -195,6 +195,10 @@ switch (vars)
 
 <xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable>
   scope = get_scope(variable);
+  if(scope == ""){
+    insert_typeInfo(info,variable);
+    scope = get_scope(variable);
+  }
   assert(scope != "");
   if(scope[tag] == ""){
     extra = MAP{};
