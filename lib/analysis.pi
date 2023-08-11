@@ -16,7 +16,9 @@
 
 <xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable/>
 
-<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable/>
+<xform set_extra_info pars=(variable, info, tag) set_new_var=FALSE tab=GLOBAL.SymTable/>
+
+<xform set_new_info pars=(variable)/>
 
 <xform get_type pars=(exp) tab=GLOBAL.SymTable/>
 
