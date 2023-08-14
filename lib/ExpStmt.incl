@@ -60,7 +60,7 @@ Type Processing
 <code DeclStmt pars=(decl) /> 
 <code StmtBlock pars=(stmts) symtab="" /> 
 <code DeclarationBlock pars=(stmts) symtab="" /> 
-<code FunctionDecl pars=(name,params,ret,body) symtab="" /> 
+<code FunctionDecl pars=(name,params,ret,body) symtab="" />
 <code StructBody pars=(stmts) symtab="" />
 
 <***** Variables and declarations ***>
