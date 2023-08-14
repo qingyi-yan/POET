@@ -277,7 +277,7 @@ switch (vars)
     case CODE.VEC#(name,_,_,_,_) : name
     case Nest#(first, second)|(first second) : AppendList[erase_replicate=1](collect_mod(first), collect_mod(second))
     case If#(exp)|CODE.CastExp#(_,exp)|CODE.FunctionCall#(_,exp) : collect_mod(exp)
-    <*default: "___UNKNOWN___"*>
+    default: "___UNKNOWN___"
     <<*CODE.FunctionCall | <* for now ignores side effects *>
    }
 </xform>

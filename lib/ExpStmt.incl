@@ -65,11 +65,11 @@ rebuild=(
    if (symtab : "") {
       enter_block("NEW");
       foreach p = CODE.TypeInfo#(t=_,v=_,_) \in params do
-         insert_typeInfo(t,v);
-      enddo
-      FunctionDecl[symtab=exit_block()]#(name,params,ret,body)
+         XFORM.insert_typeInfo(t,v);
+      enddo;
+      return FunctionDecl[symtab=exit_block()]#(name,params,ret,body);
    } else {
-      FunctionDecl[symtab=symtab]#(name,params,ret,body)
+      return FunctionDecl[symtab=symtab]#(name,params,ret,body);
    })
 />
 <code StructBody pars=(stmts) symtab="" />
