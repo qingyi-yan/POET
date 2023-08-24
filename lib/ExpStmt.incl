@@ -68,9 +68,9 @@ rebuild=(
       insert_typeInfo(t,v);
     enddo
     FunctionDecl[symtab=exit_block()]#(name,params,ret,body)
-    } else {
+  } else {
     FunctionDecl[symtab=symtab]#(name,params,ret,body)
-})
+  })
 />
 <code StructBody pars=(stmts) symtab="" />
 
