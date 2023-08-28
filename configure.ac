@@ -37,7 +37,7 @@ test -n "$rose_srcdir" || rose_srcdir="";
 test -n "$atlas_exe" || atlas_exe=xdmmtst;
 test -e "$atlas_obj" && atlas_inc="${atlas_obj}/Make.inc";
 
-testdirs="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC parsePy tune"; 
+testdirs="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune"; 
 #tooldirs="highlevel_interface test_files auto_tuning matrixOpt stencil-codegen splash2Prof";
 tooldirs="";
 

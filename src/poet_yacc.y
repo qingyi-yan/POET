@@ -51,7 +51,7 @@ OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGEN
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISEDOF THE POSSIBILITY OF SUCH DAMAGE.
 */
 /*********************************************************************/
-/*  Yacc parser for reading POET specefications and building AST     */
+/*  Yacc parser for reading POET specifications and building AST     */
 /*********************************************************************/
 #define YYDEBUG 1
 #define YYERROR_VERBOSE
@@ -59,6 +59,8 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <assert.h>
 
 YaccState yaccState;
+int yylex();
+void yyerror(const char *);
 
 extern void* insert_input();
 extern void set_input_debug();
