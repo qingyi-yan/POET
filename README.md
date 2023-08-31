@@ -32,17 +32,17 @@ Qing Yi   qyi@uccs.edu
 
 ## Contribution guidelines
 
+- You can report issues/bugs/typos in the `Issues` tab on Github. Please provide as much information as possible, e.g., steps to recreate bug, expected behavior, etc.
 - If you'd like to contribute to the POET repository, first configure git's default hooks directory on your local machine to use the git hooks located in this repository's *hooks* directory:
   * `find .git/hooks -type l -exec rm {} \;`
   * `find hooks -type f -exec ln -sf ../../{} .git/hooks/ \;`
 - Do not work on the `master` branch. It's suggested you fork this repository to your personal account and create feature branches to work on
-- You can report issues/bugs/typos in the `Issues` tab on Github. Please provide as much information as possible, e.g., steps to recreate bug, expected behavior, etc.
-- When ready for review, open a pull request (PR) to merge to the `master` branch: try to keep each PR limited in scope and goal
-- Try to keep your PR commit history to the fewest number of commits (`rebase -i` to squash your commit history if needed) -- in most cases that will be 1 commit per issue per PR
+- When ready for review, squash your commits if needed using `git rebase -i` to retain only the most significant commit(s). Doing this makes reverting bad commits easier and keeps the git history free of nonessential commits
 - Make sure to test any code changes
   * `make check` manually to run tests
-  * `git push` will run the pre-push hook that will also run tests and abort the push if your code fails these tests
-- When approved for merging by reviewers, do one final rebase to squash all commits in PR
+  * `git push` will run the pre-push hook which runs tests and halts the push operation if any test fails
+- Open a pull request (PR). Try to keep each PR limited in scope and goal
+- When PR is approved for merging by reviewers, do one final rebase to squash any extraneous commits before merging
 
 ## License
    POET : Parameterized Optimizations for Empirical Tuning
