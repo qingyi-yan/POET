@@ -37,6 +37,7 @@ Qing Yi   qyi@uccs.edu
   * `find .git/hooks -type l -exec rm {} \;`
   * `find hooks -type f -exec ln -sf ../../{} .git/hooks/ \;`
 - Do not work on the `master` branch. It's suggested you fork this repository to your personal account and create feature branches to work on
+- Make sure each commit can stand on its own and can be rolled-back independent from other commits
 - When ready for review, squash your commits if needed using `git rebase -i` to retain only the most significant commit(s). Doing this makes reverting bad commits easier and keeps the git history free of nonessential commits
 - Make sure to test any code changes
   * `make check` manually to run tests
