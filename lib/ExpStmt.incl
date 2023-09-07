@@ -47,6 +47,7 @@ Type Processing
 <code RefType pars=(base) /> 
 <code ArrayType pars=(base, dim) /> 
 <code FunctionType pars=(params,ret) /> 
+<code CastExp pars=(t : CODE.Type, e : EXP)> (@t@)@e@ </code>
 
 <********
  Similar to using EXP for expressions, 
@@ -61,8 +62,8 @@ Type Processing
 <code StmtBlock pars=(stmts) symtab="" /> 
 <code DeclarationBlock pars=(stmts) symtab="" /> 
 <code FunctionDecl pars=(name,params,ret,body) symtab="" 
-rebuild=(
-   if (symtab : "") {
+   rebuild=(
+    if (symtab : "") {
       enter_block("NEW");
       foreach p = CODE.TypeInfo#(t=_,v=_,_) \in params do
          XFORM.insert_typeInfo(t,v);
@@ -72,6 +73,7 @@ rebuild=(
       return FunctionDecl[symtab=symtab]#(name,params,ret,body);
    })
 />
+
 <code StructBody pars=(stmts) symtab="" />
 
 <***** Variables and declarations ***>
@@ -134,9 +136,9 @@ Redefine for different languages
 <define PARSE_CALL XFORM.EvalCall/>
 <define PARSE_ARRAY CODE.ArrayAccess/>
 
-<define EXP_BOP (("+" "-") ("*" "/"))/>
-<define EXP_UOP ("-")/>
-<define EXP_BASE INT|FLOAT|ID />
+<define EXP_BOP (("+" "-") ("*" "/") ("." "->"))/>
+<define EXP_UOP ("-" "&" "*")/>
+<define EXP_BASE INT|FLOAT|ID|CODE.CastExp />
 <define EXP_PREC  MAP{}/>  <<* precedence not defined
 
 <********
@@ -188,7 +190,7 @@ op
 
 <code FunctionCall pars=(function, args)
                 rebuild= (XFORM.EvalCall(function,args)) /> 
-<code ArrayAccess pars=(array,subscript)/>  
+<code ArrayAccess pars=(array,subscript)> @array@[@subscript@] </code>  
 
 <code Multiply parse=LIST(EXP,"*") />
 <code ExpList parse=LIST(EXP,",") />
@@ -362,7 +364,12 @@ case Bop#("<", f1,f2)|Bop#(">",f2,f1):
    default: ""
    }
 case Bop#("<=", f1,f2)|Bop#(">=",f2,f1):
+   f1p1 = f2m1 = "";
+   if (f2 : INT)  f2m1 = f2 - 1; 
+   if (f1 : INT) f1p1 = f1+1; 
    switch (second) {
+   case Bop#(">", f1, f2m1) | Bop#("<", f2m1, f1): Bop#("==", f1, f2)
+   case Bop#(">", f1p1, f2) | Bop#("<", f2, f1p1): Bop#("==", f1, f2)
    case Bop#("!=",f1,f2)|Bop#("!=", f2,f1): Bop#("<",f1,f2)
    case Bop#("<", f1,f2)|Bop#(">",f2,f1): second
    case Bop#(">", f1,f2)|Bop#("<",f2,f1): FALSE
@@ -506,6 +513,15 @@ default: Bop#(and,first,second)
 
 <xform RebuildExp pars=(exp) />
 <xform RebuildBop pars=(op,lhs,rhs)>
+  if (lhs : (lb, ub) && rhs : (lb2, ub2)) {
+     return (RebuildBop(op, lb, lb2), RebuildBop#(op, ub, ub2));
+  }
+  if (lhs : (lb, ub)) {
+     return (RebuildBop(op, lb, rhs), RebuildBop(op, ub, rhs));
+  }
+  if (rhs : (lb, ub)) {
+     return (RebuildBop(op, lhs, lb), RebuildBop(op, lhs, ub));
+  }
   switch (op) 
   {
    case "+": { RebuildPlus(lhs,rhs) }

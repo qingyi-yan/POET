@@ -1,0 +1,52 @@
+
+<code impl_variant pars=(id, name, impl) >
+@impl@
+</code>
+
+<code mult_impl pars=(impls : LIST(impl_variant,"\n")) >
+@car impls@
+</code>
+
+<code ICC_SIMD_pragma > 
+#pragma ivdep
+#pragma vector always
+
+</code>
+
+<code BlockConfig pars=(content:LIST(INT," ")) rebuild=content> @content@ </code>
+
+<trace XFORM_ARRAY_SCALARS=NULL/>
+<trace XFORM_PRIVATE_VARS = XFORM_ARRAY_SCALARS />
+
+<define XFORM_LOOPS_INNER NULL/>
+<define XFORM_LOOPS_OUTER NULL/>
+<define XFORM_ETYPE ""/> 
+<define XFORM_ARRAY_REFS "" /> 
+<define XFORM_LOOP_CLEANUP ""/>
+<define XFORM_LOOP_OUTMOST ""/>
+<define XFORM_PAR_LOOP ""/>
+<define XFORM_PAR_TOP ""/>
+<define XFORM_PAR_SIZE ""/>
+<define XFORM_PTNUM ""/>
+<define XFORM_TILE_SIZE ""/>
+<define XFORM_UNROLL_SIZE ""/>
+<define XFORM_DIMS_IN ""/>
+<define XFORM_DIMS_OUT ""/>
+<define XFORM_REF_INFO ""/>
+<define XFORM_ARRAY_COPY ""/>
+<define XFORM_SCALAR_INFO ""/>
+<define XFORM_MOD_VARS NULL />
+<define XFORM_READ_VARS NULL />
+<define XFORM_LOCAL_VARS NULL />
+
+<parameter tbk type=1.._ default=288 message="number of loop iterations to run by different threads for target" parse=LIST(INT,";")/>
+<parameter th type=1.._ default=2 message="number of threads to parallelize loop target"
+parse=LIST(INT,";") />
+<parameter bk1 type=(INT)... default=((72)::NULL) message="Blocking factor for loop nest target" parse=LIST(CODE.BlockConfig,";")/>
+<parameter uj type=(INT INT)... default=((2 2)::NULL) message="Unroll and Jam factor for loop nest target" parse=LIST( LIST(INT," "),";") />
+<parameter cpth type=INT default=0 message="whether to copy array outside and if yes, how many threads to use"/>
+<parameter cp type=0..2 default=2 message="configuration for copy array at loop target" parse=LIST(INT,";") />
+<parameter simd default=0  message="whether to use Assembly code with simd vectorization"/>
+
+
+<xform ResetOptConfig pars=(dummy)/>

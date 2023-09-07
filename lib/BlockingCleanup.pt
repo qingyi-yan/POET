@@ -148,6 +148,7 @@ else {
 </xform>
 
 <xform ENV_ge pars=(u,l) L_map=(NULL,NULL,NULL)>
+  assert(u != "" && l != "");
   if (u : StripmineTileStart#(_,l1,l2)) RETURN (ENV_ge(l1,l) || ENV_ge(l2,l));
   if (l : StripmineTileStart#(_,l1,l2)) RETURN (ENV_ge(u,l1) && ENV_ge(u,l2));
   foreach (L_map[0] : (u,CLEAR l1) : TRUE) {

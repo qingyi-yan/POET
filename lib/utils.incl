@@ -69,6 +69,8 @@ input
 
 <**** tracing target for all transformations ***>
 <define TRACE_TARGET ""/>
+<define TYPE_NAME ID/>
+<define FUNCTION_NAME ID/>
 
 <************* parsing functions for code templates*****************>
 
@@ -112,6 +114,15 @@ Treating a list of IDs as a single name
 
 <code IntList pars=(content:LIST(INT,",")) rebuild=content>
 (@content@)
+</code>
+
+
+<code ScopedName  match=(CODE.VarRefParse)
+  pars=(names:LIST1(TYPE_NAME|FUNCTION_NAME|ID, "::"))
+  parse=(names eval(return( (names:GLOBAL.TYPE_NAME|STRING)? names
+                           : (cdr(names)==NULL)? (car names)
+                           : ScopedName#names))) >
+@names@ 
 </code>
 
 <***** look for pattern in input  ******>

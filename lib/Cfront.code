@@ -53,7 +53,7 @@ TOKENS
 Parsing Macros
 ************>
 <define TOKEN C_TOKENS />
-<define KEYWORDS ("void" "do" "enum" "template" "inline" "float" "double" "int" "unsigned" "long" "char" "struct" "union" "extern" "static" "volatile" "const" "restrict" "register" "if" "else" "switch" "case" "default" "continue" "break" "for" "while" "goto" "operator" "using" "return")/>
+<define KEYWORDS ("typedef" "void" "do" "enum" "template" "inline" "float" "double" "int" "unsigned" "long" "char" "struct" "union" "extern" "static" "volatile" "const" "restrict" "register" "if" "else" "switch" "case" "default" "continue" "break" "for" "while" "goto" "operator" "using" "return")/>
 
 <define C_TYPE_BASE CODE.VoidType
                    |CODE.IntType
@@ -74,19 +74,11 @@ Parsing Macros
 
 <<*<define PREP XFORM.PrintLine />
 <define C_DECLARATION CODE.ExternDecl | CODE.EmptyStmt
-                   | CODE.Macro |CODE.TypeDef| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
+                   | CODE.Macro |CODE.TypeDefParse| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
 <<*CODE.TypeInfoDeclParse />
 <define DECLARATION C_DECLARATION/>
 <define VAR_INIT CODE.VarInit />
-<define TYPE_NAME ID/>
-<define FUNCTION_NAME ID/>
 
-<code ScopedName  match=(CODE.VarRefParse)
-  pars=(names:LIST1(TYPE_NAME|FUNCTION_NAME|ID, "::"))
-  parse=(names eval(return( (names:GLOBAL.TYPE_NAME|STRING)? names
-                           : (cdr(names)==NULL)? (car names)
-                           : ScopedName#names))) >
-@names@ </code>
 <define VAR_UOP "++"|"--" />
 <define C_EXP_BASE (CODE.FLOAT_ext|INT|INT_UL|CODE.StringList|Char|CODE.SizeOf|CODE.INT_0x|GLOBAL.TYPE_BASE|CODE.CastExp|CODE.VarRefParse) />
 <define EXP_BASE C_EXP_BASE />
@@ -246,7 +238,7 @@ case FunctionAnnot#e : FunctionType#(e, base)
 <code HasMatrix pars=(id: ID, t : CODE.Type, dims : LIST(INT,","))> 
 matrix(@id@,@t@,@dims@) </code>
 
-<code TypeDef pars=(decl : CODE.TypeInfoDeclParse)>
+<code TypeDefParse pars=(decl : CODE.TypeInfoDeclParse) >
 typedef @decl@ </code>
 
 <code ExternDecl pars=(content:CODE.TypeInfoDeclParse) >
@@ -310,8 +302,8 @@ extern @content@
   pars=(params: LIST(CODE.ParamDeclParse|CODE.ParamExtra,","),
         extra:"const"|LIST(CODE.TypeInfoDeclParse,""),
         body : CODE.StmtBlock|EmptyStmt|"")
-  parse=("(" params ")" extra body
-        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))=INHERIT; return(CODE.FunctionDecl[extra=extra]#(n,params,t,body))))
+  parse=("(" eval(enter_block("NEW")) params ")" extra body
+        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))=INHERIT; return((params : ID && body : CODE.EmptyStmt)? (exit_block(); CODE.TypeInfo#(t, n, params)) : CODE.FunctionDecl[extra=extra;symtab=exit_block()]#(n,params,t,body))))
   />
 
 <code ParamDeclParse
@@ -327,7 +319,7 @@ extern @content@
 
 <***************** statements ******************************>
 
-<define C_STMT_BASE CODE.EmptyStmt|CODE.DoWhileStmt|CODE.Break|CODE.Continue|CODE.Return|CODE.SwitchStmt|CODE.Nest|CODE.ExternDecl|CODE.Macro|CODE.TypeDef|CODE.GotoStmt| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
+<define C_STMT_BASE CODE.EmptyStmt|CODE.DoWhileStmt|CODE.Break|CODE.Continue|CODE.Return|CODE.SwitchStmt|CODE.Nest|CODE.ExternDecl|CODE.Macro|CODE.TypeDefParse|CODE.GotoStmt| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
 
 <code EmptyStmt > ; </code>
 <code Break> break; </code>
@@ -467,14 +459,17 @@ do @body@ @ctrl@
 </code>
 
 <code CaseLabels/>
-<code SwitchStmt pars=(condition:EXP, cases : CaseLabels)>
-switch (@condition@)
+<code SwitchStmt pars=(var:EXP, cases : CaseLabels)
+   parse = ("switch" "(" var ")" "{" eval(var) cases "}" eval(return(SwitchStmt#(var,cases))))>
+switch (@var@)
 {
   @cases@
 }
 </code>
 
-<code CaseLabel pars=(label : LIST(INT|ID|FLOAT|CODE.Char,"+"), stmt:LIST(CODE.Stmt,"\n"))>
+<code CaseLabel pars=(label : LIST(INT|ID|FLOAT|CODE.Char,"+"), stmt:LIST(CODE.Stmt,"\n"))
+       switch_var="" 
+      parse = ("case" label ":" stmt eval(switch_var=(INHERIT : CaseLabel)? INHERIT[switch_var] : INHERIT; return(CaseLabel[switch_var=switch_var]#(label, stmt)))) >
 case @label@:
   @stmt@
 </code>

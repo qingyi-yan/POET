@@ -155,7 +155,7 @@ for (@init@; @test@; @incr@)
 </code>
 
 <code CaseLabels/>
-<code SwitchStmt pars=(condition, cases : CaseLabels)>
+<code SwitchStmt pars=(var, cases : CaseLabels)>
 switch (@condition@)
 {
   @cases@
