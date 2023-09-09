@@ -64,9 +64,11 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 
 <******************* Try Convert For to a Loop ************>
 <xform RebuildLoop pars=(start:EXP, stop:EXP, incr:EXP)>
-  decl="";
-  if (start : (ExpStmt#(CODE.Assign#(ivar, lb))|(CODE.DeclStmt#(CODE.TypeInfo#((decl=_), ivar, CODE.VarInit#lb))))) {
-     if (stop : Bop#(compare=_,ivar,ub)) {
+  decl=""; ivar="";
+  
+  if (start : CODE.DeclStmt#(CODE.TypeInfo#((decl=_), ivar=_, CODE.VarInit#lb))|CODE.ExpStmt#(CODE.Assign#(ivar=_, lb=_))|NULL) {
+     if (start : ""|NULL) ivar=lb=_; 
+     if (stop : Bop#(compare=_,ivar,ub) | CODE.FunctionCall#(Bop#(".",ivar,compare=_),ub)) {
          switch (compare) {
          case "<":
             ((incr : Assign#(ivar,Bop#("+",step,ivar)))?
@@ -82,25 +84,25 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
            :      CODE.For#(start,stop,incr))
          case ">=":
             ((incr : Assign#(ivar,Bop#("-",ivar,step)))?
-                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),step)
+                  CODE.Loop[testop=">=";decl=decl]#(ivar,lb,ub,step)
            : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
-                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),1)
+                  CODE.Loop[testop=">=";decl=decl]#(ivar,lb,ub,1)
            :      CODE.For#(start,stop,incr))
          case ">":
             ((incr : Assign#(ivar,Bop#("-",ivar,step)))?
-                 Loop_r[decl=decl]#(ivar,lb,ub,step)
+                 Loop[testop=">";decl=decl]#(ivar,lb,ub,step)
            : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
-                 Loop_r[decl=decl]#(ivar,lb,ub,1)
+                 Loop[testop=">";decl=decl]#(ivar,lb,ub,1)
            :     CODE.For#(start,stop,incr))
          case "!=":
             ((incr : Assign#(ivar,Bop#("+",step,ivar)))?
                  Loop[decl=decl]#(ivar,lb,ub,step)
            : (incr : Uop#("++",ivar) || CODE.VarRef#(ivar,"++"))?
-                 Loop[decl=decl]#(ivar,lb,ub,1)
+                 Loop[testop="!=";decl=decl]#(ivar,lb,ub,1)
            : (incr : Assign#(ivar,Bop#("-",ivar,step)))?
-                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),step)
+                  CODE.Loop[testop="!=";decl=decl]#(ivar,lb,ub,step)
            : (incr : Uop#("--",ivar)|CODE.VarRef#(ivar,"--"))?
-                  CODE.Loop_r[decl=decl]#(ivar,lb,REBUILD(ub-1),1)
+                  CODE.Loop[testop="!=";decl=decl]#(ivar,lb,ub,1)
            :      CODE.For#(start,stop,incr))
          default:  CODE.For#(start,stop,incr)
         }
