@@ -194,9 +194,11 @@ switch (vars)
 </xform>
 
 <xform set_extra_info pars=(variable, info, tag) insert_new_var=FALSE tab=GLOBAL.SymTable>
-  scope = get_scope(variable);
-  if(scope == "" && (insert_new_var:TRUE)){
+  if(insert_new_var){
     set_new_info(variable);
+    scope = car(tab);
+  }
+  else{
     scope = get_scope(variable);
   }
   assert(scope != "");
