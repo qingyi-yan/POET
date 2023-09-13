@@ -47,5 +47,5 @@ AC_SUBST(atlas_inc)
 AC_SUBST(testdirs)
 AC_SUBST(tooldirs)
 AC_SUBST(rose_srcdir)
-AM_INIT_AUTOMAKE([1.10])
+AM_INIT_AUTOMAKE([1.10 foreign])
 AC_OUTPUT
