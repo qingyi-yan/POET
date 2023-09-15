@@ -74,7 +74,7 @@ Parsing Macros
 
 <<*<define PREP XFORM.PrintLine />
 <define C_DECLARATION CODE.ExternDecl | CODE.EmptyStmt
-                   | CODE.Macro |CODE.TypeDefParse| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
+                   | CODE.Macro |CODE.TypeDef| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
 <<*CODE.TypeInfoDeclParse />
 <define DECLARATION C_DECLARATION/>
 <define VAR_INIT CODE.VarInit />
@@ -319,7 +319,7 @@ extern @content@
 
 <***************** statements ******************************>
 
-<define C_STMT_BASE CODE.EmptyStmt|CODE.DoWhileStmt|CODE.Break|CODE.Continue|CODE.Return|CODE.SwitchStmt|CODE.Nest|CODE.ExternDecl|CODE.Macro|CODE.TypeDefParse|CODE.GotoStmt| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
+<define C_STMT_BASE CODE.EmptyStmt|CODE.DoWhileStmt|CODE.Break|CODE.Continue|CODE.Return|CODE.SwitchStmt|CODE.Nest|CODE.ExternDecl|CODE.Macro|CODE.TypeDef|CODE.GotoStmt| CODE.Comment2 | CODE.ExpOrVarDeclStmt/>
 
 <code EmptyStmt > ; </code>
 <code Break> break; </code>
