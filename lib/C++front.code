@@ -80,7 +80,7 @@ class @name@ @parents@
 <code UsingDecl pars=(t : LIST(ID,"::"))> using @t@ </code>
 
 <code ClassBody symtab=""
-  pars=(decls:LIST(CODE.Comment2|CODE.AccessControl|CODE.FriendDecl|CODE.TemplateDecl|CODE.TypeDef|CODE.Constructor|CODE.Destructor|CODE.UsingDecl|CODE.EmptyStmt|CODE.TypeInfoDeclParse,"\n")) 
+  pars=(decls:LIST(CODE.Comment2|CODE.AccessControl|CODE.FriendDecl|CODE.TemplateDecl|CODE.TypeDefParse|CODE.Constructor|CODE.Destructor|CODE.UsingDecl|CODE.EmptyStmt|CODE.TypeInfoDeclParse,"\n")) 
   parse=(eval(XFORM.enter_block("NEW")) "{" decls "}"
          eval(return(ClassBody[symtab=XFORM.exit_block(decls)]#decls)))
   >
