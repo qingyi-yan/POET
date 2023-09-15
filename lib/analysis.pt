@@ -182,7 +182,7 @@ switch (vars)
 </xform>
 
 <xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable>
-  scope = get_scope(variable);
+  scope = car(get_scope(variable));
   assert(scope != "");
   if(scope[tag] == ""){
     return "";
@@ -192,14 +192,8 @@ switch (vars)
   }
 </xform>
 
-<xform set_extra_info pars=(variable, info, tag) insert_new_var=FALSE tab=GLOBAL.SymTable>
-  scope = get_scope(variable);
-  if(scope == "" && (insert_new_var:TRUE)){
-    tab = car(gtab);
-    if (tab != "")
-       tab[variable]=NULL;
-    scope = get_scope(variable);
-  }
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable>
+  scope = car(get_scope(variable));
   assert(scope != "");
   if(scope[tag] == ""){
     extra = MAP{};
@@ -283,10 +277,9 @@ switch (vars)
      case  CODE.FunctionCall#(_,rhs) | CODE.FunctionCallParameter#(rhs) | CODE.VarConstructor#rhs | DeleteStmt#(rhs) |
            CODE.TypeInfo#(_,_,rhs) | CODE.VarInit#(rhs) | CODE.NewAlloc#(_,rhs) |
            CODE.ArraySubscript#rhs | CODE.CastExp#(_,rhs) | CODE.Return#(rhs) |
-           CODE.Uop#("!"|"*"|"++"|"--"|"&",rhs) | CODE.VarRef#(rhs,"++"|"--"):
+           CODE.Uop#("!"|"*"|"++"|"--"|"&"|"-"|"+"|"~",rhs) | CODE.VarRef#(rhs,"++"|"--"):
          collect_global_read(rhs)
-     case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.Uop#("*",rhs=_)
-         | CODE.ObjAccess#(rhs=_,_)  | CODE.ArrayAccess#(_,rhs=_) | CODE.Uop#(_,rhs=_):
+     case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.ObjAccess#(rhs=_,_) | CODE.ArrayAccess#(_,rhs=_):
          BuildList(collect_global_read(rhs), op)
      case CODE.Assign#(op1,op2):
          switch (op1) {
@@ -333,7 +326,7 @@ switch (vars)
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) >
   switch (op) {
     case CODE.FunctionDecl#(cur_name,params, rtype, body): global_modread(body)
-    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.Else#(CODE.If#(s=_),_) | CODE.While#(s) :
          global_modread(s);
     case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
         local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
@@ -341,7 +334,7 @@ switch (vars)
         if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
         else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
-    case CODE.Else|CODE.TypeDef|CODE.ExternDecl|"" : (NULL,NULL)
+    case CODE.Else|CODE.TypeDefParse|CODE.ExternDecl|Macro|"" : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
     default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
   }
