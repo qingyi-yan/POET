@@ -38,8 +38,12 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
       ""),
     PtrType#VoidType,
     EmptyStmt)#(
-    "",
-    "",
+    MAP:{
+"input"->PtrType#VoidType
+},
+    MAP:{
+"input"->PtrType#VoidType
+},
     "")
    NULL)
   Macro#UnknownUntilEOL#"define"" ""Index3D""(""_nx"",""_ny"",""_i"",""_j"",""_k"")"" ""(""(""_i"")""+""_nx""*""(""(""_j"")""+""_ny""*""(""_k"")"")"")" NULL(FunctionDecl#(
@@ -287,13 +291,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                NULL
             EmptyStmt NULL#(
             MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -301,13 +305,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "temp_ptr"->PtrType#FloatType#"double"
 },
             MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -669,8 +673,30 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "t_Params_Type",
           "")
 }))#(
-    "",
-    "",
+    MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
+"nx"->ConstType#IntType#"int"
+"ny"->ConstType#IntType#"int"
+"nz"->IntType#"int"
+"alpha"->ConstType#FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->ConstType#IntType#"int"
+"ldb"->ConstType#IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->ConstType#IntType#"int"
+},
+    MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
+"nx"->ConstType#IntType#"int"
+"ny"->ConstType#IntType#"int"
+"nz"->IntType#"int"
+"alpha"->ConstType#FloatType#"double"
+"A0"->PtrType#FloatType#"double"
+"timesteps"->ConstType#IntType#"int"
+"ldb"->ConstType#IntType#"int"
+"Anext"->PtrType#FloatType#"double"
+"ldc"->ConstType#IntType#"int"
+},
     "")
    NULL)
   (FunctionDecl#(
@@ -744,13 +770,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
                NULL
             EmptyStmt NULL#(
             MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -758,13 +784,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
 "temp_ptr"->PtrType#FloatType#"double"
 },
             MAP:{
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -1376,13 +1402,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "t_Params_Type",
             "")
 "j"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -1408,13 +1434,13 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
             "t_Params_Type",
             "")
 "j"->IntType#"int"
+"B"->PtrType#ConstType#FloatType#"double"
 "nx"->IntType#"int"
 "ny"->IntType#"int"
 "nz"->IntType#"int"
 "alpha"->FloatType#"double"
 "A0"->PtrType#FloatType#"double"
 "timesteps"->IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
 "ldb"->IntType#"int"
 "Anext"->PtrType#FloatType#"double"
 "ldc"->IntType#"int"
@@ -1427,13 +1453,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "t_WorkBlock_Type",
           "")
 }))#(
-    "",
-    "",
+    MAP:{
+"input"->PtrType#VoidType
+},
+    MAP:{
+"input"->PtrType#VoidType
+},
     "")
    NULL)
    NULL#(
   MAP:{
-"input"->PtrType#VoidType
 "t_workgroup"->PtrType#StructType#(
         "t_WorkGroup_Type",
         DeclarationBlock#DeclStmt#TypeInfo#(
@@ -1511,19 +1540,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "")
          NULL),
       VoidType)
-"nx"->ConstType#IntType#"int"
-"ny"->ConstType#IntType#"int"
-"nz"->IntType#"int"
-"alpha"->ConstType#FloatType#"double"
-"A0"->PtrType#FloatType#"double"
-"timesteps"->ConstType#IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
-"ldb"->ConstType#IntType#"int"
-"Anext"->PtrType#FloatType#"double"
-"ldc"->ConstType#IntType#"int"
 },
   MAP:{
-"input"->PtrType#VoidType
 "t_workgroup"->PtrType#StructType#(
         "t_WorkGroup_Type",
         DeclarationBlock#DeclStmt#TypeInfo#(
@@ -1601,14 +1619,4 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""max""(""a"",""b"")"" ""(""(""
           "")
          NULL),
       VoidType)
-"nx"->ConstType#IntType#"int"
-"ny"->ConstType#IntType#"int"
-"nz"->IntType#"int"
-"alpha"->ConstType#FloatType#"double"
-"A0"->PtrType#FloatType#"double"
-"timesteps"->ConstType#IntType#"int"
-"B"->PtrType#ConstType#FloatType#"double"
-"ldb"->ConstType#IntType#"int"
-"Anext"->PtrType#FloatType#"double"
-"ldc"->ConstType#IntType#"int"
 })
