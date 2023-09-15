@@ -238,7 +238,7 @@ case FunctionAnnot#e : FunctionType#(e, base)
 <code HasMatrix pars=(id: ID, t : CODE.Type, dims : LIST(INT,","))> 
 matrix(@id@,@t@,@dims@) </code>
 
-<code TypeDefParse pars=(decl : CODE.TypeInfoDeclParse) >
+<code TypeDef pars=(decl : CODE.TypeInfoDeclParse) >
 typedef @decl@ </code>
 
 <code ExternDecl pars=(content:CODE.TypeInfoDeclParse) >
@@ -301,9 +301,9 @@ extern @content@
 <code FunctionParameterDecl
   pars=(params: LIST(CODE.ParamDeclParse|CODE.ParamExtra,","),
         extra:"const"|LIST(CODE.TypeInfoDeclParse,""),
-        body : CODE.StmtBlock|EmptyStmt|"")
+        body : CODE.StmtBlock|CODE.EmptyStmt)
   parse=("(" eval(enter_block("NEW")) params ")" extra body
-        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))=INHERIT; return((params : ID && body : CODE.EmptyStmt)? (exit_block(); CODE.TypeInfo#(t, n, params)) : CODE.FunctionDecl[extra=extra;symtab=exit_block()]#(n,params,t,body))))
+        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))=INHERIT; return((params : ID && body : "")? (exit_block(); CODE.TypeInfo#(t, n, params)) : CODE.FunctionDecl[extra=extra;symtab=exit_block()]#(n,params,t,body))))
   />
 
 <code ParamDeclParse

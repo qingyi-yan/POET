@@ -56,8 +56,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
               "",
               PtrType#"CHAR",
               EmptyStmt)#(
-              "",
-              "",
+              MAP:{
+},
+              MAP:{
+},
               "")
              NULL)
             FunctionDecl#(
@@ -1510,7 +1512,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "",
                 "",
                 "")
-              Break NULL))
+              Break NULL))#PtrAccess#(
+              "pt",
+              "indx")
           CaseLabel#(
             "Y_NORM",
             (ExpStmt#Assign#(
@@ -1697,7 +1701,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "",
                 "",
                 "")
-              Break NULL))
+              Break NULL))#PtrAccess#(
+              "pt",
+              "indx")
           CaseLabel#(
             "Z_NORM",
             (ExpStmt#Assign#(
@@ -1884,7 +1890,9 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 "",
                 "",
                 "")
-              Break NULL))
+              Break NULL))#PtrAccess#(
+              "pt",
+              "indx")
            NULL))
       ExpStmt#FunctionCall#(
           "IsectAdd",
@@ -1921,8 +1929,16 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "v3"->PtrType#"VEC3"
 "pt"->PtrType#"TRI"
 }))#(
-    "",
-    "",
+    MAP:{
+"pr"->PtrType#"RAY"
+"hit"->PtrType#"IRECORD"
+"pe"->PtrType#"ELEMENT"
+},
+    MAP:{
+"pr"->PtrType#"RAY"
+"hit"->PtrType#"IRECORD"
+"pe"->PtrType#"ELEMENT"
+},
     (DeclStmt#TypeInfo#(
           PtrType#"RAY",
           "pr",
@@ -2138,8 +2154,20 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           (ArrayDim#"ISECT_MAX" NULL))
 "hitcode"->"INT"
 }))#(
-    "",
-    "",
+    MAP:{
+"r"->PtrType#"RAY"
+"v"->PtrType#"VOXEL"
+"hit"->PtrType#"IRECORD"
+"intersectPrim"->PtrType#"INT"
+"pid"->"INT"
+},
+    MAP:{
+"r"->PtrType#"RAY"
+"v"->PtrType#"VOXEL"
+"hit"->PtrType#"IRECORD"
+"intersectPrim"->PtrType#"INT"
+"pid"->"INT"
+},
     (DeclStmt#TypeInfo#(
           PtrType#"INT",
           "intersectPrim",
@@ -2169,10 +2197,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
    NULL)
    NULL#(
   MAP:{
-"r"->PtrType#"RAY"
-"v"->PtrType#"VOXEL"
-"pr"->PtrType#"RAY"
-"hit"->PtrType#"IRECORD"
 "CHAR"->IntType#"char"
 "INT"->IntType1#"long"
 "UINT"->IntType1#"unsigned""long" NULL
@@ -2191,8 +2215,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           "",
           PtrType#"CHAR",
           EmptyStmt)#(
-          "",
-          "",
+          MAP:{
+},
+          MAP:{
+},
           "")
          NULL)
         FunctionDecl#(
@@ -2500,8 +2526,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           "",
           PtrType#"CHAR",
           EmptyStmt)#(
-          "",
-          "",
+          MAP:{
+},
+          MAP:{
+},
           "")
          NULL)
         FunctionDecl#(
@@ -3193,7 +3221,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 ""),
             (ArrayDim#2 NULL))
 }))
-"pe"->PtrType#"ELEMENT"
 "BTNODE"->StructType#(
       "btnode",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -3965,14 +3992,8 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "IntersectHuniformPrimlist"->FunctionType#(
       ("intersectPrim""hit""v""r""pid" NULL),
       "VOID")
-"intersectPrim"->PtrType#"INT"
-"pid"->"INT"
 },
   MAP:{
-"r"->PtrType#"RAY"
-"v"->PtrType#"VOXEL"
-"pr"->PtrType#"RAY"
-"hit"->PtrType#"IRECORD"
 "CHAR"->IntType#"char"
 "INT"->IntType1#"long"
 "UINT"->IntType1#"unsigned""long" NULL
@@ -3991,8 +4012,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           "",
           PtrType#"CHAR",
           EmptyStmt)#(
-          "",
-          "",
+          MAP:{
+},
+          MAP:{
+},
           "")
          NULL)
         FunctionDecl#(
@@ -4300,8 +4323,10 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
           "",
           PtrType#"CHAR",
           EmptyStmt)#(
-          "",
-          "",
+          MAP:{
+},
+          MAP:{
+},
           "")
          NULL)
         FunctionDecl#(
@@ -4993,7 +5018,6 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
                 ""),
             (ArrayDim#2 NULL))
 }))
-"pe"->PtrType#"ELEMENT"
 "BTNODE"->StructType#(
       "btnode",
       DeclarationBlock#DeclStmt#TypeInfo#(
@@ -5765,6 +5789,4 @@ DeclarationBlock#Macro#UnknownUntilEOL#"define"" ""VOID"" "" "" "" "" "" "" "" "
 "IntersectHuniformPrimlist"->FunctionType#(
       ("intersectPrim""hit""v""r""pid" NULL),
       "VOID")
-"intersectPrim"->PtrType#"INT"
-"pid"->"INT"
 })
