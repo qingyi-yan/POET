@@ -283,10 +283,9 @@ switch (vars)
      case  CODE.FunctionCall#(_,rhs) | CODE.FunctionCallParameter#(rhs) | CODE.VarConstructor#rhs | DeleteStmt#(rhs) |
            CODE.TypeInfo#(_,_,rhs) | CODE.VarInit#(rhs) | CODE.NewAlloc#(_,rhs) |
            CODE.ArraySubscript#rhs | CODE.CastExp#(_,rhs) | CODE.Return#(rhs) |
-           CODE.Uop#("!"|"*"|"++"|"--"|"&",rhs) | CODE.VarRef#(rhs,"++"|"--"):
+           CODE.Uop#("!"|"*"|"++"|"--"|"&"|"-"|"+"|"~",rhs) | CODE.VarRef#(rhs,"++"|"--"):
          collect_global_read(rhs)
-     case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.Uop#("*",rhs=_)
-         | CODE.ObjAccess#(rhs=_,_)  | CODE.ArrayAccess#(_,rhs=_) | CODE.Uop#(_,rhs=_):
+     case CODE.PtrAccess#(rhs=_,_) | CODE.Bop#(".",rhs=_,_) | CODE.ObjAccess#(rhs=_,_) | CODE.ArrayAccess#(_,rhs=_):
          BuildList(collect_global_read(rhs), op)
      case CODE.Assign#(op1,op2):
          switch (op1) {
