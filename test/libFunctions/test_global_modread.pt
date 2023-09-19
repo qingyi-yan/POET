@@ -1,0 +1,12 @@
+include analysis.pi
+
+<eval
+<**** input = #include <stdlib.h> ****>
+result1 = global_modread(Macro#(UnknownUntilEOL#"include"" ""<""stdlib"".""h"">"));
+assert((NULL, NULL) : result1);
+
+<**** input =  else if (num < 0) ****>
+result2 = global_modread(Else#(If#(Bop#("<","num",0)),""));
+assert((NULL, "num") : result2);
+
+/>
