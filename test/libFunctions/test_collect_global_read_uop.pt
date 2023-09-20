@@ -29,7 +29,7 @@ assert(expected_output5 : result5);
 
 <**** Uop#("*",_), where input is `int value = *ptr;` ****>
 result6 = collect_global_read(DeclStmt#(TypeInfo#(IntType#("int"),"value",VarInit#(Uop#("*","ptr")))));
-expected_output6 = ("ptr");
+expected_output6 = ("ptr"Uop#("*","ptr"));
 assert(expected_output6 : result6);
 
 <**** Uop#("!",_), where input is `int isFalse = !isTrue;` ****>
