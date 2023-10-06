@@ -1,9 +1,7 @@
 <define SymTable NULL />
 <define ARRAY_TYPES NULL/>
 
-
-<code AbstractionBlock pars=(varDecls) symtab="" />
-
+<define ANNOTATION_FILES ("C_std.annot")/>
 <code BookKeeping pars=(content)> @content@ </code>
 
 <xform insert_typeInfo pars=(type,vars) tab=GLOBAL.SymTable/>
@@ -15,16 +13,13 @@
 <xform get_scope pars=(exp) tab=GLOBAL.SymTable/>
 
 <xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable/>
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable/>
 
-<xform set_extra_info pars=(variable, info, tag) insert_new_var=FALSE tab=GLOBAL.SymTable/>
+<xform get_type pars=(exp) tab=GLOBAL.SymTable sub_type="" />
 
-<xform set_new_info pars=(variable)/>
-
-<xform get_type pars=(exp) tab=GLOBAL.SymTable/>
+<xform get_scope pars=(exp) tab=GLOBAL.SymTable/>
 
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) />
-
-<xform collect_all_modread pars=(op) output=(_mod,_read) />
 
 <* collect all dereferences of ptr that may be modified *>
 <xform collect_ptr_mod pars=(ptr,block) />
@@ -40,11 +35,27 @@
 <xform find_access_control pars=(op, scope)/>
 
 <************** Optimization Analysis ****************>
-<code Pattern pars=(name : ID, attr : _, content:CODE.Nest) 
-              type="" parse = XFORM.RecognizePatterns
-              rebuild=((content[Nest.ctrl]:Loop|Loop_r|For)? XFORM.RecognizePatterns(content):
+<code Property pars=(pat_name : ID,  attr : LIST(_,","))> @pat_name@(@attr@) </code>
+<code Pattern pars=(prop : CODE.Property|ID, content : CODE.Pattern|_) type="" >
+@prop@ @content@
+</code>
+
+<code CompPattern pars=(pat_id: INT, pat : CODE.Pattern, comp:CODE.Nest|CODE.CompPattern) 
+      type = ""
+      parse = XFORM.RecognizePatterns
+      rebuild=((content[Nest.ctrl]:Loop|Loop_r|For)? XFORM.RecognizePatterns(content):
                       (if((content[Nest.body]):Nest) XFORM.RecognizePatterns(content[Nest.body]);)) 
-              /> 
+              > 
+COMPUTATION @pat_id@ @pat@ 
+  @comp@
+END COMPUTATION
+</code>
+
+<code FunctionPattern pars=(pat_id: INT, pat_names : LIST(ID,"|"), where : _, comp:LIST(CODE.CompPattern|_, "\n")) > 
+FUNCION @pat_id@ @pat_names@: @(where=>CODE.ScopedName)@ 
+  @comp@
+END FUNCTION
+</code>
 
 <*QY: find all loop index and loop variant variables*>
 <xform CategorizeVariables pars=(input) 

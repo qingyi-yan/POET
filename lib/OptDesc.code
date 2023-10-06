@@ -1,0 +1,54 @@
+include Cfront.code
+
+<code CompoundType pars=(name:ID, body:LISR(CODE.MemberType,","))>
+@name@ : {
+  @body@
+};
+</code>
+
+<code MemberType pars=(name:ID, type: CODE.Type)> @name@ : @type@ </code>
+
+<code FunctionDef pars=(name:ID, itype:CODE.Type, otype:CODE.Type, body : CODE.BNF_rhs)>
+@name@ : @itype@ -> @otype@ {
+  @CODE.StmtListr#body@
+};
+</code>
+
+<code Select pars=(vars : CODE.ExpList, cases : CODE.CaseList)>
+select(@vars@) {
+  @XFORM.output_CaseList[case_variables=vars](cases)@
+}
+</code>
+
+<xform output_CaseList pars=(cases : CODE.ExpList) case_variables=NULL />
+c = car(cases); r=NULL; 
+switch (case_variables) {
+ case NULL: 
+      i = 0; 
+      foreach d = (var=_,val=_) \in c s.t. !(var : "else"|"elseif") do
+         for ((j=0; p=GLOBAL.case_variables); p != NULL; (j=j+1;p=cdr(p))) {
+             if ((car p) : var) break;
+         }
+         if (p == NULL) { r = Bop#("==",var val) ::: r; }  <* condition variable not found*>
+         else { for (""; i < j; i = i + 1) { r = "_" :: r; }
+                r = val :: r; i = i + 1; }
+       enddo
+       for (""; i < LEN(case_vriables); i = i + 1) { r = "_" :: r; }
+       r = ReverseList(r); <* the conditions were put together backward *>
+  default:  
+       foreach d=(var=_,val=_) \in c do
+          r = Bop#("==",var,val) :: r;
+       enddo
+ }
+ r = r :: NULL;
+ if ((d = cdr(cases)) != NULL)  r = AppendList(r, output_CaseList(d));
+ return r;
+</xform>
+
+<code CompoundUpdate pars=(fd_update : LIST(CODE.ExpStmt,"\n"))>
+{
+  @CODE.StmtList#fd_update@
+}
+</code>
+
+

@@ -835,7 +835,7 @@ match_Type(POETCode* r1, POETType* type, bool convertType)
 
 void MatchASTVisitor:: setup(POETCode* _r1, POETCode* _r2) {
     if (debug_pattern()) {
-       std::cerr << "Pattern matching " << _r1->get_className() << ":" << _r1->toString() << " vs. " << _r2->get_className() << ":" << _r2->toString() << "\n";
+       //std::cerr << "Pattern matching " << _r1->get_className() << ":" << _r1->toString() << " vs. " << _r2->get_className() << ":" << _r2->toString() << "\n";
     }
 
     if (r1 != _r1) { r1 = _r1; lvar = 0; }
@@ -976,7 +976,6 @@ void MatchASTVisitor::visitXformVar( XformVar* v)
        if (p != 0) {
            res = POETAstInterface::MatchAstWithPattern(p->get_content(), v);
        }
-       else res = v->eval(r1);
       }
    }
 
@@ -1199,15 +1198,13 @@ void MatchASTVisitor::visitOperator(POETOperator* op) {
 void MatchASTVisitor::defaultVisit(POETCode* f) {
       if (any == f) { res = r1; return; }
       POETCode* ff = eval_AST(f);
-      if (ff == f) res = 0;
-      else {
-    POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
-    if (p != 0) {
+      POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
+      if (p != 0) {
         res = POETAstInterface::MatchAstWithPattern(p->get_content(), ff);
-    }
-
-            apply(r1,ff);  
+        return;
       }
+      if (ff == f) res = 0;
+      else { apply(r1,ff);  }
    }
 
 class AssignASTVisitor : public MatchASTVisitor 

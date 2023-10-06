@@ -1,0 +1,23 @@
+include analysis.pi
+
+<************************************************************
+Define input command line parameters
+*************************************************************>
+<parameter inputFile default="" message="input file name" />
+<************************************************************
+Parse inputFile & headerFile
+*************************************************************>
+<input from=inputFile syntax="Cfront.code" to=inputCode/>
+
+<eval
+XFORM.enter_block(inputCode);
+  <**** Test  set_extra_info ****>
+  result1 = XFORM.set_extra_info("functionA", "B", "_BLOCK_");
+  assert("B" : result1);
+
+  <**** Test  get_extra_info ****>
+  result2 = XFORM.get_extra_info("functionA","_BLOCK_");
+  assert("B" : result2);
+XFORM.exit_block(inputCode);
+
+/>

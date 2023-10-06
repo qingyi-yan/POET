@@ -1,0 +1,368 @@
+include OptConfig.pi
+
+
+<****************************************************************************************>
+<xform next_configuration pars=(config)>
+         cur_config=car(config); 
+         if (cur_config!=config) config=cdr(config);
+         (cur_config, config)
+</xform>
+
+<xform map_index_vars_to_loops pars=(arr_sub)>
+  loops = NULL;
+  for ((p=GLOBAL.XFORM_LOOPS_INNER; q=GLOBAL.XFORM_LOOPS_OUTER); 
+      p != NULL; (p = cdr(p); q = cdr(q))) {
+    Nest#(Loop#(i,_,_,_),_) = car(p);
+    Nest#(Loop#(j,_,_,_),_) = car(q);
+    if (Count(i, arr_sub) > 0) loops = BuildList(car(p), loops);
+    if (Count(j, arr_sub) > 0) loops = BuildList(car(q), loops);
+  }
+  RETURN (loops);
+</xform>
+
+<xform find_loop_handles pars=(loops, loophandles) cpth=0 out="" ref="">
+  output = NULL;
+  for (p = loophandles; p != NULL; p = cdr(p)) {
+    for (q = loops; q != NULL; q = cdr(q)) {
+      if (car(p) == car(q)) {
+        if ((cpth>0)&&(out!="")&&(car(p)==car(loophandles)))
+          output = out :: output;
+        else{
+          output = car(p) :: output;
+        }
+        BREAK;
+      }
+    }
+  }
+  RETURN ((ref, ReverseList(output)));
+</xform>
+
+<*Creates copies of loop variables so they can be vectorized to interact with other vectors*>
+<xform normalize_loop_index_vars pars=(input) >
+  for (p = GLOBAL.XFORM_LOOPS_INNER; p != NULL; p = cdr(p)) {
+    Nest#(loop=CODE.Loop#(i,j,k,_), body) = nest = car(p);
+    foreach id=CODE.Name|ID \in loop do
+      need_replicate = 0;
+      foreach c=CODE.ArrayAccess|id \in body do
+        need_replicate = 1; 
+      enddo
+      if (need_replicate) {
+        replace=0;
+        if (id==i || id == k) { 
+          id_new = Name#(AppendList(id, "_index_cp"));
+          body2 = body;
+          nest2 = COPY(nest);
+          <*Replace all non-array occurences of the index variable.*> 
+          foreach s = Bop#(op,id,opd2) \in body do
+	    body2 = REPLACE(Bop#(op, id, opd2), Bop#(op, id_new, opd2), body2);
+            replace=1;
+          enddo
+	  foreach s = Bop#(op,opd1,id) \in body do
+	    body2 = REPLACE(Bop#(op, opd1, id), Bop#(op, opd1, id_new), body2);
+            replace=1;
+          enddo
+          <*If any array access are changed, change them back*>
+          foreach r=ArrayAccess#(CLEAR arr, CLEAR sub) \in body2 do
+            if (Lookup(id_new, sub)) {
+              r_new = REPLACE(id_new, id, r);
+              body2 = REPLACE(r, r_new, body2);
+            }
+          enddo
+          <*If copies were made then add declaration*> 
+          if((Lookup(id_new, body2)) && replace) {
+            body2 = CODE.DeclStmt#(CODE.TypeInfo#("int", id_new, CODE.VarInit#(id)))::body2;
+            nest = REPLACE((body, body2), nest);
+            body = body2;
+            input = REPLACE(nest2, COPY(nest), input);
+          }
+        } 
+      }
+    enddo
+  }
+  input
+</xform>
+
+<xform find_non_loop_index_vars pars=(input)>
+  scalars = NULL;
+  foreach var=ID \in COPY(GLOBAL.XFORM_MOD_VARS GLOBAL.XFORM_READ_VARS) s.t. var != "NULL" do
+    if (!(Lookup(var, GLOBAL.XFORM_ARRAY_REFS))) {
+      if (var != GLOBAL.XFORM_ETYPE) {<*do not handle other types right now*>
+        flag = 0;
+        for (p = GLOBAL.XFORM_LOOPS_INNER; p != NULL; p = cdr(p)) {
+          Nest#(loop=CODE.Loop#(i,_,j,_), body) = car(p);
+
+          if (Lookup(var, loop)) {
+	    flag = 1;
+            BREAK;
+          }
+        }
+        if (flag == 0) scalars = var :: scalars;
+      }
+    }
+  enddo
+  RETURN (scalars);
+</xform>
+
+<xform find_reduction_operator pars=(var,pattern) >
+  var = var[0] => STRING;
+  foreach (pattern : CODE.Assign#(CLEAR a, CLEAR b) : FALSE) {
+    if (a == var) {
+      foreach CODE.Bop#(CLEAR op, CLEAR opd1, CLEAR opd2) \in b do
+        if (var == opd1 || var == opd2) RETURN op;  
+      enddo
+    }
+  }
+  foreach if_stat=Nest#(If#(CLEAR a), CLEAR b) \in pattern do
+    if(a : impl_variant#(_, _, c=_)) a = c;
+    Bop#(op, lh, rh) = a;
+    if (lh == var) 
+      switch (op) {
+        case ">" | ">=": return "max";
+        case "<" | "<=": return "min";
+        default: print("Warning[find_reduction_operator]: could not parse: " if_stat);
+      }
+    else if (rh == var) 
+      switch (op) {
+        case ">" | ">=": return "min";
+        case "<" | "<=": return "max";
+        default: print("Warning[find_reduction_operator]: could not parse: " if_stat);
+      }
+     
+  enddo
+  RETURN ""
+</xform>
+
+<xform find_reduction pars=(pattern) >
+  scalars = find_non_loop_index_vars();
+  for (p = scalars; p != NULL; p = cdr(p)) {
+    if (!(Lookup(car(p), GLOBAL.XFORM_SCALAR_INFO))) 
+    GLOBAL.XFORM_SCALAR_INFO[car(p)] = uses = categorize_uses[mod_vars=GLOBAL.XFORM_MOD_VARS;read_vars=GLOBAL.XFORM_READ_VARS](car(p), pattern);
+  }
+  red_vars = NULL;
+  foreach (GLOBAL.XFORM_SCALAR_INFO : (CLEAR idx, CLEAR sinfo) : TRUE) {
+    if (Lookup("reduce", sinfo)) red_vars = idx::red_vars;
+  }
+  ops = NULL;
+  for(r = red_vars; r != NULL; r = cdr(r)) {
+    red = car(r);
+    ops = find_reduction_operator(red,pattern)::ops;
+  }
+  if(red_vars == NULL || ops == "") RETURN ("", "");
+  RETURN (ops, red_vars);
+</xform>
+
+<xform insert_handle pars=(pat, handle, input) target=GLOBAL.TRACE_TARGET>
+foreach exp=ExpStmt#(Assign#(lhs=_, rhs=_)) \in input do
+  nlhs = lhs; nrhs = rhs; flag = 0;
+  if (pat == lhs) {
+    nlhs = handle;
+    flag = 1;
+  } else {
+    foreach (rhs : (arr=ArrayAccess) : FALSE) {
+      if (pat == arr) {
+        nrhs = REPLACE(arr, handle, rhs);
+        flag = 1;
+      }
+    }
+  }
+  if (flag == 1) {
+    nexp = ExpStmt#(Assign#(nlhs, nrhs));
+    BREAK;
+  }
+enddo
+if (flag == 1) {
+   REPLACE(exp,nexp,input);
+}
+</xform>
+
+
+<* Update function calls *>
+<xform check_for_known_functions pars=(pattern) trace_decl=GLOBAL.TRACE_DECL>
+  contains_variants = FALSE;
+  foreach(COPY(pattern) : line=(ExpStmt#(CLEAR body) | DeclStmt#(CLEAR body) | Nest#(If#(CLEAR body),_)) : FALSE) {
+    <*If the function is within an if then we need to change location*>
+    if(line: Nest#(If#(_),_))
+      line=body;
+    foreach(body : fun_call=CODE.FunctionCall#(CLEAR name, CLEAR args) : FALSE) {
+      switch(name) {
+        case "fabs": 
+          contains_variants = TRUE;          
+          id = "fabs";
+          new_var_simd = "___bit_flip___";
+          flip_value = "0x7fffffffffffffff";
+          new_var_scalar = "___tmp___";
+
+          <* Create scalar and simd variants for block *>
+          simd_impl = REPLACE(fun_call,Bop#("&",args,new_var_simd),line);
+          updated_line = REPLACE(fun_call,args,line);
+          scalar_impl = DeclStmt#(TypeInfo#("unsigned long *",new_var_scalar, VarInit#(CastExp#("unsigned long *", Uop#("&", args)))))
+                          ::ExpStmt#(Assign#(Uop#("*", new_var_scalar), Bop#("&", Uop#("*", new_var_scalar), flip_value)))
+                          ::updated_line;
+          simd_variant_trace = TRACE(impl_variant#(id, "simd", simd_impl));
+          scalar_variant_trace = TRACE(impl_variant#(id, "scalar", scalar_impl));
+
+          <* Decides which variables need to be added to private vars list based on optimization *>
+          var_list = NULL;
+          variant = NULL;
+          if(GLOBAL.simd/1 == 1) { 
+            var_list = new_var_simd::new_var_scalar;
+            AppendDecl[trace=trace_decl; init=VarInit#flip_value]("unsigned long", new_var_simd);
+            variant = simd_variant_trace;
+          }
+          else {
+            var_list = new_var_scalar;
+            variant = scalar_variant_trace;
+          }
+          REPLACE(ERASE(GLOBAL.XFORM_PRIVATE_VARS), var_list::ERASE(GLOBAL.XFORM_PRIVATE_VARS), GLOBAL.XFORM_PRIVATE_VARS);
+
+          REPLACE(line, ERASE(variant), pattern);
+          variants = AppendList(simd_variant_trace, scalar_variant_trace);
+          GLOBAL._variant_map[id] = mult_impl#(variants);
+       <* case "sin":
+          contains_variants = TRUE;
+        case "cos":
+          id = "cos";
+          new_var = "___tmp___";
+          simd_impl = "__m256d" :: new_var;
+          pattern = REPLACE(line, simd_impl, pattern);
+        *>  
+      }
+    }
+  }
+  contains_variants
+</xform>
+
+
+<xform setup_loop_opt pars=(pattern) pre_compute=""
+  decl=GLOBAL.TRACE_DECL target=GLOBAL.TRACE_TARGET >
+  GLOBAL.XFORM_ETYPE = pattern[Pattern.type];
+  if (GLOBAL.XFORM_ETYPE == "") ERROR("element type of matrices not defined!"); 
+  TRACE( (GLOBAL.XFORM_LOOPS_OUTER GLOBAL.XFORM_LOOPS_INNER GLOBAL.XFORM_PRIVATE_VARS), 
+    setup_loop_optimizations[trace_outerLoops=GLOBAL.XFORM_LOOPS_OUTER;
+                             trace_innerLoops=GLOBAL.XFORM_LOOPS_INNER;
+                             trace_privateVars=GLOBAL.XFORM_PRIVATE_VARS](pattern));
+  GLOBAL.XFORM_LOOP_CLEANUP=TRACE((top1=car(GLOBAL.XFORM_LOOPS_OUTER)));
+  GLOBAL.XFORM_LOOP_OUTMOST=TRACE(GLOBAL.XFORM_LOOP_CLEANUP);
+  top2 = (GLOBAL.XFORM_PAR_LOOP=TRACE(GLOBAL.XFORM_LOOP_CLEANUP));
+  top3 = (StmtBlock#(decl (GLOBAL.XFORM_PAR_TOP=TRACE(top2))));
+  EraseTraceHandle[repl=top3](top1,target);
+  (cur_psize,tbk) = next_configuration(GLOBAL.tbk);
+  GLOBAL.XFORM_PAR_SIZE=cur_psize;
+  (cur_ptnum, th) = next_configuration(GLOBAL.th);
+  GLOBAL.XFORM_PTNUM=cur_ptnum;
+  (cur_bksize, bk) = next_configuration(GLOBAL.bk1);
+  GLOBAL.XFORM_TILE_SIZE = cur_bksize;
+  (cur_uj, uj) = next_configuration(GLOBAL.uj);
+  GLOBAL.XFORM_UNROLL_SIZE = cur_uj;
+</xform>
+
+<xform categorize_variables pars=(pattern) >
+  scope = pattern;
+  if (pattern : CODE.Pattern#(_,content=_)) { scope = content; }
+
+ (GLOBAL.XFORM_MOD_VARS, GLOBAL.XFORM_READ_VARS) = global_modread(scope);
+
+  <* check for local variables *>
+  GLOBAL.XFORM_LOCAL_VARS = NULL;
+  foreach DeclStmt#(typelist) \in scope do
+    foreach TypeInfo#(_, new_local_var, _) \in typelist do
+     GLOBAL.XFORM_LOCAL_VARS = AppendList(GLOBAL.XFORM_LOCAL_VARS, new_local_var);
+    enddo
+  enddo
+
+</xform>
+
+<xform setup_array_opt pars=(pattern) pre_compute="" target=GLOBAL.TRACE_TARGET cp_tag=0>
+  GLOBAL.XFORM_ARRAY_REFS = MAP{};
+  GLOBAL.XFORM_ARRAY_COPY=MAP{};
+  GLOBAL.XFORM_SCALAR_INFO = MAP{};
+  GLOBAL.XFORM_DIMS_IN = MAP{};
+  GLOBAL.XFORM_DIMS_OUT= MAP{};
+  GLOBAL.XFORM_REF_INFO = MAP{};
+  foreach (COPY(pattern) : (r=ArrayAccess#(CLEAR arr, CLEAR sub)) : FALSE) {
+    if (!(Lookup(r, GLOBAL.XFORM_ARRAY_REFS[arr]))) {
+      loops = map_index_vars_to_loops(sub);
+      h = TRACE(r); <*adds trace handle to array access*>
+      GLOBAL.XFORM_ARRAY_REFS[arr] = BuildList(h, GLOBAL.XFORM_ARRAY_REFS[arr]);
+      GLOBAL.XFORM_DIMS_OUT[arr] = BuildList(
+          find_loop_handles[ref=h;cpth=GLOBAL.cpth;out=GLOBAL.XFORM_PAR_LOOP]
+          (loops, GLOBAL.XFORM_LOOPS_OUTER), GLOBAL.XFORM_DIMS_OUT[arr]);
+      GLOBAL.XFORM_DIMS_IN[arr] = BuildList(
+          find_loop_handles[ref=h](loops, GLOBAL.XFORM_LOOPS_INNER), 
+          GLOBAL.XFORM_DIMS_IN[arr]);
+      Pattern#(_,content) = pattern;
+      uses = categorize_uses[cp=GLOBAL.cp](r,content);
+      GLOBAL.XFORM_REF_INFO[arr] = BuildList(uses, GLOBAL.XFORM_REF_INFO[arr]);
+      for (p=COPY(GLOBAL.XFORM_REF_INFO[arr]); p!=NULL; p=cdr(p)) {
+        (_,copy,_,_,_) = car(p);
+        if (copy == "") 
+          GLOBAL.XFORM_REF_INFO[arr] = REPLACE("copy", copy, GLOBAL.XFORM_REF_INFO[arr]);
+      }
+      insert_handle(r, h, pattern);
+    }
+  }
+  if (cp_tag > 0) {
+    foreach (GLOBAL.XFORM_REF_INFO:(CLEAR arr, CLEAR info) : TRUE) {
+      (_,copy,_,_,_) = car(info);
+      if (copy == "copy") GLOBAL.XFORM_ARRAY_COPY[arr] = GLOBAL.XFORM_ARRAY_REFS[arr];
+    }
+    foreach (pre_compute : (CLEAR arr, CLEAR exp) : TRUE) {
+      if (GLOBAL.XFORM_ARRAY_COPY[arr] != "") {
+        if (cdr(GLOBAL.XFORM_ARRAY_COPY[arr]) == NULL) {
+          npre = REPLACE(arr, GLOBAL.XFORM_ARRAY_COPY[arr], exp);
+          t=TRACE(npre);
+          GLOBAL.XFORM_ARRAY_COPY[arr] = t;
+          REPLACE(npre, t, target);
+          foreach (GLOBAL.XFORM_ARRAY_REFS:(arr, CLEAR r) : TRUE) {
+           GLOBAL.XFORM_ARRAY_REFS[arr] = t;
+          }
+        }
+      }<*To the arr array name only one reference*>
+    }
+  }
+  categorize_variables(pattern);
+  scalars = find_non_loop_index_vars(pattern);
+  for (p = scalars; p != NULL; p = cdr(p)) {
+    if (!(Lookup(car(p), GLOBAL.XFORM_SCALAR_INFO))) {  
+    GLOBAL.XFORM_SCALAR_INFO[car(p)] = uses = categorize_uses(car(p), pattern[Pattern.content]);
+   }
+  }
+</xform>
+
+<xform LoopVariantCounter pars=(level) >
+count=0;
+for(cur=level;car(level)!="";level=cdr(level))
+{
+  if(!Lookup(car(level),cdr(level)))
+    count += 1;
+}
+count
+</xform>
+
+<xform ResetOptConfig pars=(dummy)>
+GLOBAL.XFORM_LOOPS_INNER=NULL;
+GLOBAL.XFORM_LOOPS_OUTER= NULL;
+GLOBAL.XFORM_ETYPE= "";
+GLOBAL.XFORM_ARRAY_REFS=""; 
+GLOBAL.XFORM_LOOP_CLEANUP="";
+GLOBAL.XFORM_LOOP_OUTMOST="";
+GLOBAL.XFORM_PAR_LOOP="";
+GLOBAL.XFORM_PAR_TOP="";
+GLOBAL.XFORM_PAR_SIZE="";
+GLOBAL.XFORM_PTNUM="";
+GLOBAL.XFORM_TILE_SIZE="";
+GLOBAL.XFORM_UNROLL_SIZE="";
+GLOBAL.XFORM_DIMS_IN="";
+GLOBAL.XFORM_DIMS_OUT="";
+GLOBAL.XFORM_REF_INFO="";
+GLOBAL.XFORM_ARRAY_COPY="";
+GLOBAL.XFORM_SCALAR_INFO="";
+GLOBAL.XFORM_MOD_VARS=NULL;
+GLOBAL.XFORM_READ_VARS=NULL;
+GLOBAL.XFORM_LOCAL_VARS=NULL;
+GLOBAL.XFORM_PRIVATE_VARS=NULL;
+GLOBAL.TRACE_VARS=NULL;
+GLOBAL.TRACE_EXP=NULL;
+</xform>
+
+
