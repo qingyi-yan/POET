@@ -1,0 +1,4 @@
+int functionA(){
+  int num = 5;
+  return num * num;
+}

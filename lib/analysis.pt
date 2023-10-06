@@ -182,7 +182,7 @@ switch (vars)
 </xform>
 
 <xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable>
-  scope = get_scope(variable);
+  scope = car(get_scope(variable));
   assert(scope != "");
   if(scope[tag] == ""){
     return "";
@@ -192,14 +192,8 @@ switch (vars)
   }
 </xform>
 
-<xform set_extra_info pars=(variable, info, tag) insert_new_var=FALSE tab=GLOBAL.SymTable>
-  scope = get_scope(variable);
-  if(scope == "" && (insert_new_var:TRUE)){
-    tab = car(gtab);
-    if (tab != "")
-       tab[variable]=NULL;
-    scope = get_scope(variable);
-  }
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable>
+  scope = car(get_scope(variable));
   assert(scope != "");
   if(scope[tag] == ""){
     extra = MAP{};

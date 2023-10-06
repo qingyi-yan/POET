@@ -13,7 +13,7 @@
 <xform get_scope pars=(exp) tab=GLOBAL.SymTable/>
 
 <xform get_extra_info pars=(variable, tag) tab=GLOBAL.SymTable/>
-<xform set_extra_info pars=(variable, info, tag) insert_new_var=FALSE tab=GLOBAL.SymTable/>
+<xform set_extra_info pars=(variable, info, tag) tab=GLOBAL.SymTable/>
 
 <xform get_type pars=(exp) tab=GLOBAL.SymTable sub_type="" />
 
