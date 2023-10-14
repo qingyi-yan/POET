@@ -1373,7 +1373,7 @@ if invariant, return 0; if projection, return (loop level, offset); else, return
    }
     if (lb != "" && ub != "") return (lb, ub);
   enddo
-  if (lb != "" || ub != "") return (lb, ub);
+  if (lb != "" && ub != "") return (lb, ub);
   return ""
 </xform>
 
@@ -1399,7 +1399,7 @@ if invariant, return 0; if projection, return (loop level, offset); else, return
            if (cur : CODE.DeclStmt#(c=_)|CODE.ExpStmt#(c=_)) cur = c;
            cur = car(cur);
         
-           Assign#(_,rhs)|TypeInfo#(_,_,CODE.VarInit#rhs) = cur;
+           Assign#(_,rhs)|TypeInfo#(_,_,(rhs="")|CODE.VarInit#rhs) = cur;
            if (Lookup(rhs, repeat)) {
               res1 = CODE.Repeat#(rhs);
            } else {
