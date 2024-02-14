@@ -66,9 +66,10 @@ END FUNCTION
 <xform RecognizePatterns pars=(input)/>
 
 <***************************************************************>
-<*location = refers to the position of the entrypoint*>
+<*entry = reference to the entrypoint for the graph*>
+<*positions = lists positions in the graph not currently mapped to any specific location*>
 <*repeats = refers to data repeated within*>
-<code Graph pars=(nodes, edges) location="" repeats=""/>
+<code Graph pars=(nodes, edges) entry=NULL positions=NULL repeats=NULL/>
 <***************************************************************>
 <*create a new unknown node, returns the name and declaration of the new node*>
 <xform new_unknown_node pars=(nodes,exp) output=(_name_, _decl_) />
