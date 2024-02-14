@@ -66,7 +66,9 @@ END FUNCTION
 <xform RecognizePatterns pars=(input)/>
 
 <***************************************************************>
-<code Graph pars=(nodes, edges)/>
+<*location = refers to the position of the entrypoint*>
+<*repeats = refers to data repeated within*>
+<code Graph pars=(nodes, edges) location="" repeats=""/>
 <***************************************************************>
 <*create a new unknown node, returns the name and declaration of the new node*>
 <xform new_unknown_node pars=(nodes,exp) output=(_name_, _decl_) />
@@ -85,4 +87,3 @@ END FUNCTION
 
 <* return whether exp is linked by an unknown node in edges *>
 <xform is_linked_by_unknown pars=(exp, graphs) /> 
-
