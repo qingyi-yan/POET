@@ -555,7 +555,7 @@ switch (vars)
            }
         }
         else { (NULL, NULL, found_stmt, stop2) }
-  case CODE.FunctionCall#(_,e)|(e=CODE.Bop|CODE.Uop)|CODE.VarInit#e:
+  case CODE.FunctionCall#(_,e)|(e=CODE.Bop|CODE.Uop|CODE.ArrayAccess)|CODE.VarInit#e:
         if (dir == "def") { (NULL, NULL, 0, 0) }
         else if (Lookup(var, e))
           { (found_stmt)? (NULL,input,0,0) : (input, NULL,0,0) }
