@@ -648,22 +648,15 @@ switch (vars)
  }
 </xform>
 
-<*create a new unknown node, returns the name and declaration of the new node*>
+<*create a new unknown node, returns the index of the newly created node and an updated list of nodes*>
 <xform new_unknown_node pars=(nodes, exp) output=(_name_, _new_nodes) >
- switch (exp) {
- case "":
-    foreach r=TypeInfo#("Unknown",n=_,init=_) \in nodes do
-       if (! (init : NewAlloc)) return (n,nodes);
-    enddo
- case CODE.NewAlloc: ""
- }
- index = 0;
- foreach TypeInfo#("Unknown",i=_,_) \in nodes do
-      if (i > index) index = i;
- enddo
- index=index+1;
- r = TypeInfo#("Unknown",index,exp);
- return (index,  r::nodes);
+  index = 0;
+  foreach TypeInfo#(_,i=_,_) \in nodes do
+    if (i > index) index = i;
+  enddo
+  index=index+1;
+  r = TypeInfo#("Unknown",index,exp);
+  return (index, r::nodes);
 </xform>
 
 <xform gen_ptr_node_help pars=(exp, nodes, edges) >
