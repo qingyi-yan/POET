@@ -68,7 +68,7 @@ END FUNCTION
 <***************************************************************>
 <code Graph pars=(nodes, edges)/>
 <***************************************************************>
-<*create a new unknown node, returns the name and declaration of the new node*>
+<*create a new unknown node, returns the index of the newly created node and an updated list of nodes*>
 <xform new_unknown_node pars=(nodes,exp) output=(_name_, _decl_) />
 
 <* generate a new node representing exp in the given graphs*>

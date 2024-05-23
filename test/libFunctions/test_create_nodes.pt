@@ -1,0 +1,18 @@
+include analysis.pi
+
+<eval 
+
+<*
+  Verify unknown nodes are not reused, i.e., each call to new_unknown_node()
+  should create a new unknown node
+*>
+nodes = NULL;
+num_calls = 10;
+
+for(p = num_calls; p != 0; p = p-1){
+  (_,nodes) = XFORM.new_unknown_node(nodes, "");
+}
+
+assert(LEN(nodes) : num_calls);
+
+/>
