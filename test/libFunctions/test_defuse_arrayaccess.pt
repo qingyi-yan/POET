@@ -1,0 +1,48 @@
+include analysis.pi
+
+<************************************************************
+Define input command line parameters
+*************************************************************>
+<parameter inputFile default="" message="input file name" />
+<************************************************************
+Parse inputFile & headerFile
+*************************************************************>
+<input from=inputFile syntax="Cfront.code" to=inputCode/>
+
+<eval
+<**** get the function input to test - pop() ****>
+input_function = NULL;
+foreach cur_func = CODE.FunctionDecl \in inputCode do
+  input_function = cur_func;
+	break;
+enddo;
+
+<************************************************************
+TEST 1 - collect_variable_uses(var, stmt, input)
+Input = var = state->depth - variable to find uses
+        stmt = state->depth--; - statement where variable state->depth is defined
+        input = pop();  - function containing stmt
+Output = List of some statements using state->depth after stmt.
+        (
+          state->vtype = state->stack[state->depth];
+        )
+*************************************************************>
+result1 = XFORM.collect_variable_uses(PtrAccess#("state","depth"), ExpStmt#(VarRef#(PtrAccess#("state","depth"),"--")), input_function);
+
+expected_output1 = ExpStmt#(
+      Assign#(PtrAccess#("state","vtype"),
+      ArrayAccess#(PtrAccess#("state","stack"),PtrAccess#("state","depth"))));
+
+assert(expected_output1 : result1);
+
+<************************************************************
+TEST 2 - collect_variable_uses(var, stmt, input)
+Input = var = state->vtype - variable to find uses
+        stmt = state->depth--; - statement where variable state->vtype is defined
+        input = pop();  - function containing stmt
+Output = NULL
+*************************************************************>
+result2 = XFORM.collect_variable_uses(PtrAccess#("state","vtype"), ExpStmt#(VarRef#(PtrAccess#("state","depth"),"--")), input_function);
+
+assert(result2 : NULL);
+/>
