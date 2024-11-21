@@ -4,10 +4,10 @@ include SMT.code
 <eval 
   queue_pop_spec = CODE.OpSpec#( 
                 CODE.GraphSpec#(("p0" "p1" "pn"), NextTo#("p0", "p1"), ReachableTo#("p1", "pn"), (Alias#("begin","p0") Alias#("back", "pn"))), 
-                CODE.GraphSpec#(NULL, NULL, ReachableTo#("p1", "pn"), (Alias#("begin", "p1") Alias#("back","pn"))));
+                CODE.GraphSpec#(("p1" "pn"), NULL, ReachableTo#("p1", "pn"), (Alias#("begin", "p1") Alias#("back","pn"))));
   queue_push_spec = CODE.OpSpec#(
                 CODE.GraphSpec#(("p0" "pn"), NULL, ReachableTo#("p0", "pn"), (Alias#("begin","p0") Alias#("back", "pn"))), 
-                CODE.GraphSpec#(("pm"), NextTo#("pn", "pm"), ReachableTo#("p0", "pn"), (Alias#("begin", "p0") Alias#("back","pm"))));
+                CODE.GraphSpec#(("p0" "pn" "pm"), NextTo#("pn", "pm"), ReachableTo#("p0", "pn"), (Alias#("begin", "p0") Alias#("back","pm"))));
   push_impl_spec1 = CODE.OpSpec#(
                 GraphSpec#(("p0"), NULL, NULL, (Alias#("head", "null") Alias#("end", "null"))),
                   GraphSpec#(("p_new"), NULL, NULL, (Alias#("head", "p_new") Alias#("end","p_new"))));
