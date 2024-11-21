@@ -2,8 +2,9 @@ include utils.incl
 
 <xform GenDataMatchSpecification pars=(anchors, org_spec, impl_spec)>
   CODE.OpSpec#(org_in, org_out) = org_spec;
-  GraphSpec#(new_pos, org_nextto_out, org_reach_out, org_alias_out) = org_out;
+  GraphSpec#(org_nodes_out, org_nextto_out, org_reach_out, org_alias_out) = org_out;
   GraphSpec#(org_nodes_in, org_nextto_in, org_reach_in, org_alias_in) = org_in;
+  new_pos = XFORM.SubstractList(org_nodes_in, org_nodes_out);
   org_nodes = AppendList[erase_replicate=1](org_nodes_in, new_pos);
 
   pos_variables = NULL;

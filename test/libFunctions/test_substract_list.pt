@@ -1,0 +1,32 @@
+include utils.incl
+
+<eval 
+  list1 = ("A" "B" "C");
+  list2 = ("B" "C" "D");
+  res = XFORM.SubstractList(list1, list2);
+  assert(XFORM.Lookup("A", res));
+
+  list1 = ("A" "B" "C");
+  list2 = ("D" "E" "F");
+  res = XFORM.SubstractList(list1, list2);
+  assert(XFORM.Lookup("A", res));
+  assert(XFORM.Lookup("B", res));
+  assert(XFORM.Lookup("C", res));
+
+  list1 = ("A" "B" "C");
+  list2 = ("A" "B" "C");
+  res = XFORM.SubstractList(list1, list2);
+  assert(res : NULL);
+
+  list1 = ("A" "B" "C");
+  list2 = (NULL);
+  res = XFORM.SubstractList(list1, list2);
+  assert(XFORM.Lookup("A", res));
+  assert(XFORM.Lookup("B", res));
+  assert(XFORM.Lookup("C", res));
+
+  list1 = (NULL);
+  list2 = ("A" "B" "C");
+  res = XFORM.SubstractList(list1, list2);
+  assert(res : NULL);
+/>
