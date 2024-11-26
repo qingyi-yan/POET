@@ -878,13 +878,21 @@ switch (vars)
         new_graphs = delete_local_variable(t, new_graphs);
      enddo
      return append_graphs(graphs, new_graphs);
-  case (Nest#(If, b1) rest):
+  case (Nest#(If#(c), b1) rest):
      g1 = analyze_connectivity(graphs,b1);
-     res = g1;
+     new_g1 = NULL;
+     foreach g=CODE.Graph#(nodes=_,edges=_) \in g1 do
+       CODE.Graph#(nodes=_,edges=_) = g;
+       edges = XFORM.AppendList(edges, XFORM.TranslateControlToEdge(c));
+       new_g1 = XFORM.append_graphs(new_g1, CODE.Graph#(nodes, edges));
+     enddo;
+     
+     res = new_g1;
      for (""; rest != NULL && car(rest) : Nest#(CODE.Else,b2=_); rest = cdr(rest) ) {
         g2 = analyze_connectivity(graphs,b2);
         res = append_graphs(res, g2);
      }
+
      return analyze_connectivity(res, rest);
   case Nest#(CODE.Loop|CODE.Loop_r|CODE.Else, body): return analyze_connectivity(graphs,body);
   case Nest#(While#(c)|If#(c), body):
@@ -1415,4 +1423,15 @@ if invariant, return 0; if projection, return (loop level, offset); else, return
   case CODE.VarInit#e : symbolic_evaluation(e,loc,input)
   
  }
+</xform>
+
+<* Translates control statement into edge *>
+<xform TranslateControlToEdge pars=(ctrl)>
+  switch (ctrl){
+    case CODE.Bop#("==",opd1=_,opd2=_) : 
+      return ("ALIAS", opd1, opd2);
+    case CODE.Bop#("!=",opd1=_,opd2=_) :
+      return("NOT_ALIAS", opd1, opd2);
+    default : print("Add case " ctrl);
+  }
 </xform>
