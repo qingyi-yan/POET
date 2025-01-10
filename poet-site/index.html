@@ -1,0 +1,175 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<title>Parameterized Optimizations for Empirical Tuning</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<div id="main">
+						<div class="inner">
+
+							<!-- Header -->
+								<header id="header">
+									<a href="index.html" class="logo"><strong>POET (Parameterized Optimizations for Empirical Tuning)</strong></a>
+								</header>
+
+							<!-- Banner -->
+								<section id="banner">
+									<div class="content">
+										<header>
+											<h1>Welcome to POET!<br /></h1>
+											<p>An open source interpreted program transformation language</p>
+										</header>
+										<p>POET is an interpreted program transformation language designed to conveniently apply advanced compiler optimizations to applications written in arbitrary programming language and to easily build ad-hoc translators between these languages. The language design specifically focuses on enabling compiler technologies to be used as a toolset to support the following software development needs:
+										<ul>
+											<li>Extensive parameterization of compiler optimizations for automatic performance tuning.</li>
+											<li>Programmable compiler optimizations and interactive tuning of application efficiency.</li>
+											<li>Ad-hoc source-to-source translation and domain-specific code generation.</li>
+										</ul>
+										</p>
+
+										<p>POET is designed to make compiler optimizations readily available to developers for programmable control and to significantly reduce the development cost of supporting ad-hoc language translation and code generation of domain-specific languages.</p>
+
+										<ul class="actions">
+											<li><a href="getting-started.html" class="button big">Get started</a></li>
+											<li><a href="#about" class="button big">Continue reading</a></li>
+										</ul>
+									</div>
+								</section>
+
+							<!-- Section -->
+								<section id="about">
+									<header class="major">
+										<h2>About</h2>
+									</header>
+									<p>POET stands for Parameterized Optimizations for Empirical Tuning, or Programmable Optimizations for Empirical Tuning. Consider it a scripting language for building small-scale optimizing compilers.</p>
+
+									<p>POET has been used to support a large number of compiler optimizations, including loop interchange, parallelization, blocking, fusion/fission, strength reduction, scalar replacement, SSE vectorization, among others, and to fully support the code generation of several domain-specific languages, including automatic tester/timer generation and automatically translating a finite-state-machine-based behavior modeling language to C++/Java code.</p>
+
+									<p>The POET language was designed and implemented by Qing Yi at the University of Texas at San Antonio in Mar, 2007 before she moved to Unversity of Colorado at Colorado Springs in 2012.</p>
+
+									<p>POET is an interpreted language designed for applying advanced program transformations to code in arbitrary languages as well as quickly building ad-hoc source-to-source translators between these languages. It has been used to support the transformation needs of both popular programming languages such as C/C++, Java, FORTRAN, and several domain-specific languages that we have designed on the fly for various purposes. Figure shows the structure of a typical POET transformation engine, which is essentially a POET language interpreter coupled with a set of transformation libraries and language syntax descriptions. The transformation libraries include predefined POET routines which can be invoked to apply a large number of compiler optimizations such as loop interchange, parallelization, fusion, blocking, unrolling, array copying, scalar replacement, among others. The language syntax specifications, on the other hand, are used by the POET interpreter to dynamically parse input code in a variety of different programming languages. The developer needs to write a POET script to specify which input files to parse using which syntax descriptions, what transformations to apply to the input code after parsing, and which syntax to use to unparse the transformation result. The POET script can be extensively parameterized and reconfigured via command-line options when invoking the transformation engine.</p>
+
+									<h2>Key Features</h2>
+
+									<p>A key design objective of POET is to dynamically support the parsing/unparsing of arbitrary programming languages and to provide full programming support for defining arbitrary transformations to the input code. The language targets both source-to-source compiler optimizations (e.g., automatic parallelization and loop transformations) and domain-specific program analysis and code generation, via the following key language features. </p>
+
+									<p>POET borrows concepts and syntax from several languages including C, Lisp, and HTML. The following is an example C-to-C language translator from the POET tutorial.</p>
+
+									<pre><code>&ltparameter inputFile type=STRING default="" message="input file name" /&gt
+&ltparameter outputFile type=STRING default="" message="output file name" /&gt
+
+&ltinput syntax="Cfront.code" from=inputFile to=inputCode /&gt
+&ltoutput syntax="Cfront.code" from=inputFile to=outputFile /&gt </code></pre>
+
+									<div class="features">
+										<article>
+											<span class="icon solid fa-book"></span>
+											<div class="content">
+												<h3>Standard Libraries</h3>
+												<p>POET includes many useful libraries, such as frontends to C/C++/Fortran and AST transformations for a large number of well-known loop optimizations (e.g., loop blocking and parallelization). It has been used to support the transformation needs of both popular programming languages such as C/C++, Java, FORTRAN, and several domain-specific languages that we have designed on the fly for various purposes. </p>
+											</div>
+										</article>
+										<article>
+											<span class="icon solid fa-paper-plane"></span>
+											<div class="content">
+												<h3>Dynamically parse/unparse arbitrary programming languages</h3>
+												<p>POET is language neutral and uses syntax specifications defined in external files to dynamically process different input/output languages. Transforming a different programming language simply requires using an alternative language syntax specification file. </p>
+											</div>
+										</article>
+										<article>
+											<span class="icon solid fa-sync"></span>
+											<div class="content">
+												<h3>Conveniently express arbitrary program transformations</h3>
+												<p>In POET, program transformations are defined as xform routines which take a collection of input data and return the transformed code as result. These routines can use arbitrary control-flow such as conditionals, loops, and recursive function calls, can build compound data structures such as lists, tuples, hash tables, and code templates, and can invoke many built-in operations (e.g., pattern matching, AST replacement and replication) to operate on the input code. </p>
+											</div>
+										</article>
+										<article>
+											<span class="icon solid fa-puzzle-piece"></span>
+											<div class="content">
+												<h3>Parameterize transformation scripts</h3>
+												<p>Each POET script can define a large collection of command-line parameters to dynamically modify its behavior. A single POET script therefore can be used to dynamically produce a wide variety of different output, effectively allowing different software implementations be manufactured on demand based on different feature requirements.</p>
+											</div>
+										</article>
+										<article>
+											<span class="icon solid fa-filter"></span>
+											<div class="content">
+												<h3>Compose and trace transformations</h3>
+												<p>POET provides <em>trace handles</em>, which can be used to automatically keep track of various code fragments as the input code goes through different transformations. The tracing capability makes the composition of different transformations extremely flexible, where transformation orders can be easily adjusted or even dynamically tuned.</p>
+											</div>
+										</article>
+										<article>
+											<span class="icon solid fa-user"></span>
+											<div class="content">
+												<h3>Flexible and easy to use</h3>
+												<p>A POET program can include an arbitrary number of different files, each of which consists of a sequence of global declarations and commands. The declarations serve to specify attributes of special-purpose global names. The static and local variables do not need to be declared before used, and their scopes are limited within the files or the code template/xform routines that contain them. All variables can dynamically hold arbitrary types of values. An extensive collection of built-in operations are provided to easily construct, analyze, and modify internal representations of different programming languages to satisfy the development needs of building customized program transformations and domain-specific code generators.</p>
+											</div>
+										</article>
+									</div>
+								</section>
+						</div>
+					</div>
+
+				<!-- Sidebar -->
+					<div id="sidebar">
+						<div class="inner">
+
+							<!-- Menu -->
+								<nav id="menu">
+									<header class="major">
+										<a href="index.html"><img src="images/POET_icon.png" alt="POET logo"/></a>
+									</header>
+									<ul>
+										<li><a href="getting-started.html">Get started</a></li>
+										<li><a href="tutorial.html">Documentation</a></li>
+										<li><a href="downloads.html">Downloads</a></li>
+										<li><a href="publications.html">Publications</a></li>
+										<li><a href="people.html">People</a></li>
+									</ul>
+								</nav>
+
+							<!-- Section -->
+								<section>
+									<header class="major">
+										<h2>Get in touch</h2>
+									</header>
+									<p>We would greatly appreciate it if you could share how you’re using POET or any suggestions you have for improving the project.</p>
+									<ul class="contact">
+										<li class="icon solid fa-envelope"><a href="mailto:qyi@uccs.edu">qyi@uccs.edu</a></li>
+									</ul>
+								</section>
+
+								<section>
+									<header class="major">
+										<h2>Acknowledgment</h2>
+									</header>
+									<p>This research has been funded by the National Science Foundation under Grant No. 1261778 (0833203 before 9/2012) and No. 1261811 (0747357 before 9/2012) and by the Department of Energy under Grant No. DE-SC001770.</p>
+								</section>
+
+							<!-- Footer -->
+								<footer id="footer">
+									<p class="copyright">&copy; 2025 POET: Parameterized Optimizations for Empirical Tuning</p>
+									<p class="copyright">Design adapted from <a href="https://html5up.net">HTML5 UP</a></p>
+								</footer>
+
+						</div>
+					</div>
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
