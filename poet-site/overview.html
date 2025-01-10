@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>Parameterized Optimizations for Empirical Tuning</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<div id="main">
+						<div class="inner">
+
+							<!-- Header -->
+								<header id="header">
+									<a href="index.html" class="logo"><strong>POET (Parameterized Optimizations for Empirical Tuning)</strong></a>
+									<!-- <ul class="icons">
+										<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+										<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+										<li><a href="#" class="icon brands fa-snapchat-ghost"><span class="label">Snapchat</span></a></li>
+										<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+										<li><a href="#" class="icon brands fa-medium-m"><span class="label">Medium</span></a></li>
+									</ul> -->
+								</header>
+
+							<!-- Content -->
+              <section>
+                <header class="main">
+                  <h1>Overview of the POET Language</h1>
+                </header>
+
+                <ul>
+                  <li><b>The Type System</b>
+                    POET supports two types of atomic values: integers and strings. Additionally, the following compound types are supported within POET:<br>
+                  <ul>
+                    <li><i>Lists.</i>A POET list is a singly linked list of arbitrary elements and can be constructed
+        by simply enumerating all the elements. For example, (a &quot;&lt;=&quot; b) produces a list
+        with three elements, a, &quot;&lt;=&quot;, and b.</li>
+                     <li>A POET <i>tuple</i> is a finite number of statically-composed elements separated
+        by commas. For example, (&quot;i&quot;, 0, &quot;m&quot;, 1) constructs a tuple with four elements, &quot;i&quot;, 0, &quot;m&quot;, and 1.</li>
+                     <li><i>Associative Maps.</i> POET maps are used to associate pairs of arbitrary values and
+        are constructed by invoking the MAP operator, e.g.,
+        MAP{3=&gt;&quot;abc&quot;} builds a map that associates 3 with &quot;abc&quot;.</li>
+                    <li><i>Code Templates.</i> Each POET code template is a distinct user-defined data type and
+        is constructed using the # operator. They
+        are used to build pointer-based data structures such as arbitrarily shaped trees and
+        DAGs (directed acyclic graphs) and are used to construct internal representations of
+        the input code that POET scripts operate on.</li>
+                    <li><i>Xform Handles.</i> Each POET xform handle is a global function pointer and is constructed
+        by following the name of a POET xform routine with an optional list of
+        values to pre-configure invocations of the routine. Each
+        xform handle can be invoked by following it with a tuple of input parameters and will
+        return the result of evaluating the corresponding routine using the given parameters.</li>
+                  </ul>
+                </li><br><br>
+                <li><b>Components of A POET Script</b>  POET supports: <br>
+                    <ul>
+                    <li>A POET <i>comment</i> can appear anywhere and is either enclosed
+        inside a pair of &lt;* and *&gt; or from &lt;&lt;* until the end of the current line.</li>
+                    <li>
+                       Three categories of global variables, macros, command-line parameters, and trace handles.<br>
+                     <i>Macro</i> can be used to reconfigure behavior of the POET interpreter.<br>
+                     <i>Command-line parameters</i> whose values can be redefined via command-line options and are used to extensively parameterize POET
+        scripts.<br>			
+                     <i>Trace handle</i> can act as an integral component of a compound data structure to trace transformations to the data.<br>
+                    </li>
+                    <li>Three types of executable commands, input, eval, and output <br>
+                    <i>Input command</i> is used to parse
+        a file named by variable  say 'inputFile' using syntax descriptions contained in a file named by say
+        'inputLang'. The parsing result is then converted into an internal representation and stored
+        to variable 'inputCode'.<br>
+        The <i>eval command</i> specifies a sequence of expressions and
+        statements to evaluate.<br> The <i>Output Command</i>  is used to write the transformed
+        internal representation (i.e., inputCode) to an external file named by 'outputFile'.</li>
+                  </ul>
+                </li><br><br>
+                <li><b>Variables And Assignments</b><br>
+                    <ul>
+                    <li><i>Local variables</i>, whose lifetime and scopes span through the bodies of single code templates
+        or xform routines.</li>
+                    <li><i>Static variables</i>, whose lifetime and scopes are restricted within individual POET files
+        to avoid naming conflicts from other files.</li>
+                    <li><i>Global variables</i>, whose lifetime and scopes span throughout the entire execution of a
+        POET transformation engine and across multiple files. There are three categories of
+        global variables: macros, command-line parameters, and trace handles, each of which
+        serves a special purpose and must be explicitly declared in the global scope before
+        used.</li>
+                  </ul>
+                </li>				
+                </ul>
+
+              </section>
+
+						</div>
+					</div>
+
+				<!-- Sidebar -->
+					<div id="sidebar">
+						<div class="inner">
+
+							<!-- Menu -->
+								<nav id="menu">
+									<header class="major">
+										<h2>Menu</h2>
+									</header>
+									<ul>
+										<li><a href="index.html">Homepage</a></li>
+										<li><a href="tutorial.html">Tutorial</a></li>
+										<li><a href="downloads.html">Downloads</a></li>
+										<li><a href="publications.html">Publications</a></li>
+										<li><a href="people.html">People</a></li>
+									</ul>
+								</nav>
+
+							<!-- Section -->
+								<section>
+									<header class="major">
+										<h2>Get in touch</h2>
+									</header>
+									<p>Sed varius enim lorem ullamcorper dolore aliquam aenean ornare velit lacus, ac varius enim lorem ullamcorper dolore. Proin sed aliquam facilisis ante interdum. Sed nulla amet lorem feugiat tempus aliquam.</p>
+									<ul class="contact">
+										<li class="icon solid fa-envelope"><a href="mailto:qyi@uccs.edu">qyi@uccs.edu</a></li>
+									</ul>
+								</section>
+
+							<!-- Footer -->
+              <footer id="footer">
+                <p class="copyright">&copy; POET : Parameterized Optimizations for Empirical Tuning</p>
+                <p class="copyright">This research has been funded by the National Science Foundation under Grant No. 1261778 (0833203 before 9/2012) and No. 1261811 (0747357 before 9/2012) and by the Department of Energy under Grant No. DE-SC001770.</p>
+                <p class="copyright">Website adapted from <a href="https://html5up.net">HTML5 UP</a></p>
+              </footer>
+
+						</div>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
