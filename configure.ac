@@ -23,6 +23,7 @@ AC_CONFIG_FILES([examples/Makefile])
 AC_CONFIG_FILES([test/parseC/Makefile])
 AC_CONFIG_FILES([test/parsePy/Makefile])
 AC_CONFIG_FILES([test/libFunctions/Makefile])
+AC_CONFIG_FILES([test/SMT/Makefile])
 AC_CONFIG_FILES([tools/Makefile])
 #AC_CONFIG_FILES([tools/highlevel_interface/Makefile])
 #AC_CONFIG_FILES([tools/test_files/Makefile])
@@ -38,7 +39,7 @@ test -n "$rose_srcdir" || rose_srcdir="";
 test -n "$atlas_exe" || atlas_exe=xdmmtst;
 test -e "$atlas_obj" && atlas_inc="${atlas_obj}/Make.inc";
 
-testdirs="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC tune libFunctions"; 
+testdirs="commands gemmATLAS gemvATLAS gerATLAS autoScripts timerGeneration parseF parseC SMT tune libFunctions"; 
 #tooldirs="highlevel_interface test_files auto_tuning matrixOpt stencil-codegen splash2Prof";
 tooldirs="";
 

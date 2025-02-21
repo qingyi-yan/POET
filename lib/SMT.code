@@ -1,0 +1,177 @@
+<code SMTSpecification pars=(num_of_nodes : INT, 
+                             num_of_graphs: INT, 
+                             new_pos : LIST(ID, ","),
+                             pos_variables : LIST(CODE.PositionVariableDefinition,","),
+                             anchors : LIST(CODE.Anchor, ","), 
+                             nextto_rels : LIST(CODE.NextToDefinition,"\n"),
+                             reach_rels : LIST(CODE.ReachDefinition,"\n"),
+                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition, "\n"))>
+
+(set-logic ALL)
+(set-option :produce-models true)
+(set-option :produce-unsat-cores true)
+
+; Memory cells
+(define-fun memory_cell ((l Int)) Bool
+  (and (<= 0 l) (<= l @num_of_nodes@))
+)
+
+; Position and implementation variables
+@((pos_variables == NULL)? "" : pos_variables)@
+
+; definition of anchor/member variables
+@CODE.AnchorVariableDefinition#(anchors, num_of_graphs)@
+
+; nextto relations
+@((nextto_rels == NULL)? "" : nextto_rels)@
+
+; reachable relations
+@((reach_rels == NULL)? "" : reach_rels)@
+
+; aliases
+@((aliases == NULL)? "" : aliases)@
+
+; binding of member variables
+@CODE.AnchorVariableBinding#(anchors, num_of_graphs)@
+
+(check-sat)
+(get-model)
+(get-unsat-core)
+</code>
+
+<code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","))>
+@(res = NULL; unique = NULL;
+for (p = names; p != NULL; p = cdr(p)) {
+ res = CODE.PositionVariable#(car(p), tag) :: res;
+ if (car(SPLIT(5,(car p))) == "p_new") {
+   for (p1 = names; p1 != NULL; p1 = cdr(p1)) {
+      if (car(p) != car(p1) && !Lookup(car(p1), new_pos)) {
+        unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
+      }
+   }
+ }  
+}res)@
+@unique@
+</code>
+
+<code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
+(assert (! (not (= @v1@_@tag@ @v2@_@tag@)) :named p_unique_@v1@_@v2@_@tag@))
+</code>
+
+<code PositionVariable pars=(name : ID, tag : ID)>
+(declare-const @name@_@tag@ Int)
+(assert (memory_cell @name@_@tag@))
+</code>
+
+<code AnchorVariableBinding pars=(anchors : LIST(CODE.Anchors,","), n : INT)>
+@(res = NULL;
+for (p = anchors; p != NULL; p = cdr(p)) {
+ anchor = car p;
+ Anchor#(v1,v2) = anchor;
+ for (i = 0; i < n; i = i + 1) {
+   Anchor#(v1,v2) = anchor;
+   res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
+   res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
+ }
+} res)@
+</code>
+
+<code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchors,","), n : INT)>
+@(res = NULL;
+for (p = anchors; p != NULL; p = cdr(p)) {
+ anchor = car p;
+ Anchor#(v1,v2) = anchor;
+ for (i = 0; i < n; i = i + 1) {
+   res = CODE.AnchorVariable#(v2, i) :: res;  
+   res = CODE.AnchorVariable#(v1, i) :: res;  
+ }
+} res)@
+</code>
+
+<code AnchorVariable pars=(name : ID, index : INT)>
+(declare-const @name@_in@index@ Int)
+(assert (memory_cell @name@_in@index@))
+(declare-const @name@_out@index@ Int)
+(assert (memory_cell @name@_out@index@))
+</code>
+
+<code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
+(assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+</code>
+
+<code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
+@(res1 = res2 = NULL;
+ foreach n = CODE.NextTo \in rels do
+   res1 = (CODE.NextToPossible#(tag, n)) :: res1;
+   res2 = (CODE.NextToAssert#(tag,n)) :: res2;
+ enddo
+)@(define-fun nextto_@tag@ ((l Int) (r Int)) Bool
+  @((res1 : NULL|"")? "false"
+   : (cdr(res1) : ""|NULL)? res1
+   : ("(or " res1 ")"))@)
+@res2@
+</code>
+
+<code NextToPossible pars=(tag, r : CODE.NextTo) >
+(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (< l r))
+</code>
+
+<code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
+(assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
+</code>
+
+<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo,"\n"))>
+@(res1 = res2 = NULL;
+foreach n = CODE.ReachableTo \in rels do
+  res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
+  res2 = (CODE.ReachableToAssert#(tag,n)) :: res2;
+enddo
+)@(define-fun-rec reachable_@tag@ ((l Int) (r Int)) Bool
+  (or @res1@
+    (= l r)
+    (nextto_@tag@ l r)
+    (exists ((m Int)) (and (nextto_@tag@ l m) (reachable_@tag@ m r)))
+    (exists ((m Int)) (and (reachable_@tag@ l m) (nextto_@tag@ m r)))))
+@res2@
+</code>
+
+<code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
+(and (= l @r[ReachableTo.n1]@_@tag@)  (= r @r[ReachableTo.n2]@_@tag@) (<= l r))
+</code>
+
+<code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
+(assert (!(reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@) :named reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
+</code>
+
+<code AliasDefinition pars=(tag : ID, rels : LIST(CODE.Alias|CODE.NotAlias, "\n"))>
+@(res = NULL;
+foreach n = CODE.Alias \in rels do
+  res = (CODE.AliasAssert#(tag,n)) :: res;
+enddo
+foreach n = CODE.NotAlias \in rels do
+  res = (CODE.NotAliasAssert#(tag,n)) :: res;
+enddo
+res)@
+</code>
+
+<code AliasAssert pars=(tag:ID, r : CODE.Alias) p=NULL>
+@CODE.Alias#(v1,v2) = r; 
+if (v1 == "null")  v1 = 0;
+else v1 = v1 ^ "_" ^ tag;
+if (v2 == "null")  v2 = 0;
+else v2 = v2 ^ "_" ^ tag;
+@(assert (! (= @v1@ @v2@) :named alias_@v1@_@v2@))
+</code>
+
+<code NotAliasAssert pars=(tag:ID, r : CODE.Alias) p=NULL>
+@CODE.NotAlias#(v1,v2) = r; 
+if (v1 == "null")  v1 = 0;
+else v1 = v1 ^ "_" ^ tag;
+if (v2 == "null")  v2 = 0;
+else v2 = v2 ^ "_" ^ tag;
+@(assert (! (not (= @v1@ @v2@)) :named alias_@v1@_@v2@))
+</code>
+
+<code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>
+(assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
+</code>

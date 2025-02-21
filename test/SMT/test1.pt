@@ -1,0 +1,32 @@
+include DataStructureMatch.pi
+include SMT.code
+
+<eval 
+  queue_pop_spec = CODE.OpSpec#( 
+                CODE.GraphSpec#(("p0" "p1" "pn"), NextTo#("p0", "p1"), ReachableTo#("p1", "pn"), (Alias#("begin","p0") Alias#("back", "pn"))), 
+                CODE.GraphSpec#(NULL, NULL, ReachableTo#("p1", "pn"), (Alias#("begin", "p1") Alias#("back","pn"))));
+  queue_push_spec = CODE.OpSpec#(
+                CODE.GraphSpec#(("p0" "pn"), NULL, ReachableTo#("p0", "pn"), (Alias#("begin","p0") Alias#("back", "pn"))), 
+                CODE.GraphSpec#(("pm"), NextTo#("pn", "pm"), ReachableTo#("p0", "pn"), (Alias#("begin", "p0") Alias#("back","pm"))));
+  push_impl_spec1 = CODE.OpSpec#(
+                GraphSpec#(("p0"), NULL, NULL, (Alias#("head", "null") Alias#("end", "null"))),
+                  GraphSpec#(("p_new"), NULL, NULL, (Alias#("head", "p_new") Alias#("end","p_new"))));
+  push_impl_spec2 = CODE.OpSpec#(
+                    GraphSpec#(("p0" "p_unknown"), NULL, NULL, (NotAlias#("head","null") Alias#("head", "p0") Alias#("end", "p_unknown"))),
+                    GraphSpec#(("p_new"), NextTo#("p_unknown","p_new"), NULL, (Alias#("head", "p0") Alias#("end", "p_new"))));
+  push_impl_spec = push_impl_spec1 :: push_impl_spec2;
+  anchors = (CODE.Anchor#("begin", "head") CODE.Anchor#("back","end")); 
+  queue_push_match1_1 = GenDataMatchSpecification(anchors, queue_pop_spec, push_impl_spec1);
+  queue_push_match2_1 = GenDataMatchSpecification(anchors, queue_push_spec, push_impl_spec1);
+  queue_push_match1_2 = GenDataMatchSpecification(anchors, queue_pop_spec, push_impl_spec2);
+  queue_push_match2_2 = GenDataMatchSpecification(anchors, queue_push_spec, push_impl_spec2);
+  queue_push_match1 = GenDataMatchSpecification(anchors, queue_pop_spec, push_impl_spec);
+  queue_push_match2 = GenDataMatchSpecification(anchors, queue_push_spec, push_impl_spec);
+/>
+
+<output from=queue_push_match1 to="push_spec1.smt"/>
+<output from=queue_push_match2 to="push_spec2.smt"/>
+<output from=queue_push_match1_1 to="push_spec1_1.smt"/>
+<output from=queue_push_match2_2 to="push_spec2_2.smt"/>
+<output from=queue_push_match1_2 to="push_spec1_2.smt"/>
+<output from=queue_push_match2_1 to="push_spec2_1.smt"/>

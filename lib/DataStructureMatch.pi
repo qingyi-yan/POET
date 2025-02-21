@@ -1,0 +1,17 @@
+<code NextTo pars=(n1:ID, n2:ID)/>
+
+<code ReachableTo pars=(n1:ID, n2:ID)/>
+
+<code Alias pars=(v1:ID, v2:ID)/>
+
+<code NotAlias pars=(v1:ID, v2:ID)/>
+
+<code SMTSpecification pars=(num_of_nodes, num_of_graphs, new_pos,
+                             pos_variables, anchors,
+                             nextto_rels, reach_rels, aliases)/>
+
+<code OpSpec pars=(graph_in, graph_out)/>
+
+<code GraphSpec pars=(nodes, nextto, reach, alias)/>
+
+<xform GenDataMatchSpecification pars=(anchors, org_spec, impl_spec)/>
