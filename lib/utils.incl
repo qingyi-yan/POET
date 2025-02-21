@@ -313,6 +313,30 @@ else {
 </xform>
 
 <****** 
+  Enumerate items that are in list1 or list2
+  but not both
+*******>
+<xform SubstractList pars=(list1, list2)>
+  res = NULL;
+  
+  for (p_list = list1; p_list != NULL; p_list = TAIL(p_list)) {
+    cur = HEAD(p_list);
+    if(!(XFORM.Lookup(cur, list2))){
+      res = XFORM.AppendList(cur, res);
+    }
+  }
+
+  for (p_list = list2; p_list != NULL; p_list = TAIL(p_list)) {
+    cur = HEAD(p_list);
+    if(!(XFORM.Lookup(cur, list1))){
+      res = XFORM.AppendList(cur, res);
+    }
+  }
+
+  return res;
+</xform>
+
+<****** 
 *******>
 <xform gen_cartesian_product pars=(op, l1,l2) >
   res=NULL;
