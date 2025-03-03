@@ -33,6 +33,7 @@ AC_CONFIG_FILES([tools/Makefile])
 #AC_CONFIG_FILES([tools/matrixOpt/Makefile])
 #AC_CONFIG_FILES([tools/stencil-codegen/Makefile])
 #AC_CONFIG_FILES([tools/splash2Prof/Makefile])
+AC_CONFIG_FILES([tools/patternDetection/Makefile])
 
 test -n "$atlas_obj" || atlas_obj="";
 test -n "$rose_srcdir" || rose_srcdir="";

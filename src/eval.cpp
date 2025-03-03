@@ -1273,7 +1273,8 @@ POETCode* XformVarInvoke:: eval(bool evalArg)
                  static_cast<POETTuple*>(pars)->size() : 1;
       int argsize = (args->get_enum() == SRC_TUPLE)? 
                  static_cast<POETTuple*>(args)->size() : 1;
-      if (argsize > parsize)  FUNC_MISMATCH(e.get_name()->toString(OUTPUT_NO_DEBUG), args);
+      if (argsize > parsize && parsize != 1)  
+            FUNC_MISMATCH(e.get_name()->toString(OUTPUT_NO_DEBUG), args);
       if (evalArg) { args = eval_AST(args); }
    }
    POETCode *config = get_config();

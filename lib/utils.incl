@@ -125,6 +125,14 @@ Treating a list of IDs as a single name
 @names@ 
 </code>
 
+<**** Find codes that match the given condition (function)***>
+<xform find_match pars=(f, input)>
+ foreach cur=_ \in ERASE(input) s.t. 0 do
+    if (f(cur)) return 1;
+ enddo
+ return 0;
+</xform>
+
 <***** look for pattern in input  ******>
 <xform Lookup pars=(pattern, input) breakup_pattern=0 >
   foreach cur=pattern \in ERASE(input) do  return TRUE; enddo

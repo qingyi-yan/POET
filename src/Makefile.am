@@ -1,5 +1,5 @@
 
-bin_PROGRAMS = pcg
+bin_PROGRAMS = pcg rose_pcg
 pcg_SOURCES=  poet_AST.cpp main.cpp codegen.cpp parse.cpp tokenize.cpp eval.cpp eval_ext.cpp evalOp.cpp driver.cpp timing.cpp poet_yacc.y poet_lex.l 
 
 noinst_LIBRARIES = libpoet.a

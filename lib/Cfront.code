@@ -57,9 +57,9 @@ Parsing Macros
 
 <define C_TYPE_BASE CODE.VoidType
                    |CODE.IntType
+                   |CODE.FloatType
                    |CODE.IntType1
                    |CODE.RegisterType
-                   |CODE.FloatType
                    |CODE.StructType
                    |CODE.UnionType
                    |CODE.EnumType
@@ -67,7 +67,7 @@ Parsing Macros
                    |CODE.VolatileType
                    |CODE.InlineType
                    |CODE.ConstType/>
-<define C_TYPE_ANNOT "restrict"|"const"|"*"|"&"|CODE.ArraySubscript/>
+<define C_TYPE_ANNOT "restrict"|"const"|"int"|"*"|"&"|CODE.ArraySubscript/>
 <define TYPE_REBUILD XFORM.C_RebuildType />
 <define TYPE_BASE C_TYPE_BASE/>  <*QY: allow redefinition of type base*>
 <define TYPE_ANNOT C_TYPE_ANNOT/>  <*QY: allow redefinition of type annot*>
@@ -166,8 +166,8 @@ else { CODE.DeclarationBlock#res })@
 <code RefType pars=(base:CODE.Type) > @base@& </code>
 <code VoidType> void </code>
 <code IntType pars=(name:"char"|"int") > @name@ </code>
-<code IntType1 pars=(content:LIST1("unsigned"|"signed"|"long"|"short"|"char"|"int"," ")) > @content@ </code>
 <code FloatType pars=(name:"float"|"double")> @name@ </code>
+<code IntType1 pars=(content:LIST1("unsigned"|"signed"|"long"|"short"|"char"|"int"|"float"|"double"," ")) > @content@ </code>
 <code FunctionAnnot pars=(params : CODE.ParamDeclParse) 
         parse=( "(" "*" ")" "(" params ")" eval(return FunctionAnnot#params))/>
 
@@ -180,7 +180,8 @@ else { CODE.DeclarationBlock#res })@
 <code EnumTypeValues pars=(content:LIST(CODE.EnumName,",")) > {@content@} </code>
 
 <code EnumName pars=(name : ID, val:CODE.AssignInt|"") > @name val@ </code>
-<code AssignInt pars=(val:INT) > =@val@ </code>
+<code AssignInt pars=(val:INT|CODE.INT_0x) > =@val@ </code>
+
 
 <code EnumTypeName pars=(name:ID) > enum @name@ </code>
 
@@ -211,6 +212,7 @@ struct @name ((body == "")? "" : StructBody#(body))@
 (@t@)@e@
 </code>
 
+<code UnknownAnnotType pars=(base, annot)>  @annot@ @base@ </code>
 
 <xform C_RebuildType pars=(base, annot)>
 switch (annot)
@@ -224,6 +226,7 @@ case "restrict" : CODE.RestrictType#base
 case "register" : RegisterType#base
 case ArraySubscript#e : ArrayAccess#(base, e)
 case FunctionAnnot#e : FunctionType#(e, base)
+case GLOBAL.TYPE_BASE|"int": CODE.UnknownAnnotType(annot, base)
 }
 </xform>
 
@@ -271,17 +274,20 @@ extern @content@
 
 <code VariableParse
   parse=(( (name=(CODE.ScopedName|CODE.FunctionPtr))
-          eval(INHERIT,name) (t=CODE.VariableAnnot)
-          eval(XFORM.insert_typeInfo("",t); return t))
+          eval(INHERIT,name) (t=CODE.VariableAnnot) 
+          eval(XFORM.insert_typeInfo("", t); return t))
+       | ((name=(CODE.Type|CODE.TypeAnnot)) eval(TYPE_REBUILD(INHERIT,name)) (t=VariableParse) eval(return t))
        | ("" eval(return(INHERIT))))
 />
 
 <code FunctionPtr pars=(name:ID|"") lookahead=2 > (*@name@) </code>
 
-<code VariableAnnot
+<code VariableAnnot  
    parse=( ((t=CODE.ArrayDecl) eval(return t))
          | ((t=FunctionParameterDecl) eval(return t))
          | ((t=GLOBAL.VAR_INIT) eval(return t))
+         | ((t=CODE.TypeAnnot) eval(INHERIT::t) (t=VariableAnnot) eval(return t))
+         | ((name=ID) eval(INHERIT,name) (t=VariableAnnot) eval(return t))
          | ("" eval(return (CODE.TypeInfo#(INHERIT[0],INHERIT[1],"")))))
 />
 
@@ -300,10 +306,11 @@ extern @content@
 
 <code FunctionParameterDecl
   pars=(params: LIST(CODE.ParamDeclParse|CODE.ParamExtra,","),
+        params2: LIST(CODE.ParamDeclParse|CODE.ParamExtra,","),
         extra:"const"|LIST(CODE.TypeInfoDeclParse,""),
-        body : CODE.StmtBlock|CODE.EmptyStmt)
-  parse=("(" eval(enter_block("NEW")) params ")" extra body
-        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))=INHERIT; return((params : ID && body : "")? (exit_block(); CODE.TypeInfo#(t, n, params)) : CODE.FunctionDecl[extra=extra;symtab=exit_block()]#(n,params,t,body))))
+        body : CODE.StmtBlock|CODE.EmptyStmt) 
+  parse=("(" eval(enter_block("NEW")) params ")" ( ("(" eval(enter_block("NEW")) params2 ")")|"") extra body
+        eval( (t=_,n=_)|FunctionDecl#(n=_,"",t=_,CODE.EmptyStmt)|FunctionCall#(t=_,Uop#("*",n=_))|(t=n=_)=INHERIT; return((params : ID && body : "")? (exit_block(); CODE.TypeInfo#(t, n, params)) : CODE.FunctionDecl[extra=extra;symtab=exit_block()]#(n,params,t,body))))
   />
 
 <code ParamDeclParse
@@ -311,7 +318,7 @@ extern @content@
 
 <code ParamExtra> ... </code>
 
-<code ArrayDim pars=(dim:EXP|"")> [@dim@] </code>
+<code ArrayDim pars=(dim:LIST(EXP,""))> [@dim@] </code>
 <code ArrayDimList parse=LIST1(ArrayDim,"") />
 <code ArrayInit pars=(elems : CODE.ExpBlock|CODE.String) > = @elems@  </code>
 <code ExpBlock pars=(elems:LIST(ExpBlock|EXP,","))> { @elems@ } </code>
@@ -467,7 +474,7 @@ switch (@var@)
 }
 </code>
 
-<code CaseLabel pars=(label : LIST(INT|ID|FLOAT|CODE.Char,"+"), stmt:LIST(CODE.Stmt,"\n"))
+<code CaseLabel pars=(label : LIST(INT|ID|FLOAT|CODE.Char|("-" INT)|("(" EXP ")"),"+"), stmt:LIST(CODE.Stmt,"\n"))
        switch_var="" 
       parse = ("case" label ":" stmt eval(switch_var=(INHERIT : CaseLabel)? INHERIT[switch_var] : INHERIT; return(CaseLabel[switch_var=switch_var]#(label, stmt)))) >
 case @label@:
@@ -490,8 +497,8 @@ default: @stmt@
 
 <code P_EXP parse=( "(" (e=EXP) ")" eval(return(e))) />
 
-<code SizeOf pars=(arg : CODE.SizeOfArg|ID)> sizeof @arg@ </code>
-<code SizeOfArg pars=(type:Type, annot:TypeAnnot)> (@type annot@) </code>
+<code SizeOf pars=(arg : CODE.SizeOfArg|ID|("*" ID))> sizeof @arg@ </code>
+<code SizeOfArg pars=(type:LIST1(Type|ID|TypeAnnot|EXP, " "))> (@type@) </code>
 
 <code MIN pars=(first,second)> min(@first@,@second@) </code>
 
@@ -560,7 +567,9 @@ default: Bop#(op,lhs,rhs)
 }
 </xform>
 
-<code FunctionCallParameter pars=(args: LIST(EXP|CODE.StmtBlock,",")) 
+<code FunctionCallParameter1 pars=( content : LIST1(EXP|"return"," ")) rebuild=content > @content@ </code>
+
+<code FunctionCallParameter pars=(args: LIST(CODE.FunctionCallParameter1|CODE.StmtBlock,",")) 
         rebuild=((cdr(args)==NULL)? (car args) : args) >
 (@args@)
 </code>
