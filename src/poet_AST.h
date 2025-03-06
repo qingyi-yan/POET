@@ -36,6 +36,7 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <poet_config.h>
 #include <poet_error.h>
 #include <poet_SymbolTable.h>
+#include <poet_ASTinterface.h>
 #include <assert.h>
 
 class POETCode;
@@ -51,8 +52,8 @@ class POETType;
 class POETMap;
 class POETOperator;
 class TupleAccess;
-class POETCode_ext;
 class POETNull;
+class POETCode_ext;
 typedef enum {SRC_ANY, SRC_NULL, SRC_UNKNOWN, 
    SRC_STRING, SRC_ICONST, SRC_LIST, SRC_CVAR, SRC_TUPLE, SRC_MAP,
    SRC_LVAR, SRC_TYPE, SRC_XVAR, SRC_TUPLE_ACCESS, SRC_OP, SRC_ASSIGN, 
@@ -77,7 +78,7 @@ class POETCodeVisitor {
   virtual void visitType(POETType*);
   virtual void visitOperator(POETOperator*) ;
   virtual void visitTupleAccess(TupleAccess*) ;
-  virtual void visitUnknown(POETCode_ext* ) { assert(0); }
+  virtual void visitUnknown(POETCode_ext*) { assert(0); }
   virtual POETCode* apply(POETCode* c);
 };
 
@@ -682,17 +683,56 @@ class WriteOutput : public POETCode, public FileInfo
 /*QY: special AST extension for supporting ASTs from external compilers*/
 class POETCode_ext : public POETCode
 {
-  protected:
-    void* content;
   public:
-    POETCode_ext(void* _content) : content(_content) {assert(content!=0);};
     virtual POETEnum get_enum() const { return SRC_UNKNOWN; }
     virtual std:: string get_className() const { return "POETCode_ext"; }
+    virtual bool equal(const POETCode_ext* that) const = 0;
     virtual void visit(POETCodeVisitor* op)  { op->visitUnknown(this); }
-    virtual std:: string toString(ASTOutputEnum config=DEBUG_OUTPUT_SHORT) ;
-    void* get_content() { return content; }
-  friend class POETAstInterface;
+    virtual POETCode* visit_children(POETCodeVisitor* op, bool backward) = 0;
+    virtual void unparse(std::ostream& out, int start_pos) = 0;
+    virtual POETCode* get_attribute(POETCode* attr) = 0;
+    virtual POETCode* MatchWithPattern(POETCode* pattern) = 0;
+    // returns a pointer of the same content but is managed globally.
+    virtual POETCode* make_permanent() = 0;
 };
+
+template <class AST_NODE_PTR>
+class POETCode_ext_template : public POETCode_ext
+{
+  protected:
+    AST_NODE_PTR content;
+   public:
+    POETCode_ext_template(AST_NODE_PTR _content) 
+        : content(_content) {assert(content!=0);};
+    AST_NODE_PTR get_content() const { return content; }
+
+    virtual POETEnum get_enum() const { return SRC_UNKNOWN; }
+    virtual std:: string get_className() const { return "POETCode_ext"; }
+    virtual bool equal(const POETCode_ext* that) const {
+      auto* that2 = dynamic_cast<const POETCode_ext_template<AST_NODE_PTR>*>(that);
+      assert(that2 != 0);
+      return content == that2->content;
+    }
+    virtual std:: string toString(ASTOutputEnum) {
+       return POETAstInterface<AST_NODE_PTR>::Ast2String(content);
+    }
+    virtual POETCode* visit_children(POETCodeVisitor* op, bool backward) override { 
+       return POETAstInterface<AST_NODE_PTR>::visitAstChildren(content, op, backward);
+    }
+    virtual void unparse(std::ostream& out, int start_pos) override {
+       POETAstInterface<AST_NODE_PTR>::unparse(content, out, start_pos);
+    }
+    virtual POETCode* get_attribute(POETCode* attr) override {
+      return POETAstInterface<AST_NODE_PTR>::getAstAttribute(content, attr);
+    }
+    virtual POETCode* MatchWithPattern(POETCode* pattern) override {
+      return POETAstInterface<AST_NODE_PTR>::MatchAstWithPattern(content,pattern);
+    }
+    // returns a pointer of the same content but is managed globally.
+    virtual POETCode* make_permanent() {
+      return POETAstInterface<AST_NODE_PTR>::Ast2POET(content);
+    }
+ };
 
 
 class POETProgram : public POETCode

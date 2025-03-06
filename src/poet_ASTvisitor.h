@@ -63,7 +63,7 @@ class CollectInfoVisitor : public POETCodeVisitor, public EvaluatePOET
      }
   virtual void visitUnknown(POETCode_ext* ext)
     {
-       POETAstInterface::visitAstChildren(ext->get_content(), next_op, backward); 
+       ext->visit_children(next_op, backward); 
     }
   virtual void visitLocalVar(LocalVar* v) { 
           LvarSymbolTable::Entry e = v->get_entry();
@@ -163,7 +163,7 @@ class ReplInfoVisitor : public EvaluatePOET, public POETCodeVisitor
      }
   virtual void visitUnknown(POETCode_ext* ext)
     { 
-       POETCode* res1 = POETAstInterface::visitAstChildren(ext->get_content(),this, false);
+       POETCode* res1 = ext->visit_children(this, false);
        if (res1 != 0) res = res1;
        else res = ext;
     }

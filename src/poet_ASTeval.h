@@ -95,7 +95,7 @@ inline POETString* AST2String(POETCode* r)
       return ASTFactory::inst()->new_string(r->toString(OUTPUT_NO_DEBUG));
      }
   case SRC_UNKNOWN: {
-     std::string s = POETAstInterface::Ast2String(static_cast<POETCode_ext*>(r)->get_content());
+     std::string s = r->toString();
      if (s != "") { return ASTFactory::inst()->new_string(s); }
      else return 0;
     }
