@@ -1,4 +1,3 @@
-
 /*
    POET : Parameterized Optimizations for Empirical Tuning
    Copyright (c)  2008,  Qing Yi.  All rights reserved.
@@ -26,23 +25,38 @@ OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGEN
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISEDOF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-/********************************************************************
-  Routines for implementing evaluation of POET AST which can be substituted
-with alternive implementations to connect POET with existing compilers.
-These routines include:
-  EvaluatePOET::eval_readInput_nosyntax
-  POETAstInterface::Ast2String
-  POETAstInterface::unparseToString
-  POETAstInterface::MatchAstTypeName
-  POETAstInterface::Ast2POET
-  POETAstInterface::ReplaceChildren
-********************************************************************/
 #include <poet_ASTeval.h>
-#include <poet_ASTinterface.h>
+#include <string>
+#include <list>
 
-POETCode* EvaluatePOET::
-eval_readInput_nosyntax(POETCode* inputFiles, POETCode* codeType, POETCode* inputInline)
-{ 
-  return eval_readInput(inputFiles, codeType,inputInline); 
+extern bool debug_time;
+std::vector<std::string> poet_files, extra_input;
+
+
+int main(int argc, char** argv)
+{
+  int index = initialize(argc, argv);
+  EvaluatePOET::startup();
+  try {
+  std::cerr << "POET files: " ;
+  for ( ; index < argc; ++index) {
+     const char* fname = argv[index];
+     if (*fname == '-')  break; //* stop processing POET files
+     std::cerr << argv[index] << " ";
+     poet_files.push_back(fname);
+  }
+  std::cerr << "\n";
+  if (index < argc) std::cerr << "extra parameters: ";
+  for ( ; index < argc; ++index) {
+      std::cerr << argv[index] << " ";
+      extra_input.push_back(argv[index]);
+  }
+  std::cerr << "\n";
+  for (int i = 0; i < poet_files.size(); i++){
+     const char* fname = poet_files[i].c_str();
+     EvaluatePOET::eval_program(process_file(fname));
+  }
+  }
+  catch (Error err) { return 1;}
+  return 0;
 }
-

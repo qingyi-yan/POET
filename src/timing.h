@@ -1,5 +1,5 @@
-#ifndef TIMING_H
-#define TIMING_H
+#ifndef POET_TIMING_H
+#define POET_TIMING_H
 
 #include <sys/time.h>
 

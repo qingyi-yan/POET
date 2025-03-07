@@ -42,7 +42,6 @@ LvarSymbolTable POETProgram::traceDef;
 LvarSymbolTable POETProgram::paramDef;
 LvarSymbolTable POETProgram::macroDef;
 ASTFactory* ASTFactory::_inst = 0;
-std::map<void*, POETCode*> POETAstInterface::codeMap;
 POETProgram* curfile;
 int user_debug = 0;
 
@@ -83,11 +82,6 @@ POETCode* POETProgram:: make_listType(POETCode* elemType)
           { assert(elemType!=0); return ASTFactory::inst()->new_typeUop(TYPE_LIST,elemType); }
 POETCode* POETProgram:: make_atomType(POETTypeEnum t)
 { return ASTFactory::inst()->new_type(t);  }
-
-std::string POETCode_ext :: toString(ASTOutputEnum config)
-{  
-   return POETAstInterface::Ast2String(content); 
-}
 
 POETCode* POETProgram:: make_pair(POETCode* r1, POETCode* r2)
           { return ASTFactory::inst()->new_pair(r1,r2); }

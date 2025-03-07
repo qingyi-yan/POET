@@ -667,7 +667,7 @@ class CodeReplSingleOperator : public CodeReplOperator
   POETCode *from, *to;
   POETCode* apply(POETCode* f)
      { 
-       if (f==from || (f->get_enum() == SRC_UNKNOWN && POETAstInterface::MatchAstWithPattern(static_cast<POETCode_ext*>(f)->get_content(), from)!=0)) {
+       if (f==from || (f->get_enum() == SRC_UNKNOWN && static_cast<POETCode_ext*>(f)->MatchWithPattern(from)!=0)) {
          if (debug_repl()) std::cerr << "replacing " << f->toString() << "\n with " << to->toString() << "\n";
          return to;
        } 
@@ -884,7 +884,7 @@ void MatchASTVisitor:: visitIconst(POETIconst* v) {
     else {
       POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
       if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), v);
+        res = p->MatchWithPattern(v);
       }
     }
 
@@ -897,7 +897,7 @@ void MatchASTVisitor::visitString(POETString* v) {
     else {
       POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
       if (p != 0) 
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), v);
+        res = p->MatchWithPattern(v);
     }
 
   }
@@ -929,10 +929,10 @@ matchCodeVar(POETCode *_r1, CodeVar* v2, POETCode* args)  {
 void MatchASTVisitor::visitUnknown (POETCode_ext* e) {
      POETCode_ext* e1 = dynamic_cast<POETCode_ext*>(r1);
      if (debug_pattern()) 
-        std::cerr << "matching unknown nodes: " << e->get_content() << " vs. " << ((e1 == NULL)? "NULL" : e1->get_content()) << "\n";
+        std::cerr << "matching unknown nodes: " << e->toString() << " vs. " << ((e1 == NULL)? "NULL" : e1->toString()) << "\n";
      if (e1 != 0) {
-        if (e1->get_content() == e->get_content()) res = r1; 
-        else res = POETAstInterface::MatchAstWithPattern(e1->get_content(), e);
+        if (e1->equal(e)) res = r1; 
+        else res = e1->MatchWithPattern(e);
      }
 
   }
@@ -940,7 +940,7 @@ void MatchASTVisitor::visitUnknown (POETCode_ext* e) {
 void MatchASTVisitor::visitCodeVar(CodeVar* v2)  {
     POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
     if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), v2);
+        res = p->MatchWithPattern(v2);
     }
     else if (matchCodeVar(r1, v2, v2->get_args())) res = r1;
      else res = 0;
@@ -974,7 +974,7 @@ void MatchASTVisitor::visitXformVar( XformVar* v)
       else {
        POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
        if (p != 0) {
-           res = POETAstInterface::MatchAstWithPattern(p->get_content(), v);
+           res = p->MatchWithPattern(v);
        }
       }
    }
@@ -982,7 +982,7 @@ void MatchASTVisitor::visitXformVar( XformVar* v)
 void MatchASTVisitor::visitTuple( POETTuple* r2) {
     POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
     if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), r2);
+        res = p->MatchWithPattern(r2);
     }
     else {
        if (r1 == 0 || r1->get_enum() != SRC_TUPLE) { res = 0; return; }
@@ -1000,7 +1000,7 @@ void MatchASTVisitor::visitTuple( POETTuple* r2) {
 void MatchASTVisitor::visitType( POETType* t) { 
     POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
     if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), t);
+        res = p->MatchWithPattern(t);
     }
     else
         res = match_Type(r1, t, false); 
@@ -1011,7 +1011,7 @@ void MatchASTVisitor::visitList(POETList* v2)  {
            std::cerr << "Trying to match list " << r1->toString() << " with " << v2->toString() << "\n";
     POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
     if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), v2);
+        res = p->MatchWithPattern(v2);
     }
     else {
        POETList* v1 = dynamic_cast<POETList*>(r1);
@@ -1049,7 +1049,7 @@ void MatchASTVisitor::visitAssign(POETAssign* assign)  {
           POETCode* lhs = assign->get_lhs(); 
           if (apply(r1,assign->get_rhs())) {
              if (res->get_enum() == SRC_UNKNOWN) 
-                res = POETAstInterface::Ast2POET(static_cast<POETCode_ext*>(res)->get_content());
+                res = static_cast<POETCode_ext*>(res)->make_permanent();
              if (lvar != 0 && lhs->get_enum() == SRC_LVAR) {
                 static_cast<LocalVar*>(lhs)->get_entry().set_code(lvar);
                 res = lvar;
@@ -1062,7 +1062,7 @@ void MatchASTVisitor::visitAssign(POETAssign* assign)  {
 void MatchASTVisitor::visitOperator(POETOperator* op) {
     POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
     if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), op);
+        res = p->MatchWithPattern(op);
         if (res != 0) return;
     }
      switch (op->get_op()) {
@@ -1200,7 +1200,7 @@ void MatchASTVisitor::defaultVisit(POETCode* f) {
       POETCode* ff = eval_AST(f);
       POETCode_ext* p = dynamic_cast<POETCode_ext*>(r1);
       if (p != 0) {
-        res = POETAstInterface::MatchAstWithPattern(p->get_content(), ff);
+        res = p->MatchWithPattern(ff);
         return;
       }
       if (ff == f) res = 0;

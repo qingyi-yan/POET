@@ -31,14 +31,17 @@ OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISE
 #include <vector>
 #include <map>
 
-class POETCode_ext;
+
 class POETCode;
+class AstNodeType;
+class POETCodeVisitor;
+template <typename AST_NODE_PTR>
 class POETAstInterface 
 {
-  static std::map<void*, POETCode*> codeMap;
+  static std::map<AST_NODE_PTR, POETCode*> codeMap;
 public:
-  typedef void* Ast;
-  typedef void* AstType;
+  typedef AST_NODE_PTR Ast;
+  typedef AstNodeType AstType;
   typedef std::vector<Ast>  AstList;
   typedef std::vector<AstType>  AstTypeList;
 
@@ -55,7 +58,7 @@ public:
     { codeMap[n] = p; }
   static POETCode* find_Ast2POET(const Ast& n)
     {
-      std::map<void*, POETCode*>::const_iterator p = codeMap.find(n);
+      typename std::map<AST_NODE_PTR, POETCode*>::const_iterator p = codeMap.find(n);
       if (p != codeMap.end()) { return (*p).second; }
       return 0;
     }

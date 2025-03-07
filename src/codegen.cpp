@@ -217,7 +217,7 @@ class CodeGenVisitor : public CollectInfoVisitor
     {
       if (debug_unparse())
 std::cerr<<"Trying to unparse " << e->toString() << "\n";
-      POETAstInterface::unparse(e->get_content(), out, start_pos);
+      e->unparse(out, start_pos);
     }
   virtual void visitString(POETString* s) 
      {  output(s); }

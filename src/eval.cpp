@@ -428,7 +428,7 @@ class XformEvalVisitor : public ReplInfoVisitor
        switch (tuple->get_enum()) {
          case SRC_UNKNOWN: {
              access= apply(access);
-             res = POETAstInterface::getAstAttribute(dynamic_cast<POETCode_ext*>(tuple)->get_content(), access); 
+             res = dynamic_cast<POETCode_ext*>(tuple)->get_attribute(access); 
              return;
             }
          case SRC_TUPLE: {
