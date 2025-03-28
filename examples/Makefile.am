@@ -1,6 +1,7 @@
 
 POET_LIB=$(top_srcdir)/lib
 pcg = ${top_builddir}/src/pcg
+rose_pcg = ${top_builddir}/rose_connection/rose_pcg
 debug=
 in=
 out=
@@ -53,6 +54,8 @@ check :
 	rm out
 	make analysis out="out"
 	$(comp) out $(srcdir)/cfg.out
+	make analysis_rose out="out"
+	$(comp) out $(srcdir)/cfg.out_rose
 	rm out
 	make apply_opt
 	make xform
@@ -99,6 +102,10 @@ C2F:
 
 F2C:
 	$(pcg) $(debug) -pf95=$(f95) -pinfile=$(in) -poutfile=$(out) -parrref=$(arrref) $(srcdir)/F2C.pt
+
+analysis_rose:
+	$(rose_pcg) $(debug) -pinfile="$(srcdir)/dgemm_orig.c" -pinputLang="" -poutfile=$(out) $(srcdir)/CFG.pt
+
 
 analysis:
 	$(pcg) $(debug) -pinfile="$(srcdir)/dgemm_orig.c" -pinputLang="Cfront.code" -poutfile=$(out) $(srcdir)/CFG.pt

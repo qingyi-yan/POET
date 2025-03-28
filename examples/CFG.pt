@@ -6,19 +6,19 @@ include Loops.incl
 
 <xform BuildBasicBlocks pars=(input)>
    blocks = MAP{};
-   foreach cur=Nest#(CLEAR loop, CLEAR body) \in input s.t. FALSE do
+   foreach cur=Nest#(loop=_, body=_) \in input s.t. FALSE do
       blocks[cur] = blocks[body]=1; 
    enddo
-   start=""; curBlock = ""; count=0;
+   start=""; curBlock = NULL; count=0;
    foreach cur=_ \in input s.t. FALSE do
      if (blocks[cur] == 1) {
-        if (curBlock != "") {
+        if (!(curBlock : ""|NULL)) {
            blocks[start]=BasicBlock#(count, ReverseList(curBlock));
-           count = count + 1; curBlock = "";
+           count = count + 1; curBlock = NULL;
         }
         start=cur; 
      }
-     if (cur : Loop|ExpStmt) { curBlock = cur :: curBlock; }
+     if (cur : CODE.Loop|CODE.For|CODE.ExpStmt) { curBlock = cur :: curBlock; }
   enddo
   if (curBlock!="") 
      blocks[start] = BasicBlock#(count, curBlock);
@@ -37,7 +37,7 @@ digraph @label@
 
 <xform BuildCFG pars=(input, blocks) prev="" edges="">
     cur=blocks[input]; 
-    if (cur != "") 
+    if (cur : CODE.BasicBlock) 
      { 
        if (prev != "") 
          edges = BuildList(GraphEdge#(prev,cur), edges);
@@ -69,4 +69,4 @@ digraph @label@
 <eval blocks=BuildBasicBlocks(inputCode);
       (cfg,_) = BuildCFG(inputCode, blocks); />
 
-<output syntax=(inputLang) to=outfile from=(CFG#("CFG",cfg)) />
+<output syntax=(inputLang "Cfront.code") to=outfile from=(CFG#("CFG",cfg)) />

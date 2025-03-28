@@ -696,20 +696,25 @@ class POETCode_ext : public POETCode
     virtual POETCode* make_permanent() = 0;
 };
 
-template <class AST_NODE_PTR>
+template <class AST_NODE_PTR, class Interface>
 class POETCode_ext_template : public POETCode_ext
 {
   protected:
     AST_NODE_PTR content;
+    POETCode* poet_repl;
    public:
-    POETCode_ext_template(AST_NODE_PTR _content) 
-        : content(_content) {assert(content!=0);};
-    AST_NODE_PTR get_content() const { return content; }
+    POETCode_ext_template(AST_NODE_PTR _content, POETCode* repl = 0) 
+        : content(_content), poet_repl(repl) {assert(content!=0 || repl != 0);};
+    AST_NODE_PTR get_ptr() const { return content; }
+    POETCode* get_poet_code() const {
+        if (poet_repl != 0) return poet_repl;
+        return  Interface::Ast2POET(content);
+    }
 
     virtual POETEnum get_enum() const { return SRC_UNKNOWN; }
     virtual std:: string get_className() const { return "POETCode_ext"; }
     virtual bool equal(const POETCode_ext* that) const {
-      auto* that2 = dynamic_cast<const POETCode_ext_template<AST_NODE_PTR>*>(that);
+      auto* that2 = dynamic_cast<const POETCode_ext_template<AST_NODE_PTR,Interface>*>(that);
       assert(that2 != 0);
       return content == that2->content;
     }

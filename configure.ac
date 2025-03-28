@@ -8,6 +8,7 @@ AC_PROG_YACC
 AM_PROG_LEX
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([rose_connection/Makefile])
 AC_CONFIG_FILES([lib/Makefile])
 AC_CONFIG_FILES([doc/Makefile])
 AC_CONFIG_FILES([test/Makefile])
@@ -36,6 +37,7 @@ AC_CONFIG_FILES([tools/Makefile])
 
 test -n "$atlas_obj" || atlas_obj="";
 test -n "$rose_srcdir" || rose_srcdir="";
+test -n "$rose_install" || rose_install="";
 test -n "$atlas_exe" || atlas_exe=xdmmtst;
 test -e "$atlas_obj" && atlas_inc="${atlas_obj}/Make.inc";
 
@@ -49,5 +51,6 @@ AC_SUBST(atlas_inc)
 AC_SUBST(testdirs)
 AC_SUBST(tooldirs)
 AC_SUBST(rose_srcdir)
+AC_SUBST(rose_install)
 AM_INIT_AUTOMAKE([1.10])
 AC_OUTPUT

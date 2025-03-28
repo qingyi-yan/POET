@@ -48,7 +48,7 @@ class SgSymbol;
 class SgScopeStatement;
 
 typedef POETAstInterface<SgNode*> ROSE_POETAstInterface;
-typedef POETCode_ext_template<SgNode*> POETCode_rose;
+typedef POETCode_ext_template<SgNode*, ROSE_POETAstInterface> POETCode_sg_node;
 extern std::vector<std::string> extra_input;
 extern bool debug_pattern();
 extern std::list<std::string> lib_dir;
@@ -201,7 +201,7 @@ POETCode* POETAstInterface<AST_NODE_PTR>::Ast2POET(const Ast& n)
        POETCode* type = 0;
        const SgTemplateType *t1 = isSgTemplateType(t);
        if (t1 != 0) type = STRING(t1->get_name().str());
-       else { type = new POETCode_rose(t); }
+       else { type = new POETCode_sg_node(t); }
        ROSE_POETAstInterface::set_Ast2POET(n, type);
        return type;
   } }
@@ -225,7 +225,7 @@ POETCode* POETAstInterface<AST_NODE_PTR>::Ast2POET(const Ast& n)
   if (!inside_unparse)
 std::cerr << "creating AST wrap for " << ROSE_POETAstInterface::Ast2String(n) << "\n";
 #endif
-  res = new POETCode_rose(n);
+  res = new POETCode_sg_node(n);
   ROSE_POETAstInterface::set_Ast2POET(n,res);
   return res;
 }
@@ -304,9 +304,9 @@ class POETGenTypeName : public POETCodeVisitor
   virtual void visitTuple( POETTuple* v)  { tname_vec.push_back("TUPLE"); arg_vec.push_back(v); }
   virtual void visitNULL(POETNull* l) { tname_vec.push_back("LIST"); arg_vec.push_back(0); }
   virtual void visitUnknown(POETCode_ext* ext) { 
-     POETCode_rose* rose_ext = dynamic_cast<POETCode_rose*>(ext);
+     POETCode_sg_node* rose_ext = dynamic_cast<POETCode_sg_node*>(ext);
      assert(rose_ext != 0);
-     SgNode* input=(SgNode*)rose_ext->get_content();
+     SgNode* input=(SgNode*)rose_ext->get_ptr();
      switch (input->variantT()) {
        case V_SgVarRefExp:
           tname_vec.push_back("Name"); arg_vec.push_back(STRING(static_cast<SgVarRefExp*>(input)->get_symbol()->get_name().str()));
@@ -488,60 +488,68 @@ bool CompareTypeName(const std::string& varname, POETCode* arg)
   return false;
 }
 
-AstInterface::AstList GetAstChildrenList(SgNode* input, bool backward=false)
+std::vector<POETCode_sg_node>  ConvertAstList(const AstInterface::AstList& c, bool backward = false)
 {
-  AstInterface::AstList c = AstInterface::GetChildrenList(input);
-  switch (input->variantT()) {
-     case V_SgIfStmt:
-     case V_SgWhileStmt: {
-      if (c[0]->variantT()==V_SgExprStatement)
-         c[0] = static_cast<SgExprStatement*>(c[0].get_ptr())->get_expression();
-      }
-      break;
-     case V_SgPragmaDeclaration: {
-           c.push_back(static_cast<SgPragmaDeclaration*>(input)->get_pragma());
-           AstInterface::AstList l; 
-           if (AstInterface::IsBlock(input->get_parent(), 0, &c)) {
-           for (AstInterface::AstList::const_iterator p = l.begin(); p != l.end(); ++p) {
-              SgNode* cur = (*p).get_ptr();
-              if (cur == input) {
-                 ++p;
-                 cur = (*p).get_ptr();
-                 c.push_back(cur); break;
-              }
+  auto pass_through = [](SgNode* v) -> SgNode* { 
+        switch (v->variantT()) {
+        case V_SgAssignInitializer: 
+           return static_cast<SgAssignInitializer*>(v)->get_operand();
+        case V_SgExprStatement: 
+           if (v->get_parent()->variantT() == V_SgForInitStatement) {
+             return static_cast<SgExprStatement*>(v)->get_expression();
            }
-          }
-      }
-      break;
-      case V_SgBasicBlock:
-           if (AstInterface::IsBlock(input, 0, &c)) {
-           AstInterface::AstList::iterator p1 = c.end(), p2 = p1;
-           unsigned size = 0;;
-           for (AstInterface::AstList::iterator p = c.begin(); p != c.end(); ++p) {
-              SgNode* cur = (*p).get_ptr();
-              if (cur == 0) { continue; }
-              size ++;
-              if (p1 != c.end() && p1 != p) {
-                 *p1 = *p; p1++; }
-              p2 = p;
-              while (cur->variantT() == V_SgPragmaDeclaration) {
-                  p2++; cur = (*p2).get_ptr(); *p2 = 0;
-                  if (p1 == c.end()) { p1 = p2; }
-              }
-           }
-           if (size < c.size()) { c.resize(size); }
-          }
-           break;
-  }
+        default:
+           return v;
+       }
+     };
+  std::vector<POETCode_sg_node> c1; 
   if(backward) {
-     AstInterface::AstList c1; int i = 0;
      for (AstInterface::AstList::const_reverse_iterator p = c.rbegin(); p != c.rend(); ++p) {
-       ++i;
-        c1.push_back(*p);
+        assert((*p).get_ptr() != 0);
+        c1.push_back(POETCode_sg_node(pass_through((*p).get_ptr())));
      }
-     return c1;
+  } else {
+     for (AstInterface::AstList::const_iterator p = c.begin(); p != c.end(); ++p) {
+        if ((*p).get_ptr() != 0) {
+           c1.push_back(POETCode_sg_node(pass_through((*p).get_ptr())));
+        }
+     }
   }
-  return c;
+  return c1;
+}
+
+std::vector<POETCode_sg_node>  GetAstChildrenList(SgNode* input, bool backward = false)
+{
+  auto c = AstInterface::GetChildrenList(input);
+  auto v = input->variantT();
+  if (v == V_SgForStatement) {
+      std::vector<POETCode_sg_node> cc; 
+      POETCode* c1, *c2, *c3;
+      c1 = ROSE_POETAstInterface::Ast2POET(isSgForStatement(input)->get_for_init_stmt());
+      c2 = ROSE_POETAstInterface::Ast2POET(isSgForStatement(input)->get_test_expr());
+      c3 = ROSE_POETAstInterface::Ast2POET(isSgForStatement(input)->get_increment()); 
+      auto* ctrl = CODE_ACC("For", TUPLE3(c1,c2,c3));
+      cc.push_back(POETCode_sg_node(0, ctrl));
+      cc.push_back(isSgForStatement(input)->get_loop_body()); 
+      return cc;
+  } else if  (v == V_SgBasicBlock) {
+      std::vector<POETCode_sg_node> cc = ConvertAstList(c); 
+      if (cc.size() > 2) {
+          auto p = cc.rbegin();
+          POETCode* c2 = (*p).get_poet_code();
+          for (++p; p != cc.rend(); ++p) {
+              POETCode* c3 = (*p).get_poet_code();
+              c2 = LIST(c3, c2);
+          }
+          cc[1] = POETCode_sg_node(0, c2);
+          auto pp = cc.begin();
+          pp ++; pp++;
+          cc.erase(pp, cc.end());
+      }
+      return cc;
+     
+  }
+  return ConvertAstList(c, backward);
 }
 
 bool compareSgNode(SgNode* n1, SgNode* n2)
@@ -557,7 +565,7 @@ bool compareSgNode(SgNode* n1, SgNode* n2)
 
 POETCode* MatchAstWithPatternHelp(const ROSE_POETAstInterface::Ast& n, POETCode* pat);
 
-bool ClassifyAst(const ROSE_POETAstInterface::Ast& input, const std::string& tname, POETCode* arg, AstInterface::AstList& c, POETCode*& poet_res)
+bool ClassifyAst(const ROSE_POETAstInterface::Ast& input, const std::string& tname, POETCode* arg, std::vector<POETCode_sg_node>& c, POETCode*& poet_res)
 {
   static SgName tmpname; // used to keep SageName content from children;
 #ifdef DEBUG_OP
@@ -565,7 +573,7 @@ bool ClassifyAst(const ROSE_POETAstInterface::Ast& input, const std::string& tna
 std:: cerr << "trying to match " << input->class_name() << ":" << ROSE_POETAstInterface::Ast2String(input) << " vs " << tname << ":" << ((arg==0)? "NULL:" : arg->toString()) << "\n";
 #endif
   if (tname == "UNKNOWN") {
-     return compareSgNode(input, (SgNode*)static_cast<POETCode_rose*>(arg)->get_content());
+     return compareSgNode(input, (SgNode*)static_cast<POETCode_sg_node*>(arg)->get_ptr());
   }
   else if (tname == "EXP") { /* is an expression?*/
      assert(arg==0);
@@ -695,9 +703,8 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
           break;
    case V_SgClassDefinition: 
    //case V_SgTemplateClassDefinition:
-   case V_SgBasicBlock: if (!res) res = CHECK_NAME2(input,tname,"StmtBlock", "LIST");
-        if (!res && static_cast<SgBasicBlock*>(input)->get_statements().size()==1)
-             return ClassifyAst(static_cast<SgBasicBlock*>(input)->get_statements()[0],tname,arg,c, poet_res); 
+   case V_SgBasicBlock: 
+         if (!res) res = CHECK_NAME2(input,tname,"StmtBlock", "LIST");
          break;
    case V_SgInitializedName:  if (!res) res = CHECK_NAME(input,tname, "TypeInfo");
        if (res) {
@@ -707,8 +714,10 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
            //c.push_back(input);
            tmpname = static_cast<SgInitializedName*>(input)->get_name();
            c.push_back(&tmpname);
-           c.push_back(static_cast<SgInitializedName*>(input)->get_initializer());
-           if (isSgAssignInitializer(c[2].get_ptr()) != 0) c[2]=static_cast<SgAssignInitializer*>(c[2].get_ptr())->get_operand();
+           SgExpression* init = static_cast<SgInitializedName*>(input)->get_initializer();
+           if (isSgAssignInitializer(init) != 0) 
+               init=static_cast<SgAssignInitializer*>(init)->get_operand();
+           c.push_back(init);
          }
        }
        break;
@@ -728,22 +737,15 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
        break;
    case V_SgForInitStatement: {
        if (!res) res = CHECK_NAME(input, tname, "DeclStmt");
-       if (!res) {
-          AstInterface::AstList m = GetAstChildrenList(input);
-          if (m.size() == 1) res=ClassifyAst(m[0].get_ptr(), tname, arg, c, poet_res);
-          else { c = m; res= CHECK_NAME(input,tname, "LIST");}
-       }
-       else if (arg != 0) { c = GetAstChildrenList(input); }
        break;
      }
    case V_SgExprStatement:  
        if (tname == "Bop") { 
           res = ClassifyAst(isSgExprStatement(input)->get_expression(),tname,arg,c, poet_res); 
-       }
-       if (!res) res = CHECK_NAME2(input,tname,"Stmt","ExpStmt");
+       } else  if (!res) res = CHECK_NAME2(input,tname,"Stmt","ExpStmt");
        break;
    case V_SgFunctionCallExp: {
-     AstInterface::AstList m = GetAstChildrenList(input);
+     auto m = GetAstChildrenList(input);
      SgNode* op = m[0].get_ptr(); unsigned argnum = m.size()-1;
      if ( (tname == "Bop" && argnum == 2)|| (tname == "Uop" && argnum==1) || (tname == "ArrayAccess" && argnum==2)) {
        POETCode* opname = (arg == 0)? STRING(tname) : arg;
@@ -786,23 +788,23 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
    case V_SgTemplateFunctionDeclaration:
    case V_SgTemplateInstantiationFunctionDecl:
    case V_SgFunctionDeclaration: if (!res) res=CHECK_NAME(input,tname,"FunctionDecl"); 
-        if (res && arg != 0) { c=AstInterface::GetChildrenList(input); 
-            int size = c.size();
+        if (res && arg != 0) { 
+            auto c1=AstInterface::GetChildrenList(input); 
+            int size = c1.size();
             assert(size >= 3);
             if (tname == "FunctionDecl") {
-              if (size == 4) { c.resize(3);  size = 3; }
+              if (size == 4) { c1.resize(3);  size = 3; }
             }
-            SgFunctionDefinition *def = isSgFunctionDefinition(c[2].get_ptr());
-            if (def != 0) c[2] = def->get_body();
-            c.push_back(c[size-1]);
-            for (int i = size; i > 0; i--) {
-                  c[i-1] = c[i-2]; 
+            SgFunctionDefinition *def = isSgFunctionDefinition(c1[2].get_ptr());
+            if (def != 0) c1[2] = def->get_body();
+            c.push_back(input);
+            for (auto a : c1) {
+               c.push_back(a.get_ptr());
             }
-            c[0] = input;
             if (tname == "MemberFunctionDecl") {
               SgMemberFunctionDeclaration* mf = isSgMemberFunctionDeclaration(input);
               assert (mf != 0);
-              c.push_back(mf->get_associatedClassDeclaration()->get_type()); 
+              c.push_back(POETCode_sg_node(mf->get_associatedClassDeclaration()->get_type())); 
             }
         }
         break;
@@ -854,23 +856,18 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
         else { c.push_back(isSgExprStatement(isSgWhileStmt(input)->get_condition())->get_expression()); }
        }
         break;
-   case V_SgForStatement: if (!res) res=CHECK_NAME2(input,tname,"Nest","For");
+   case V_SgForStatement: if (!res) res=CHECK_NAME(input,tname,"Nest");
       if (res && arg != 0) {
-        if (tname == "Nest") { c.push_back(input); c.push_back(isSgForStatement(input)->get_loop_body()); }
-        else  { c.push_back(isSgForStatement(input)->get_for_init_stmt());
-                        c.push_back(isSgForStatement(input)->get_test_expr());
-                        c.push_back(isSgForStatement(input)->get_increment());  } 
+         c = GetAstChildrenList(input);
       }
         break;
    case V_SgIfStmt: if (!res) res=CHECK_NAME2(input,tname, "Nest", "If");
        if (res) {
          if (tname == "Nest" && arg != 0) {
-          c.push_back(input);
-          c.push_back(isSgIfStmt(input)->get_true_body());
-/* The false body is never 0; hack it for now
-          if (isSgIfStmt(input)->get_false_body() == 0) children_number = 2; 
-          else children_number=3;
-*/
+          auto* if_node = isSgIfStmt(input);
+          c.push_back(POETCode_sg_node(0, CODE_ACC("If", ROSE_POETAstInterface::Ast2POET(if_node->get_conditional()))));
+          c.push_back(POETCode_sg_node(if_node->get_true_body()));
+          c.push_back(POETCode_sg_node(0, CODE_ACC("Else", ROSE_POETAstInterface::Ast2POET(if_node->get_false_body()))));
         }
         else if (arg != 0) {
         c.push_back(isSgExprStatement(isSgIfStmt(input)->get_conditional())->get_expression()); }
@@ -916,8 +913,7 @@ std::cerr << "RECOGNIZING PRAGMA: \n";
 }
 
 /*QY: This is used to support traversal of AST by the POET interpreter*/
-POETCode* MatchAstTypeName(const ROSE_POETAstInterface::Ast& input, const std::string& tname, POETCode* args)
-{ 
+POETCode* MatchAstTypeName(const ROSE_POETAstInterface::Ast& input, const std::string& tname, POETCode* args) { 
   assert (input != 0 && tname != "") ;
 
   std::vector<POETCode*> arg_arr;
@@ -936,11 +932,11 @@ POETCode* MatchAstTypeName(const ROSE_POETAstInterface::Ast& input, const std::s
        { args = arg_arr[1]; arg_arr.resize(1); }
     }
   }
-  AstInterface::AstList c; POETCode*  poet_res=0;
+  std::vector<POETCode_sg_node> c; POETCode*  poet_res=0;
   if (!ClassifyAst(input, tname, args, c, poet_res)) return 0;
   if (c.size() == 0) {
 #ifdef DEBUG_OP
-    std::cerr << "done matching type name from ClassifyAst " << ROSE_POETAstInterface::Ast2String(n) << "\n";
+    std::cerr << "done matching type name from ClassifyAst " << ROSE_POETAstInterface::Ast2String(input) << "\n";
 #endif
         return (poet_res==0)? ROSE_POETAstInterface::Ast2POET(input) : poet_res; 
   }
@@ -953,7 +949,8 @@ std::cerr << "return result from ClassifyAst " << "\n";
              std::cerr << "Error: expecting a single result to return but has " << c.size() << " for " << ROSE_POETAstInterface::Ast2String(input) <<  "\n";
              assert(0);
            }
-           return ROSE_POETAstInterface::Ast2POET(c[0].get_ptr()); }
+           return c[0].get_poet_code();
+    }
   } 
  
 #ifdef DEBUG_OP
@@ -1011,8 +1008,7 @@ std::cerr << "continue to match argument: " << args->toString() << "\n";
   return ROSE_POETAstInterface::Ast2POET(input);
 }
 
-POETCode* MatchAstWithPatternHelp(const ROSE_POETAstInterface::Ast& n, POETCode* pat)
-{ 
+POETCode* MatchAstWithPatternHelp(const ROSE_POETAstInterface::Ast& n, POETCode* pat) { 
   assert (n != 0 && pat != 0) ;
   POETGenTypeName op;
   pat->visit(&op);
@@ -1045,12 +1041,12 @@ getAstAttribute(const Ast& n, POETCode* attr)
       break;
     default: tname="map";
    } 
-   AstInterface::AstList c;
+   std::vector<POETCode_sg_node> c;
    POETCode* poet_res=0;
    if (ClassifyAst(n, tname, attr, c, poet_res)) { 
         if (poet_res != 0) return poet_res;
         assert(c.size() == 1); 
-        return Ast2POET(c[0].get_ptr());
+        return c[0].get_poet_code();
    }
    return 0;
 }
@@ -1155,7 +1151,7 @@ class POETCode_ext_delegate : public UnparseDelegate
         SgTemplateInstantiationFunctionDecl* d = isSgTemplateInstantiationFunctionDecl(input);
         assert(d != 0);
         std::string curname = d->get_templateDeclaration()->get_name().getString();
-        AstInterface::AstList c = GetAstChildrenList(input);
+        auto c = AstInterface::GetChildrenList(input);
         assert(c.size() == 3);
         if (c[1] != 0) unparse(c[1].get_ptr(), align);
         else (*out) << "void ";
@@ -1244,7 +1240,7 @@ class POETCode_ext_delegate : public UnparseDelegate
 std::cerr << "checking stmt: " << stmt->sage_class_name() << " : " << stmt << "\n";
 #endif
       POETCode* t = ROSE_POETAstInterface::find_Ast2POET(stmt);
-      if (t != 0 && (t->get_enum() != SRC_UNKNOWN || static_cast<POETCode_rose*>(t)->get_content() != stmt)) {
+      if (t != 0 && (t->get_enum() != SRC_UNKNOWN || static_cast<POETCode_sg_node*>(t)->get_ptr() != stmt)) {
 #ifdef DEBUG_UNPARSE
       std::cerr << "unparsing POET modification: " << t->toString() << "\n";
 #endif
@@ -1369,22 +1365,14 @@ POETCode* POETAstInterface<AST_NODE_PTR>
 ::visitAstChildren(const Ast& input, POETCodeVisitor* op, bool backward)
 {
   bool hasres = false;
-  AstInterface::AstList c = GetAstChildrenList(input, backward);
+  auto c = GetAstChildrenList(input, backward);
   int v = input->variantT();
-  if ( (v == V_SgIfStmt || v == V_SgWhileStmt)) {
-      if (c[0].get_ptr()->variantT()==V_SgExprStatement) 
-         c[0] = static_cast<SgExprStatement*>(c[0].get_ptr())->get_expression();
-  }
   std::vector<POETCode*> children;
-  for (AstInterface::AstList::const_iterator p = c.begin(); p != c.end(); ++p) {
-     SgNode* n = (*p).get_ptr();
+  for (auto a : c) {
+     auto* n = a.get_poet_code(); 
      if (n != 0) {
-       if (isSgAssignInitializer(n) != 0) n=static_cast<SgAssignInitializer*>(n)->get_operand();
-       POETCode_rose tmp(n);
-       POETCode* t = ROSE_POETAstInterface::find_Ast2POET(n);
-       if (t == 0) t=&tmp;
-       POETCode* curres = op->apply(t); 
-       if (curres != 0 && curres != t) {
+       POETCode* curres = op->apply(n); 
+       if (curres != 0 && curres != n) {
           children.push_back(curres);
           hasres = true;
        }
@@ -1404,7 +1392,7 @@ POETCode* POETAstInterface<AST_NODE_PTR>
    POETCode* res = mod_Ast2POET(input, children);
    if (res == 0) {
      for (int i = 0; i < c.size(); ++i) {
-         if (c[i] != 0) 
+         if (c[i].get_ptr() != 0) 
            set_Ast2POET(c[i].get_ptr(), children[i]);
      }
    }
@@ -1420,11 +1408,11 @@ POETCode* POETAstInterface<AST_NODE_PTR>
             SgNode* cur = (*psibs).get_ptr();
             if (cur != d && isSgTemplateInstantiationFunctionDecl(cur) && static_cast<SgTemplateInstantiationFunctionDecl*>(cur)->get_qualified_name () == d->get_qualified_name()) {
                 POETCode_ext_delegate::get_inst()->set_modify(cur);
-                c = AstInterface::GetChildrenList(cur);
+                auto c2 = AstInterface::GetChildrenList(cur);
                 AstInterface::AstList c1 = AstInterface::GetChildrenList(d);
-                for (int i = 0; i < c.size(); ++i) {
-                    if (c[i] != 0)  {
-                           set_Ast2POET(c[i].get_ptr(), Ast2POET(c1[i].get_ptr()));
+                for (int i = 0; i < c2.size(); ++i) {
+                    if (c2[i] != 0)  {
+                           set_Ast2POET(c2[i].get_ptr(), Ast2POET(c1[i].get_ptr()));
                     }
                 }
                 break;
