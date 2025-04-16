@@ -1,0 +1,48 @@
+include analysis.pi
+
+<************************************************************
+Define input command line parameters
+*************************************************************>
+<parameter inputFile default="" message="input file name" />
+<************************************************************
+Parse inputFile & headerFile
+*************************************************************>
+<input from=inputFile syntax="Cfront.code" to=inputCode/>
+
+<eval
+input_function = NULL;
+foreach cur_func = CODE.FunctionDecl \in inputCode do
+  input_function = cur_func;
+	break;
+enddo;
+
+<*** TEST 1 - collect_variable_uses(var, stmt, input)
+Input = var = js_ctx->depth - variable to find uses of
+        stmt = js_ctx->depth++; - statement where variable js_ctx->depth is defined
+        input = find_next();  - function containing stmt
+Output = List of some statements using js_ctx->depth after stmt.
+        (
+          if(js_ctx->depth > 0),
+          js_ctx->index[js_ctx->depth]++
+        )
+***>
+result1 = XFORM.collect_variable_uses(PtrAccess#("js_ctx","depth"), ExpStmt#(VarRef#(PtrAccess#("js_ctx","depth"),"++")), input_function);
+
+<***
+Expected Output = List of statements using js_ctx->depth after stmt "js_ctx->depth++;" is found.
+        (
+          js_ctx->index[js_ctx->depth] = 0,
+          js_ctx->values[js_ctx->depth] = ov,
+          if(js_ctx->depth > 0),
+          js_ctx->index[js_ctx->depth]++
+        )
+***>
+expected_output1 = (
+  ExpStmt#(Assign#(ArrayAccess#(PtrAccess#("js_ctx","index"),PtrAccess#("js_ctx","depth")),0))
+  ExpStmt#(Assign#((ArrayAccess#(PtrAccess#("js_ctx","values"),PtrAccess#("js_ctx","depth")),"ov")))
+  If#(Bop#(">",PtrAccess#("js_ctx","depth"),0))
+  ExpStmt#(VarRef#(ArrayAccess#(PtrAccess#("js_ctx","index"),PtrAccess#("js_ctx","depth")),"++"))
+);
+
+assert(expected_output1 : result1);
+/>
