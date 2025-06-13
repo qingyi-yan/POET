@@ -20,7 +20,7 @@ include utils.incl
     tag = "out" ^ index; 
     GraphSpec#(g_nodes, cur_nextto, cur_reach, cur_alias) = g_out;
     num_of_nodes = num_of_nodes + LEN(nodes_in) + LEN(g_nodes);
-    g_nodes = AppendList(g_in[GraphSpec.nodes], g_nodes); 
+    g_nodes = AppendList[erase_replicate=1](g_in[GraphSpec.nodes], g_nodes); 
 
     cur_pos = AppendList[erase_replicate=1](org_nodes, g_nodes);
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos, new_pos) :: pos_variables;

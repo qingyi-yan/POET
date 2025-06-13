@@ -6,13 +6,15 @@ output=
 comp=diff
 F95=0
 
-files = test1.pt
+files = test1.pt test2.pt test3.pt
 EXTRA_DIST = $(files)
 
 all: now
 
 now:
 	$(pcg) $(debug) -L$(POET_LIB) test1.pt
+	$(pcg) $(debug) -L$(POET_LIB) test2.pt
+	$(pcg) $(debug) -L$(POET_LIB) test3.pt
 
 check: 
 	make now
@@ -22,6 +24,6 @@ distclean:
 	rm Makefile
 
 clean :
-	rm -f *.smt
+	rm -f *.smt2
 
 include ../../Make.inc

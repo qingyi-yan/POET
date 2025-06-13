@@ -113,7 +113,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code NextToPossible pars=(tag, r : CODE.NextTo) >
-(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (< l r))
+(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (not (= l r)))
 </code>
 
 <code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
