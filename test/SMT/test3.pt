@@ -13,8 +13,16 @@ include SMT.code
                       );
 
   sll_insert_spec_notempty = CODE.OpSpec#(
-                        CODE.GraphSpec#(("p0" "p1" "pn"), NULL, (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), (Alias#("begin","p0") NotAlias#("begin", "null"))),
-                        CODE.GraphSpec#(("p2"), NextTo#("p2","p0"), (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), Alias#("begin", "p2"))
+                        CODE.GraphSpec#(
+                          ("p0" "p1" "pn"), 
+                          NULL, 
+                          (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), 
+                          (Alias#("begin","p0") NotAlias#("begin", "null"))),
+                        CODE.GraphSpec#(
+                          ("p2"), 
+                          NextTo#("p2","p0"), 
+                          (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), 
+                          (Alias#("begin", "p2") NotAlias#("begin", "null")))
                       );
 
   <*Null*>
@@ -69,7 +77,7 @@ include SMT.code
                           ("p_new" "p_unknown"),
                           NextTo#("p_unknown", "p_new"),
                           NULL,
-                          Alias#("head", "p0")));
+                          (Alias#("head", "p0") NotAlias#("head", "null"))));
 
   append_impl_spec = append_impl_spec_empty :: append_impl_spec_notempty;
 
