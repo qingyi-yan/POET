@@ -39,6 +39,8 @@
 (get-unsat-core)
 </code>
 
+<code PtrAccess pars=(ptr:ID,fd:ID)> @ptr@->@fd@ </code>
+
 <code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","))>
 @(res = NULL; unique = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
@@ -96,7 +98,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+  (assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -163,7 +165,7 @@ else v2 = v2 ^ "_" ^ tag;
 @(assert (! (= @v1@ @v2@) :named alias_@v1@_@v2@))
 </code>
 
-<code NotAliasAssert pars=(tag:ID, r : CODE.Alias) p=NULL>
+<code NotAliasAssert pars=(tag:ID, r : CODE.NotAlias) p=NULL>
 @CODE.NotAlias#(v1,v2) = r; 
 if (v1 == "null")  v1 = 0;
 else v1 = v1 ^ "_" ^ tag;
