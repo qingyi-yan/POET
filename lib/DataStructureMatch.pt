@@ -25,9 +25,9 @@ include utils.incl
 
     cur_pos = AppendList[erase_replicate=1](org_nodes, g_nodes);
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos, new_pos) :: pos_variables;
-    cur_nextto = AppendList(org_nextto_out, cur_nextto);
-    cur_reach = AppendList(org_reach_out, cur_reach);
-    cur_alias = AppendList(org_alias_out, cur_alias);
+    cur_nextto = AppendList[erase_replicate=1](org_nextto_out, cur_nextto);
+    cur_reach = AppendList[erase_replicate=1](org_reach_out, cur_reach);
+    cur_alias = AppendList[erase_replicate=1](org_alias_out, cur_alias);
     nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
     reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
@@ -36,9 +36,9 @@ include utils.incl
     GraphSpec#(g_nodes, cur_nextto, cur_reach, cur_alias) = g_in;
     cur_pos = AppendList[erase_replicate=1](org_nodes, g_nodes);
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos, new_pos) :: pos_variables;
-    cur_nextto = AppendList(org_nextto_in, cur_nextto);
-    cur_reach = AppendList(org_reach_in, cur_reach);
-    cur_alias = AppendList(org_alias_in, cur_alias);
+    cur_nextto = AppendList[erase_replicate=1](org_nextto_in, cur_nextto);
+    cur_reach = AppendList[erase_replicate=1](org_reach_in, cur_reach);
+    cur_alias = AppendList[erase_replicate=1](org_alias_in, cur_alias);
     nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
     reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
@@ -46,7 +46,7 @@ include utils.incl
     index = index + 1;
   }
 
-  DEBUG{alias_rels};
+  DEBUG{pos_variables};
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels);
 </xform>

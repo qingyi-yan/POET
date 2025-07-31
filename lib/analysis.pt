@@ -682,13 +682,16 @@ switch (vars)
       return (AppendList(n1,n2), nodes, edges);
  case TypeInfo#(CODE.PtrType,name=_,VarInit#(rhs=_)):
        (n1,nodes,edges) = gen_ptr_node_help(rhs, nodes, edges);
-   <<* print ("rhs=" rhs); print ("{" nodes "\n" edges "}"); assert(n1 != NULL);
+       <* print ("rhs=" rhs);
+       print ("{" nodes "\n" edges "}");  *>
+       assert(n1 != NULL);
        if (n1 != NULL) edges = ("ALIAS",name,n1)::edges;
        return (n1, nodes, edges);
  case TypeInfo#(CODE.PtrType,name=_,""):
     (n1,nodes)=new_unknown_node(nodes,"");
     return (n1, nodes, ("ALIAS",name,n1)::edges);
  case ID|CODE.Name:
+    if(exp : "NULL") return (NULL, nodes, edges);
     foreach TypeInfo#(_,exp,_) \in nodes do
        return (exp,nodes,edges); enddo
     foreach e=("ALIAS",exp,n=_) \in edges do
