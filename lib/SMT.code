@@ -57,7 +57,7 @@ for (p = names; p != NULL; p = cdr(p)) {
 </code>
 
 <code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
-(assert (! (not (= @v1@_@tag@ @v2@_@tag@)) :named p_unique_@v1@_@v2@_@tag@))
+(assert (! (or (= @v1@_@tag@ 0) (not (= @v1@_@tag@ @v2@_@tag@))) :named p_unique_@v1@_@v2@_@tag@))
 </code>
 
 <code PositionVariable pars=(name : ID, tag : ID)>
@@ -98,7 +98,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+(assert (! (or (= @v1@_@tag@ @v2@_@tag@)(and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -175,5 +175,5 @@ else v2 = v2 ^ "_" ^ tag;
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>
-(assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
+(assert (! (or (= @v@_@tag1@ 0) (= @v@_@tag1@ @v@_@tag2@)) :named unchanged_@v@_@tag1@_@tag2@))
 </code>

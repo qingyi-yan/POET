@@ -683,8 +683,8 @@ switch (vars)
  case TypeInfo#(CODE.PtrType,name=_,VarInit#(rhs=_)):
        (n1,nodes,edges) = gen_ptr_node_help(rhs, nodes, edges);
        <* print ("rhs=" rhs);
-       print ("{" nodes "\n" edges "}");  *>
-       assert(n1 != NULL);
+       print ("{" nodes "\n" edges "}"); 
+       assert(n1 != NULL); *>
        if (n1 != NULL) edges = ("ALIAS",name,n1)::edges;
        return (n1, nodes, edges);
  case TypeInfo#(CODE.PtrType,name=_,""):

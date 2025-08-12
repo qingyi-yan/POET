@@ -46,7 +46,5 @@ include utils.incl
     index = index + 1;
   }
 
-  DEBUG{pos_variables};
-
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels);
 </xform>
