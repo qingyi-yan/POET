@@ -1,0 +1,44 @@
+include analysis.pi
+
+<parameter inputFile default="" message="input file name"/>
+<parameter inputLang default="C++front.code" message="file name for input language syntax" />
+<input from=(inputFile) syntax=(inputLang) to=inputCode/>
+
+<eval
+    result = MAP{};
+
+    <* Initial graph representing a list: ( head=p0 ...  pn ) *>
+    g0 = CODE.Graph#((CODE.TypeInfo#("Unknown",1,"") 
+                      CODE.TypeInfo#("Unknown",2,"")),
+                      (("ALIAS","head",1) ("REACHABLE",1,2)
+                       ("ALIAS","p0",1) ("ALIAS","pn",2))
+                      );
+    Graph#(_,original_edges=_) = g0;
+
+    print("\nTest 0 - Delete head");
+    DEBUG{XFORM.delete_ptr_node("head", g0)};
+    print("\nExpected: CODE.Graph#(CODE.TypeInfo#(\"Unknown\",2,\"\"), ((\"ALIAS\",\"pn\",2))");
+    
+    print("\nTest 1 - Delete all edges relating to head and 1");
+    DEBUG{original_edges};
+    
+    edges_without_head = XFORM.delete_edges_from("head", _, original_edges);
+    DEBUG{edges_without_head};
+    print("\nExpected: (\"REACHABLE\",1,2) (\"ALIAS\",\"p0\",1) (\"ALIAS\",\"pn\",2)");
+    
+    edges_without_head_and_1 = XFORM.delete_edges_from(1, _, edges_without_head);
+    DEBUG{edges_without_head_and_1};
+    print("\nExpected: (\"ALIAS\",\"pn\",2)");
+
+    <* Call analyze_connectivity for all blocks *>
+    foreach block = CODE.FunctionDecl#(fx_name=_,_,_,_) \in inputCode do
+        result[fx_name] = XFORM.analyze_connectivity(g0, block);
+    enddo;
+    
+    <* Print all output graphs *>
+    foreach cur=(fx_name,output_graphs) \in result do
+        print("\n********************Function block analyzed: " fx_name);
+        DEBUG{output_graphs};
+    enddo;
+
+/>
