@@ -16,17 +16,17 @@
   (and (<= 0 l) (<= l @num_of_nodes@))
 )
 
-; Position and implementation variables
-@((pos_variables == NULL)? "" : pos_variables)@
-
-; definition of anchor/member variables
-@CODE.AnchorVariableDefinition#(anchors, num_of_graphs)@
-
 ; nextto relations
 @((nextto_rels == NULL)? "" : nextto_rels)@
 
 ; reachable relations
 @((reach_rels == NULL)? "" : reach_rels)@
+
+; Position and implementation variables
+@((pos_variables == NULL)? "" : pos_variables)@
+
+; definition of anchor/member variables
+@CODE.AnchorVariableDefinition#(anchors, num_of_graphs)@
 
 ; aliases
 @((aliases == NULL)? "" : aliases)@
@@ -57,7 +57,9 @@ for (p = names; p != NULL; p = cdr(p)) {
 </code>
 
 <code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
-(assert (! (or (= @v1@_@tag@ 0) (not (= @v1@_@tag@ @v2@_@tag@))) :named p_unique_@v1@_@v2@_@tag@))
+(assert (! (=> (and (not (reachable_@tag@ @v1@_@tag@ @v2@_@tag@)) 
+                (not (reachable_@tag@ @v2@_@tag@ @v1@_@tag@)))
+           (not (= @v1@_@tag@ @v2@_@tag@)))) :named p_unique_@v1@_@v2@_@tag@))
 </code>
 
 <code PositionVariable pars=(name : ID, tag : ID)>
@@ -98,7 +100,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (or (= @v1@_@tag@ @v2@_@tag@)(and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+(assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -115,7 +117,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code NextToPossible pars=(tag, r : CODE.NextTo) >
-(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (not (= l r)))
+(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (or (= r @r[NextTo.n2]@_@tag@ 0) (< l r)))
 </code>
 
 <code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
@@ -175,5 +177,5 @@ else v2 = v2 ^ "_" ^ tag;
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>
-(assert (! (or (= @v@_@tag1@ 0) (= @v@_@tag1@ @v@_@tag2@)) :named unchanged_@v@_@tag1@_@tag2@))
+(assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
 </code>
