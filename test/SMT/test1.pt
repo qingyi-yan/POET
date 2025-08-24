@@ -24,9 +24,9 @@ include SMT.code
   queue_push_match2 = GenDataMatchSpecification(anchors, queue_push_spec, push_impl_spec);
 />
 
-<output from=queue_push_match1 to="push_spec1.smt"/>
-<output from=queue_push_match2 to="push_spec2.smt"/>
-<output from=queue_push_match1_1 to="push_spec1_1.smt"/>
-<output from=queue_push_match2_2 to="push_spec2_2.smt"/>
-<output from=queue_push_match1_2 to="push_spec1_2.smt"/>
-<output from=queue_push_match2_1 to="push_spec2_1.smt"/>
+<output from=queue_push_match1 to="push_spec1.smt2"/>
+<output from=queue_push_match2 to="push_spec2.smt2"/>
+<output from=queue_push_match1_1 to="push_spec1_1.smt2"/>
+<output from=queue_push_match2_2 to="push_spec2_2.smt2"/>
+<output from=queue_push_match1_2 to="push_spec1_2.smt2"/>
+<output from=queue_push_match2_1 to="push_spec2_1.smt2"/>

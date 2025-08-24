@@ -1,0 +1,59 @@
+include DataStructureMatch.pi
+include SMT.code
+
+<eval
+  <*DoublyLinkedList InsertFront vs DEQUE push_front*>
+  <*The specifications are split between null and not null input states*>
+  
+  insertfwd_spec_empty = CODE.OpSpec#(
+                        CODE.GraphSpec#(NULL, NULL, NULL, (Alias#("begin","null") Alias#("back", "null"))),
+                        CODE.GraphSpec#(("p0"), NULL, NULL, (Alias#("begin","p0") Alias#("back", "p0")))
+                      );                   
+  insertfwd_spec_notempty = CODE.OpSpec#(
+                        CODE.GraphSpec#(("p0" "pn"), NULL, ReachableTo#("p0","pn"), (Alias#("begin","p0") Alias#("back","pn") NotAlias#("begin","null"))),
+                        CODE.GraphSpec#(("p0" "p2" "pn"), NextTo#("p2","p0"), ReachableTo#("p0","pn"), (Alias#("begin","p2") Alias#("back","pn")))
+                      );
+
+  insertbwd_spec_empty = CODE.OpSpec#(
+                        CODE.GraphSpec#(NULL, NULL, NULL, (Alias#("begin","null") Alias#("back", "null"))),
+                        CODE.GraphSpec#(("p0"), NULL, NULL, (Alias#("begin","p0") Alias#("back", "p0")))
+                      );                   
+  insertbwd_spec_notempty = CODE.OpSpec#(
+                        CODE.GraphSpec#(("p0" "pn"), NULL, ReachableTo#("p0","pn"), (Alias#("begin","p0") Alias#("back","pn") NotAlias#("begin","null"))),
+                        CODE.GraphSpec#(("p0" "p2" "pn"), NextTo#("p0","p2"), ReachableTo#("pn","p0"), (Alias#("begin","p2") Alias#("back","pn")))
+                      );
+
+  <*Null*>
+  pushfront_spec_empty = CODE.OpSpec#(
+                        GraphSpec#(NULL,NULL,NULL,(Alias#("headp","null") Alias#("tailp","null"))),
+                        GraphSpec#("p_new",NULL,NULL,(Alias#("headp","p_new") Alias#("tailp","p_new")))
+                    );
+
+  <*Not null*>
+  pushfront_spec_notempty = CODE.OpSpec#(
+                        GraphSpec#(("p0"),NULL,NULL,(Alias#("headp","p0") Alias#("tailp","p0") NotAlias#("headp","null") NotAlias#("tailp","null"))),
+                        GraphSpec#(("p_new" "p0"),(CODE.NextTo#("p_new", "p0") CODE.NextTo#("p0", "p_new")),NULL,(Alias#("headp","p_new") Alias#("tailp","p0")))
+                    );
+
+  anchors = (CODE.Anchor#("begin", "headp") CODE.Anchor#("back", "tailp")); 
+  
+  split_insertfwd_match1 = GenDataMatchSpecification(anchors, insertfwd_spec_empty, pushfront_spec_empty);
+  split_insertfwd_match2 = GenDataMatchSpecification(anchors, insertfwd_spec_notempty, pushfront_spec_empty);
+  split_insertfwd_match3 = GenDataMatchSpecification(anchors, insertfwd_spec_empty, pushfront_spec_notempty);
+  split_insertfwd_match4 = GenDataMatchSpecification(anchors, insertfwd_spec_notempty, pushfront_spec_notempty);
+
+  split_insertbwd_match1 = GenDataMatchSpecification(anchors, insertbwd_spec_empty, pushfront_spec_empty);
+  split_insertbwd_match2 = GenDataMatchSpecification(anchors, insertbwd_spec_notempty, pushfront_spec_empty);
+  split_insertbwd_match3 = GenDataMatchSpecification(anchors, insertbwd_spec_empty, pushfront_spec_notempty);
+  split_insertbwd_match4 = GenDataMatchSpecification(anchors, insertbwd_spec_notempty, pushfront_spec_notempty);
+/>
+<output from=split_insertfwd_match1 to="insertfwd_empty_push_empty.smt2"/>
+<output from=split_insertfwd_match2 to="insertfwd_notempty_push_empty.smt2"/>
+<output from=split_insertfwd_match3 to="insertfwd_empty_push_notempty.smt2"/>
+<output from=split_insertfwd_match4 to="insertfwd_notempty_push_notempty.smt2"/>
+
+<output from=split_insertbwd_match1 to="insertbwd_empty_push_empty.smt2"/>
+<output from=split_insertbwd_match2 to="insertbwd_notempty_push_empty.smt2"/>
+<output from=split_insertbwd_match3 to="insertbwd_empty_push_notempty.smt2"/>
+<output from=split_insertbwd_match4 to="insertbwd_notempty_push_notempty.smt2"/>
+

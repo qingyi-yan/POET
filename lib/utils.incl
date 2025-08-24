@@ -346,6 +346,35 @@ split the $input$ at each $split$ separator
  else { (input,NULL) }
 </xform>
 
+<****** 
+Returns elements that are in l1 but not in l2
+*******>
+<xform DifferenceList pars=(l1, l2)>
+  result = NULL;
+  for (p1 = ReverseList(l1); p1 != NULL; p1 = cdr(p1)) {
+    item1 = car(p1);
+    if(!XFORM.Lookup(item1, l2)){
+      result = XFORM.AppendList[erase_replicate=1](result, item1);
+    }
+  }
+  return result;
+</xform>
+
+<****** 
+Returns elements that are in either list1 or list2, but not in both
+*******>
+<xform SymmetricDifferenceList pars=(l1, l2)>
+  result = NULL;
+  diff_elements1 = XFORM.DifferenceList(l1, l2);
+  diff_elements2 = XFORM.DifferenceList(l2, l1);
+  if(!(diff_elements1 : NULL)){
+    result = XFORM.AppendList(result, diff_elements1);
+  }
+  if(!(diff_elements2 : NULL)){
+    result = XFORM.AppendList(result, diff_elements2);
+  }
+  return result;
+</xform>
 
 <*******
 Erase $handle$ from $trace$. Return the erased $handle$ and modified $trace$

@@ -39,6 +39,8 @@
 (get-unsat-core)
 </code>
 
+<code PtrAccess pars=(ptr:ID,fd:ID)> @ptr@->@fd@ </code>
+
 <code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","))>
 @(res = NULL; unique = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
@@ -113,7 +115,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code NextToPossible pars=(tag, r : CODE.NextTo) >
-(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (< l r))
+(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@) (or (= r @r[NextTo.n2]@_@tag@ 0) (< l r)))
 </code>
 
 <code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
@@ -163,13 +165,13 @@ else v2 = v2 ^ "_" ^ tag;
 @(assert (! (= @v1@ @v2@) :named alias_@v1@_@v2@))
 </code>
 
-<code NotAliasAssert pars=(tag:ID, r : CODE.Alias) p=NULL>
+<code NotAliasAssert pars=(tag:ID, r : CODE.NotAlias) p=NULL>
 @CODE.NotAlias#(v1,v2) = r; 
 if (v1 == "null")  v1 = 0;
 else v1 = v1 ^ "_" ^ tag;
 if (v2 == "null")  v2 = 0;
 else v2 = v2 ^ "_" ^ tag;
-@(assert (! (not (= @v1@ @v2@)) :named alias_@v1@_@v2@))
+@(assert (! (not (= @v1@ @v2@)) :named notalias_@v1@_@v2@))
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>

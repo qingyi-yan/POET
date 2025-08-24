@@ -1,0 +1,105 @@
+include DataStructureMatch.pi
+include SMT.code
+
+
+
+<eval 
+  <*This test case compares SLL abstraction InsertFront specification
+    against a SLL implementation PushFirst and AppendLast functions*>
+
+  sll_insert_spec_empty = CODE.OpSpec#(
+                        CODE.GraphSpec#(NULL, NULL, NULL, Alias#("begin","null")),
+                        CODE.GraphSpec#(("p2"), NULL, NULL, Alias#("begin", "p2"))
+                      );
+
+  sll_insert_spec_notempty = CODE.OpSpec#(
+                        CODE.GraphSpec#(
+                          ("p0" "p1" "pn"), 
+                          NULL, 
+                          (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), 
+                          (Alias#("begin","p0") NotAlias#("begin", "null"))),
+                        CODE.GraphSpec#(
+                          ("p2"), 
+                          NextTo#("p2","p0"), 
+                          (ReachableTo#("p0", "p1") ReachableTo#("p1","pn")), 
+                          (Alias#("begin", "p2") NotAlias#("begin", "null")))
+                      );
+
+  <*Null*>
+  pushfirst_impl_spec_empty = CODE.OpSpec#(
+                        GraphSpec#(
+                          ("p0"),
+                          NULL,
+                          NULL,
+                          (Alias#("head", "null"))),
+                        GraphSpec#(
+                          ("p_new"),
+                          NULL,
+                          NULL,
+                          (Alias#("head","p_new")))
+                      );
+
+  <*Not null*>
+  pushfirst_impl_spec_notempty = CODE.OpSpec#(
+                        GraphSpec#(
+                          ("p0"),
+                          NULL,
+                          NULL,
+                          (Alias#("head", "p0") NotAlias#("head", "null"))),
+                        GraphSpec#(
+                          ("p_new"),
+                          NextTo#("p_new", "p0"),
+                          NULL,
+                          Alias#("head","p_new")));
+
+  pushfirst_impl_spec = pushfirst_impl_spec_empty :: pushfirst_impl_spec_notempty;
+
+  append_impl_spec_empty = CODE.OpSpec#(
+                        GraphSpec#(
+                          ("p0"),
+                          NULL,
+                          NULL,
+                          Alias#("head", "null")),
+                        GraphSpec#(
+                          ("p_new"),
+                          NULL,
+                          NULL,
+                          Alias#("head","p_new"))
+                      );
+
+  append_impl_spec_notempty = CODE.OpSpec#(
+                        GraphSpec#(
+                          ("p0"),
+                          NULL,
+                          NULL,
+                          (Alias#("head", "p0") NotAlias#("head", "null"))),
+                        GraphSpec#(
+                          ("p_new" "p_unknown"),
+                          NextTo#("p_unknown", "p_new"),
+                          NULL,
+                          (Alias#("head", "p0") NotAlias#("head", "null"))));
+
+  append_impl_spec = append_impl_spec_empty :: append_impl_spec_notempty;
+
+  anchors = CODE.Anchor#("begin", "head"); 
+  
+  sll_push_match1 = GenDataMatchSpecification(anchors, sll_insert_spec_empty, pushfirst_impl_spec_empty);
+  sll_push_match2 = GenDataMatchSpecification(anchors, sll_insert_spec_empty, pushfirst_impl_spec_notempty);
+  sll_push_match3 = GenDataMatchSpecification(anchors, sll_insert_spec_notempty, pushfirst_impl_spec_empty);
+  sll_push_match4 = GenDataMatchSpecification(anchors, sll_insert_spec_notempty, pushfirst_impl_spec_notempty);
+
+  sll_append_match1 = GenDataMatchSpecification(anchors, sll_insert_spec_empty, append_impl_spec_empty);
+  sll_append_match2 = GenDataMatchSpecification(anchors, sll_insert_spec_empty, append_impl_spec_notempty);
+  sll_append_match3 = GenDataMatchSpecification(anchors, sll_insert_spec_notempty, append_impl_spec_empty);
+  sll_append_match4 = GenDataMatchSpecification(anchors, sll_insert_spec_notempty, append_impl_spec_notempty);
+/>
+
+<output from=sll_push_match1 to="insertfront_empty_push_empty.smt2"/>
+<output from=sll_push_match2 to="insertfront_empty_push_notempty.smt2"/>
+<output from=sll_push_match3 to="insertfront_notempty_push_empty.smt2"/>
+<output from=sll_push_match4 to="insertfront_notempty_push_notempty.smt2"/>
+
+<output from=sll_append_match1 to="insertfront_empty_append_empty.smt2"/>
+<output from=sll_append_match2 to="insertfront_empty_append_notempty.smt2"/>
+<output from=sll_append_match3 to="insertfront_notempty_append_empty.smt2"/>
+<output from=sll_append_match4 to="insertfront_notempty_append_notempty.smt2"/>
