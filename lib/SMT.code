@@ -74,6 +74,7 @@ for (p = names; p != NULL; p = cdr(p)) {
  }  
 }res)@
 @unique@
+@notnull_pos@
 </code>
 
 <code PositionVariableNotNull pars=(name:ID, tag:ID)>
@@ -100,9 +101,8 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
    if(!(v2:"UNMAPPED")){
-    Anchor#(v1,v2) = anchor;
-   res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
-   res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
+    res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
+    res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
    }
  }
 } res)@
@@ -110,6 +110,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 
 <code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
 @(res = NULL;
+unmapped_vars = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
  <*TODO: Extend to support parameter mappings*>
  if(car(p) : CODE.ParamAnchor){
@@ -120,10 +121,13 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
       res = CODE.AnchorVariable#(v2, i) :: res;
+    }else{
+      unmapped_vars = CODE.AnchorUnmapped#(v1, i) :: unmapped_vars;  
     }
-    res = CODE.AnchorVariable#(v1, i) :: res;  
+    res = CODE.AnchorVariable#(v1, i) :: res;
  }
 } res)@
+@unmapped_vars@
 </code>
 
 <code AnchorVariable pars=(name : ID, index : INT)>
@@ -135,6 +139,11 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
 (assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+</code>
+
+<code AnchorUnmapped pars=(name:ID, index : INT)>
+(assert (! (= @name@_in@index@ 0) :named unmapped_anchor_@name@_in@index@))
+(assert (! (= @name@_out@index@ 0) :named unmapped_anchor_@name@_out@index@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -158,12 +167,15 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
 </code>
 
-<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,"\n"))>
-@(res1 = res2 = NULL;
+<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotReachable,"\n"))>
+@(res1 = res2 = res3 = NULL;
 foreach n = CODE.ReachableTo \in rels do
   res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
   res2 = (CODE.ReachableToAssert#(tag,n)) :: res2;
 enddo
+foreach m = CODE.NotReachableTo \in rels do
+  res3 = (CODE.NotReachableAssert#(tag,m)) :: res3;
+enddo;
 )@
 (define-fun-rec reachable_@tag@ ((l Int) (r Int)) Bool
   (or
@@ -175,6 +187,7 @@ enddo
   )
 )
 @res2@
+@res3@
 </code>
 
 <code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
@@ -183,6 +196,10 @@ enddo
 
 <code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
 (assert (!(reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@) :named reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
+</code>
+
+<code NotReachableAssert pars=(tag : ID, r : CODE.NotReachableTo)>
+(assert (!(not (reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@)) :named not_reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
 </code>
 
 <code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,""))>
