@@ -53,9 +53,12 @@ smt_spec@
 (get-unsat-core)
 </code>
 
-<code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
-@(res = NULL; unique = NULL;
+<code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), deleted_pos : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
+@(res = NULL; unique = NULL; notnull_pos = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
+ if(!Lookup(car(p), deleted_pos) && car(SPLIT(2,(car p))) == "in"){
+  notnull_pos = CODE.PositionVariableNotNull#(car(p),tag) :: notnull_pos;
+ }
  res = CODE.PositionVariable#(car(p), tag) :: res;
  if (car(SPLIT(5,(car p))) == "p_new") {
    for (p1 = names; p1 != NULL; p1 = cdr(p1)) {
@@ -71,6 +74,10 @@ for (p = names; p != NULL; p = cdr(p)) {
  }  
 }res)@
 @unique@
+</code>
+
+<code PositionVariableNotNull pars=(name:ID, tag:ID)>
+(assert (! (not (= @name@_@tag@ 0))) :named p_not_null_@name@_@tag@)
 </code>
 
 <code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
@@ -151,48 +158,23 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
 </code>
 
-<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo,"\n"))>
+<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,"\n"))>
 @(res1 = res2 = NULL;
 foreach n = CODE.ReachableTo \in rels do
   res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
   res2 = (CODE.ReachableToAssert#(tag,n)) :: res2;
 enddo
 )@
-(define-fun-rec reachable_basic_@tag@ ((l Int) (r Int)) Bool
+(define-fun-rec reachable_@tag@ ((l Int) (r Int)) Bool
   (or
     @res1@
     (= l r)
     (nextto_@tag@ l r)
-    (exists ((m Int)) (and (reachable_basic_@tag@ l m) (reachable_basic_@tag@ m r)))
+    (exists ((m Int)) (and (nextto_@tag@ l m) (reachable_@tag@ m r)))
+    (exists ((m Int)) (and (reachable_@tag@ l m) (nextto_@tag@ m r)))
   )
 )
-@CODE.NotCircleDefinition#(tag)@
-@CODE.CombinedReachDefinition#(tag)@
 @res2@
-</code>
-
-<code NotCircleDefinition pars=(tag:ID)>
-(define-fun non_empty_is_non_circle_@tag@ ((n Int) (m Int)) Bool
-  (=> 
-    (exists ((p1 Int) (p2 Int))
-      (and 
-        (reachable_basic_@tag@ n p1)
-        (nextto_@tag@ p1 p2)
-        (reachable_basic_@tag@ p2 m)
-      )
-    )
-    (not (= n m))
-  )
-)
-</code>
-
-<code CombinedReachDefinition pars=(tag:ID)>
-(define-fun reachable_@tag@ ((l Int) (r Int)) Bool
-  (and 
-    (reachable_basic_@tag@ l r)
-    (non_empty_is_non_circle_@tag@ l r)
-  )
-)
 </code>
 
 <code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
@@ -201,6 +183,31 @@ enddo
 
 <code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
 (assert (!(reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@) :named reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
+</code>
+
+<code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,""))>
+@(res1 = NULL;
+foreach n = CODE.NonCircleReachableTo \in r do
+  res1 = (CODE.NotCircleAssert#(tag,n)) :: res1;
+enddo
+)@
+(define-fun non_empty_is_non_circle_@tag@ ((n Int) (m Int)) Bool
+  (=> 
+    (exists ((p1 Int) (p2 Int))
+      (and 
+        (reachable_@tag@ n p1)
+        (nextto_@tag@ p1 p2)
+        (reachable_@tag@ p2 m)
+      )
+    )
+    (not (= n m))
+  )
+)
+@res1@
+</code>
+
+<code NotCircleAssert pars=(tag:ID, r: CODE.NonCircleReachableTo)>
+(assert (!(non_empty_is_non_circle_@tag@ @r[NonCircleReachableTo.n1]@_@tag@ @r[NonCircleReachableTo.n2]@_@tag@) :named non_empty_is_non_circle_@tag@_@r[NonCircleReachableTo.n1]@_@r[NonCircleReachableTo.n2]@))
 </code>
 
 <code AliasDefinition pars=(tag : ID, rels : LIST(CODE.Alias|CODE.NotAlias, "\n"))>
