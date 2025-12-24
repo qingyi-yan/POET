@@ -110,7 +110,6 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 
 <code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
 @(res = NULL;
-unmapped_vars = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
  <*TODO: Extend to support parameter mappings*>
  if(car(p) : CODE.ParamAnchor){
@@ -121,13 +120,10 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
       res = CODE.AnchorVariable#(v2, i) :: res;
-    }else{
-      unmapped_vars = CODE.AnchorUnmapped#(v1, i) :: unmapped_vars;  
     }
     res = CODE.AnchorVariable#(v1, i) :: res;
  }
 } res)@
-@unmapped_vars@
 </code>
 
 <code AnchorVariable pars=(name : ID, index : INT)>
@@ -139,11 +135,6 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
 (assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
-</code>
-
-<code AnchorUnmapped pars=(name:ID, index : INT)>
-(assert (! (= @name@_in@index@ 0) :named unmapped_anchor_@name@_in@index@))
-(assert (! (= @name@_out@index@ 0) :named unmapped_anchor_@name@_out@index@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
