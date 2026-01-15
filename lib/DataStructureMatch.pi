@@ -10,6 +10,10 @@
 
 <code NotAlias pars=(v1:ID, v2:ID)/>
 
+<code DeletedPosition pars=(n1:ID)/>
+
+<code NewAllocPosition pars=(n1:ID)/>
+
 <code SMTSpecification pars=(num_of_nodes, num_of_graphs, new_pos,
                              pos_variables, anchors,
                              nextto_rels, reach_rels, aliases)/>

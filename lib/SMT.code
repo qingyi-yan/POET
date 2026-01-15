@@ -58,10 +58,6 @@ smt_spec@
 (get-unsat-core)
 </code>
 
-<code DeletedPosition pars=(n1:ID)/>
-
-<code NewAllocPosition pars=(n1:ID)/>
-
 <code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
 @(res = NULL; unique = NULL; deleted_pos = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
