@@ -128,7 +128,7 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 )@
 @((def : NULL|"")? ""
    : (cdr(def) : ""|NULL)? ("(assert (!" def ":named @v1@_@tag@_is_matched_to_new_alloc))")
-   : ("(assert (! (or " def ") :named " @v1@_@tag@_is_matched_to_new_alloc"))"))@
+   : ("(assert (! (or " def ") :named " v1"_"tag"_is_matched_to_new_alloc))"))@
 </code>
 
 <code NewAllocMatchPossible pars=(tag, v1: ID, v2: ID)>
