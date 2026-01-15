@@ -1,4 +1,3 @@
-
 <code SMTOutput pars=(class_name:ID, spec_name:ID, content: LIST(CODE.SMTBlock, "\n"))>
 @class_name
 spec_name
@@ -30,6 +29,9 @@ smt_spec@
   (and (<= 0 l) (<= l @num_of_nodes@))
 )
 
+; deleted positions
+(declare-fun deleted (Int) Bool)
+
 ; Position and implementation variables
 @((pos_variables == NULL)? "" : pos_variables)@
 
@@ -45,6 +47,9 @@ smt_spec@
 ; aliases
 @((aliases == NULL)? "" : aliases)@
 
+; binding of newly allocated positions
+@CODE.NewAllocBinding#(pos_variables)@
+
 ; binding of member variables
 @CODE.AnchorVariableBinding#(anchors, num_of_graphs)@
 
@@ -53,32 +58,110 @@ smt_spec@
 (get-unsat-core)
 </code>
 
-<code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), deleted_pos : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
-@(res = NULL; unique = NULL; notnull_pos = NULL;
+<code DeletedPosition pars=(n1:ID)/>
+
+<code NewAllocPosition pars=(n1:ID)/>
+
+<code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
+@(res = NULL; unique = NULL; deleted_pos = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
- if(!Lookup(car(p), deleted_pos) && car(SPLIT(2,(car p))) == "in"){
-  notnull_pos = CODE.PositionVariableNotNull#(car(p),tag) :: notnull_pos;
+ if((car(p)) : CODE.DeletedPosition#(del_pos=_)){
+  deleted_pos = XFORM.AppendList[erase_replicate=TRUE](del_pos,deleted_pos);
+  continue;
  }
  res = CODE.PositionVariable#(car(p), tag) :: res;
- if (car(SPLIT(5,(car p))) == "p_new") {
-   for (p1 = names; p1 != NULL; p1 = cdr(p1)) {
-      if (car(p) != car(p1) && !Lookup(car(p1), new_pos)) {
-        if(car(p) == "p_new0" && (car(p1) == "p0" || car(p1) == "p2")){
-          <*DEBUG{car(p)};
-          DEBUG{car(p1)};*>
-        }else{
-          unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
-        }
-      }
-   }
- }  
-}res)@
+ for(p1 = names; p1 != NULL; p1 = cdr(p1)){
+  if((car(p1)) : CODE.DeletedPosition){
+    continue;
+  }
+  if(car(p) != car(p1)){
+    if(Lookup(car(p), new_pos) && !(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl))){
+      unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
+    }else if(Lookup(car(p), new_pos_impl) && !(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl))){
+      unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
+    }
+  }
+ }
+}
+res)@
 @unique@
-@notnull_pos@
+@((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
+@((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
 </code>
 
-<code PositionVariableNotNull pars=(name:ID, tag:ID)>
-(assert (! (not (= @name@_@tag@ 0))) :named p_not_null_@name@_@tag@)
+<code NewAllocDefinition pars=(tag:ID, new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","))>
+@(def=NULL; assertions=NULL;
+for (p = new_pos; p != NULL; p = cdr(p)) {
+  if((car(p)) : CODE.DeletedPosition){
+    continue;
+  }
+  def = CODE.NewAllocExpression#(tag,car(p)) :: def;
+  assertions = CODE.NewAllocAssert#(tag,car(p)) :: assertions;
+}
+for (p = new_pos_impl; p != NULL; p = cdr(p)) {
+  if((car(p)) : CODE.DeletedPosition){
+    continue;
+  }
+  def = CODE.NewAllocExpression#(tag,car(p)) :: def;
+  assertions = CODE.NewAllocAssert#(tag,car(p)) :: assertions;
+}
+)@(define-fun new_alloc ((i Int)) Bool
+  @((def : NULL|"")? "false"
+   : (cdr(def) : ""|NULL)? def
+   : ("(or " def ")"))@
+)
+@assertions@
+</code>
+
+<code NewAllocExpression pars=(tag:ID, var: ID)>
+(= i @var@_@tag@)
+</code>
+
+<code NewAllocAssert pars=(tag:ID, var:ID)>
+(assert (! (new_alloc @var@_@tag@) :named @var@_@tag@_is_new_alloc))
+</code>
+
+<code NewAllocMatch pars=(tag:ID, v1: ID, cur_pos: LIST(ID,","))>
+@(def=NULL;
+for (p = cur_pos; p != NULL; p = cdr(p)) {
+  if(car(p) : v1 || car(p) : CODE.DeletedPosition){
+    continue;
+  }
+  def = CODE.NewAllocMatchPossible#(tag, v1, car(p)) :: def;
+}
+)@
+@((def : NULL|"")? ""
+   : (cdr(def) : ""|NULL)? ("(assert (!" def ":named @v1@_@tag@_is_matched_to_new_alloc))")
+   : ("(assert (! (or " def ") :named " @v1@_@tag@_is_matched_to_new_alloc"))"))@
+</code>
+
+<code NewAllocMatchPossible pars=(tag, v1: ID, v2: ID)>
+(and (new_alloc @v2@_@tag@) (= @v1@_@tag@ @v2@_@tag@))
+</code>
+
+<code NewAllocBinding pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","))>
+@(res1 = NULL; res2 = NULL;
+for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
+  CODE.PositionVariableDefinition#(tag=_,cur_pos=_,new_pos=_,new_pos_impl=_,alias=_) = car(pv_def);
+  for(p1 = new_pos; p1 != NULL; p1 = cdr(p1)){
+    res2 = CODE.NewAllocMatch#(tag,car(p1),cur_pos) :: res2;
+  }
+})@
+@((res2:NULL|"")? "" : res2)@
+</code>
+
+<code PositionDeletedDefinition pars=(tag:ID, deleted_pos:LIST(ID,""))>
+@(res=NULL;
+  for (p = deleted_pos; p != NULL; p = cdr(p)) {
+    if(car(SPLIT(2,tag)) != "in"){
+      res = CODE.PositionDeletedAssert#(car(p), tag) :: res;
+    }
+  }
+res)@
+</code>
+
+<code PositionDeletedAssert pars=(name:ID, tag:ID)>
+(assert (! (deleted @name@_@tag@) :named @name@_@tag@_deleted))
 </code>
 
 <code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
@@ -88,6 +171,7 @@ for (p = names; p != NULL; p = cdr(p)) {
 <code PositionVariable pars=(name : ID, tag : ID)>
 (declare-const @name@_@tag@ Int)
 (assert (memory_cell @name@_@tag@))
+(assert (! (not (= @name@_@tag@ 0)) :named p_not_null_@name@_@tag@))
 </code>
 
 <code AnchorVariableBinding pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
@@ -158,7 +242,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
 </code>
 
-<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotReachable,"\n"))>
+<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotReachableTo,"\n"))>
 @(res1 = res2 = res3 = NULL;
 foreach n = CODE.ReachableTo \in rels do
   res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
@@ -190,7 +274,7 @@ enddo;
 </code>
 
 <code NotReachableAssert pars=(tag : ID, r : CODE.NotReachableTo)>
-(assert (!(not (reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@)) :named not_reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
+(assert (!(not (reachable_@tag@ @r[NotReachableTo.n1]@_@tag@ @r[NotReachableTo.n2]@_@tag@)) :named not_reach_@tag@_@r[NotReachableTo.n1]@_@r[NotReachableTo.n2]@))
 </code>
 
 <code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,""))>
