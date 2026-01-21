@@ -18,7 +18,7 @@ smt_spec@
                              anchors : LIST(CODE.Anchor, ""), 
                              nextto_rels : LIST(CODE.NextToDefinition,"\n"),
                              reach_rels : LIST(CODE.ReachDefinition,"\n"),
-                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition, "\n"))>
+                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition|CODE.UnchangedVariable, "\n"))>
 
 (set-logic ALL)
 (set-option :produce-models true)
@@ -32,11 +32,11 @@ smt_spec@
 ; deleted positions
 (declare-fun deleted (Int) Bool)
 
-; Position and implementation variables
-@((pos_variables == NULL)? "" : pos_variables)@
-
 ; definition of anchor/member variables
 @CODE.AnchorVariableDefinition#(anchors, num_of_graphs)@
+
+; Position and implementation variables
+@((pos_variables == NULL)? "" : pos_variables)@
 
 ; nextto relations
 @((nextto_rels == NULL)? "" : nextto_rels)@
@@ -101,7 +101,7 @@ for (p = new_pos_impl; p != NULL; p = cdr(p)) {
   def = CODE.NewAllocExpression#(tag,car(p)) :: def;
   assertions = CODE.NewAllocAssert#(tag,car(p)) :: assertions;
 }
-)@(define-fun new_alloc ((i Int)) Bool
+)@(define-fun new_alloc_@tag@ ((i Int)) Bool
   @((def : NULL|"")? "false"
    : (cdr(def) : ""|NULL)? def
    : ("(or " def ")"))@
@@ -114,7 +114,7 @@ for (p = new_pos_impl; p != NULL; p = cdr(p)) {
 </code>
 
 <code NewAllocAssert pars=(tag:ID, var:ID)>
-(assert (! (new_alloc @var@_@tag@) :named @var@_@tag@_is_new_alloc))
+(assert (! (new_alloc_@tag@ @var@_@tag@) :named @var@_@tag@_is_new_alloc))
 </code>
 
 <code NewAllocMatch pars=(tag:ID, v1: ID, cur_pos: LIST(ID,","))>
@@ -132,7 +132,7 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 </code>
 
 <code NewAllocMatchPossible pars=(tag, v1: ID, v2: ID)>
-(and (new_alloc @v2@_@tag@) (= @v1@_@tag@ @v2@_@tag@))
+(and (new_alloc_@tag@ @v2@_@tag@) (= @v1@_@tag@ @v2@_@tag@))
 </code>
 
 <code NewAllocBinding pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","))>
@@ -328,5 +328,9 @@ else v2 = v2 ^ "_" ^ tag;
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>
+(assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
+</code>
+
+<code UnchangedVariable pars=(v : ID, tag1 : ID, tag2 : ID)>
 (assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
 </code>
