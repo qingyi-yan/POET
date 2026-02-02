@@ -2,6 +2,8 @@
 
 <code ReachableTo pars=(n1:ID, n2:ID)/>
 
+<code HasValue pars=(n1:ID, n2:ID)/>
+
 <code NonCircleReachableTo pars=(n1:ID, n2:ID)/>
 
 <code NotReachableTo pars=(n1:ID, n2:ID)/>

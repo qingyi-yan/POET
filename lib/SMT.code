@@ -53,21 +53,31 @@ smt_spec@
 ; binding of member variables
 @CODE.AnchorVariableBinding#(anchors, num_of_graphs)@
 
+; general consistency rules
+@CODE.AliasedPositionSameValueDefinition#(pos_variables)@
+@CODE.PositionHasSingleValueDefinition#(pos_variables)@
+
 (check-sat)
 (get-model)
 (get-unsat-core)
 </code>
 
 <code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
-@(res = NULL; unique = NULL; deleted_pos = NULL;
+@(res = NULL; unique = NULL; deleted_pos = NULL; values = NULL; p_val_pair = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
  if((car(p)) : CODE.DeletedPosition#(del_pos=_)){
   deleted_pos = XFORM.AppendList[erase_replicate=TRUE](del_pos,deleted_pos);
   continue;
+ }else if((car(p)) : CODE.HasValue#(pos=_,val=_)){
+  p_val_pair = car(p) :: p_val_pair;
+  if(!XFORM.Lookup(val, values)){
+    values = CODE.ValueVariable#(tag, val) :: values;
+  }
+  continue;
  }
  res = CODE.PositionVariable#(car(p), tag) :: res;
  for(p1 = names; p1 != NULL; p1 = cdr(p1)){
-  if((car(p1)) : CODE.DeletedPosition){
+  if((car(p1)) : CODE.DeletedPosition|CODE.HasValue){
     continue;
   }
   if(car(p) != car(p1)){
@@ -83,19 +93,21 @@ res)@
 @unique@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
 @((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
+@((values == NULL)? "" : CODE.ValueVariableDefinition#(values))@
+@((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
 </code>
 
 <code NewAllocDefinition pars=(tag:ID, new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","))>
 @(def=NULL; assertions=NULL;
 for (p = new_pos; p != NULL; p = cdr(p)) {
-  if((car(p)) : CODE.DeletedPosition){
+  if((car(p)) : CODE.DeletedPosition|CODE.HasValue){
     continue;
   }
   def = CODE.NewAllocExpression#(tag,car(p)) :: def;
   assertions = CODE.NewAllocAssert#(tag,car(p)) :: assertions;
 }
 for (p = new_pos_impl; p != NULL; p = cdr(p)) {
-  if((car(p)) : CODE.DeletedPosition){
+  if((car(p)) : CODE.DeletedPosition|CODE.HasValue){
     continue;
   }
   def = CODE.NewAllocExpression#(tag,car(p)) :: def;
@@ -117,10 +129,17 @@ for (p = new_pos_impl; p != NULL; p = cdr(p)) {
 (assert (! (new_alloc_@tag@ @var@_@tag@) :named @var@_@tag@_is_new_alloc))
 </code>
 
-<code NewAllocMatch pars=(tag:ID, v1: ID, cur_pos: LIST(ID,","))>
-@(def=NULL;
+<code NewAllocMatch pars=(tag:ID, v1: ID|CODE.HasValue, cur_pos: LIST(ID,","))>
+@(def=NULL; res=NULL;
 for (p = cur_pos; p != NULL; p = cdr(p)) {
-  if(car(p) : v1 || car(p) : CODE.DeletedPosition){
+  if(car(p) : v1){
+    continue;
+  }else if(car(p) : CODE.DeletedPosition){
+    continue;
+  }else if(v1 : CODE.HasValue && car(p) : CODE.HasValue){
+    res = CODE.PositionValueMatchPossible#(tag, v1, car(p)) :: res;
+    continue;
+  }else if(v1 : CODE.HasValue || car(p) : CODE.HasValue){
     continue;
   }
   def = CODE.NewAllocMatchPossible#(tag, v1, car(p)) :: def;
@@ -129,14 +148,45 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 @((def : NULL|"")? ""
    : (cdr(def) : ""|NULL)? ("(assert (!" def ":named @v1@_@tag@_is_matched_to_new_alloc))")
    : ("(assert (! (or " def ") :named " v1"_"tag"_is_matched_to_new_alloc))"))@
+@((res : NULL|"")? "" : CODE.PositionValueMatchAssert#(tag, v1, res))@
 </code>
 
-<code NewAllocMatchPossible pars=(tag, v1: ID, v2: ID)>
+<code NewAllocMatchPossible pars=(tag : ID, v1: ID, v2: ID)>
 (and (new_alloc_@tag@ @v2@_@tag@) (= @v1@_@tag@ @v2@_@tag@))
 </code>
 
+<code PositionValueMatchPossible pars=(tag: ID, v1 : CODE.HasValue, v2: CODE.HasValue)>
+(=> (= @v1[HasValue.n1]@_@tag@ @v2[HasValue.n1]@_@tag@) (= @v1[HasValue.n2]@_@tag@ @v2[HasValue.n2]@_@tag@))
+</code>
+
+<code PositionValueMatchAssert pars=(tag: ID, v1 : CODE.HasValue, res: LIST(CODE.PositionValueMatchPossible,","))>
+@(CODE.HasValue#(p,v) = v1;
+(res : NULL|"")? ""
+   : (cdr(res) : ""|NULL)? ("(assert (! " res " :named @p@_@tag@_value_@v@_is_matched))")
+   : ("(assert (! (and " res ") :named " p"_"tag"_value_"v"_is_matched))"))@
+</code>
+
+<code ValueVariableDefinition pars=(names : LIST(CODE.ValueVariable, "\n"))>
+@(vars=NULL;
+foreach cur=CODE.ValueVariable#(vartag=_,varname=_) \in names do
+  vars = XFORM.AppendList(varname^_^vartag, vars);
+enddo;)@
+; definition of values (data stored in memory cells)
+(declare-sort Value)
+@names@
+@CODE.ValueVariableDistinctAssert#(vars)@
+</code>
+
+<code ValueVariable pars=(tag : ID, name : ID)>
+(declare-const @name@_@tag@ Value)
+</code>
+
+<code ValueVariableDistinctAssert pars=(names : LIST(ID," "))>
+(assert (! (distinct @names@) :named value_variables_are_distinct))
+</code>
+
 <code NewAllocBinding pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","))>
-@(res1 = NULL; res2 = NULL;
+@(res2 = NULL;
 for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
   CODE.PositionVariableDefinition#(tag=_,cur_pos=_,new_pos=_,new_pos_impl=_,alias=_) = car(pv_def);
   for(p1 = new_pos; p1 != NULL; p1 = cdr(p1)){
@@ -171,13 +221,18 @@ res)@
 </code>
 
 <code AnchorVariableBinding pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
-@(res = NULL;
+@(res = NULL; res1 = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
- <*TODO: Extend to support parameter mappings*>
- if(car(p) : CODE.ParamAnchor){
+ anchor = car p;
+ if(anchor : CODE.ParamAnchor){
+  <*
+  CODE.ParamAnchor#(v1,v2) = anchor;
+  for (i = 0; i < n; i = i + 1) {
+    res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
+  }
+  *>
   continue;
  }
- anchor = car p;
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
    if(!(v2:"UNMAPPED")){
@@ -186,18 +241,24 @@ for (p = anchors; p != NULL; p = cdr(p)) {
    }
  }
 } res)@
+@res1@
 </code>
 
 <code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
 @(res = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
- <*TODO: Extend to support parameter mappings*>
- if(car(p) : CODE.ParamAnchor){
-  continue;
- }
  anchor = car p;
+ if(anchor : CODE.ParamAnchor){
+   continue;
+ }
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
+    <*If function parameter is a position, which is already declared*>
+    <*
+    if(car(SPLIT(1,v1)) != "p"){
+      res = CODE.AnchorVariable#(v1, i) :: res;
+    }
+    *>
     if(!(v2:"UNMAPPED")){
       res = CODE.AnchorVariable#(v2, i) :: res;
     }
@@ -215,6 +276,10 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 
 <code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
 (assert (! (or (= @v1@_@tag@ @v2@_@tag@) (and (= @v1@_@tag@ 0) (nextto_@tag@ @v1@_@tag@ @v2@_@tag@))) :named binding_@v1@_@v2@_@tag@))
+</code>
+
+<code BindingParams pars=(v1 : ID, v2 : ID, tag : ID)>
+(assert (! (= @v1@_@tag@ @v2@_@tag@) :named binding_@v1@_@v2@_@tag@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -333,4 +398,78 @@ else v2 = v2 ^ "_" ^ tag;
 
 <code UnchangedVariable pars=(v : ID, tag1 : ID, tag2 : ID)>
 (assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
+</code>
+
+<code HasValueDefinition pars=(tag : ID, rels: LIST(CODE.HasValue,""))>
+@(res1 = res2 = NULL;
+foreach h = CODE.HasValue \in rels do
+  res1 = (CODE.HasValuePossible#(tag, h)) :: res1;
+  res2 = (CODE.HasValueAssert#(tag, h)) :: res2;
+enddo;
+)@(define-fun has_value_@tag@ ((l Int) (r Value)) Bool
+    @((res1 : NULL|"")? "false"
+   : (cdr(res1) : ""|NULL)? res1
+   : ("(or " res1 ")"))@)
+@res2@
+</code>
+
+<code HasValuePossible pars=(tag, r : CODE.HasValue) >
+(and (= l @r[HasValue.n1]@_@tag@)  (= r @r[HasValue.n2]@_@tag@))
+</code>
+
+<code HasValueAssert pars=(tag : ID, r : CODE.HasValue)>
+(assert (!(has_value_@tag@ @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@) :named has_value_@tag@_@r[HasValue.n1]@_@r[HasValue.n2]@))
+</code>
+
+<code AliasedPositionSameValueDefinition pars=(pos_variables : LIST(CODE.PositionVariableDefinition,","))>
+@(res=NULL;
+for(q = pos_variables; q != NULL; q = cdr(q)){
+  cur_q = car(q);
+  names = cur_q[PositionVariableDefinition.names];
+  for(n = names; n != NULL; n = cdr(n)){
+    if(car(n) : CODE.HasValue){
+      res = CODE.AliasedPositionSameValueAssert#(cur_q[PositionVariableDefinition.tag]) :: res;
+      break;
+    }
+  }
+})@
+@res@
+</code>
+
+<code AliasedPositionSameValueAssert pars=(tag: ID)>
+(assert 
+  (! (forall ((c1 Int) (c2 Int) (v1 Value) (v2 Value))
+       (=> 
+         (and (has_value_@tag@ c1 v1) 
+              (has_value_@tag@ c2 v2) 
+              (= c1 c2))
+         (= v1 v2)))
+     :named aliased_positions_@tag@_hold_same_value)
+)
+</code>
+
+<code PositionHasSingleValueDefinition pars=(pos_variables : LIST(CODE.PositionVariableDefinition,","))>
+@(res=NULL;
+for(q = pos_variables; q != NULL; q = cdr(q)){
+  cur_q = car(q);
+  names = cur_q[PositionVariableDefinition.names];
+  for(n = names; n != NULL; n = cdr(n)){
+    if(car(n) : CODE.HasValue){
+      res = CODE.PositionHasSingleValueAssert#(cur_q[PositionVariableDefinition.tag]) :: res;
+      break;
+    }
+  }
+})@
+@res@
+</code>
+
+<code PositionHasSingleValueAssert pars=(tag : ID)>
+(assert 
+  (! (forall ((c Int) (v1 Value) (v2 Value))
+       (=> 
+         (and (has_value_@tag@ c v1) 
+              (has_value_@tag@ c v2))
+         (= v1 v2)))
+     :named positions_@tag@_have_single_value)
+)
 </code>
