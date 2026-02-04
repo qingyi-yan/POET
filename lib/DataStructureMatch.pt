@@ -39,7 +39,40 @@ include utils.incl
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
     
     GraphSpec#(g_nodes_in, cur_nextto, cur_reach, cur_alias) = g_in;
-    new_pos_impl = XFORM.DifferenceList(g_nodes_out, org_nodes_in); <*Newly allocated nodes in implementation*>
+    impl_pos_diff = XFORM.DifferenceList(g_nodes_out, org_nodes_in); <*Newly allocated nodes in implementation*>
+
+    values = NULL;
+    values_impl = NULL;
+
+    <*Collect implementation value variables*>
+    for(p=g_nodes_out; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.HasValue#(v1=_,v2=_)){
+        values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
+      }
+    }
+
+    for(p=anchors; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
+        values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
+      }
+    }
+
+    <*Collect specification value variables*>
+    for(p=org_nodes_out; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.HasValue#(v1=_,v2=_)){
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+      }
+    }
+
+    new_pos_impl = NULL;
+    <*Unknown nodes are not new allocations*>
+    <*TODO: Remove p_unknowns from list of newly allocated nodes*>
+    for(impl_p=impl_pos_diff; impl_p != NULL; impl_p = cdr(impl_p)){
+      if(car(SPLIT(9,car(impl_p))) != "p_unknown"){
+        new_pos_impl = car(impl_p) :: new_pos_impl;
+      }
+    }
+    new_pos_impl = XFORM.ReverseList(new_pos_impl);
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,new_pos_impl,cur_alias) :: pos_variables;
 
     tag = "in" ^ index; 
@@ -56,10 +89,13 @@ include utils.incl
     index = index + 1;
   }
 
+  <*
   DEBUG{pos_variables};
   DEBUG{new_pos};
   DEBUG{alias_rels};
-  
+  DEBUG{values};
+  DEBUG{values_impl};
+  *>
 
-  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels);
+  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, values, values_impl);
 </xform>

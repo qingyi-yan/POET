@@ -18,7 +18,9 @@ smt_spec@
                              anchors : LIST(CODE.Anchor, ""), 
                              nextto_rels : LIST(CODE.NextToDefinition,"\n"),
                              reach_rels : LIST(CODE.ReachDefinition,"\n"),
-                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition|CODE.UnchangedVariable, "\n"))>
+                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition|CODE.UnchangedVariable, "\n"),
+                             values :  LIST(CODE.ValueVariable, ""),
+                             values_impl : LIST(CODE.ValueVariable, ""))>
 
 (set-logic ALL)
 (set-option :produce-models true)
@@ -32,11 +34,17 @@ smt_spec@
 ; deleted positions
 (declare-fun deleted (Int) Bool)
 
-; definition of anchor/member variables
-@CODE.AnchorVariableDefinition#(anchors, num_of_graphs)@
+; specification value variables
+@((values == NULL)? "" : CODE.ValueVariableDefinition#("spec", values))@
+
+; implementation value variables
+@((values_impl == NULL)? "" : CODE.ValueVariableDefinition#("impl", values_impl))@
 
 ; Position and implementation variables
 @((pos_variables == NULL)? "" : pos_variables)@
+
+; definition of anchor/member variables
+@CODE.AnchorVariableDefinition#(anchors, num_of_graphs, values, values_impl)@
 
 ; nextto relations
 @((nextto_rels == NULL)? "" : nextto_rels)@
@@ -70,9 +78,6 @@ for (p = names; p != NULL; p = cdr(p)) {
   continue;
  }else if((car(p)) : CODE.HasValue#(pos=_,val=_)){
   p_val_pair = car(p) :: p_val_pair;
-  if(!XFORM.Lookup(val, values)){
-    values = CODE.ValueVariable#(tag, val) :: values;
-  }
   continue;
  }
  res = CODE.PositionVariable#(car(p), tag) :: res;
@@ -85,6 +90,10 @@ for (p = names; p != NULL; p = cdr(p)) {
       unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
     }else if(Lookup(car(p), new_pos_impl) && !(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl))){
       unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
+    }else if(car(SPLIT(9,car(p))) == "p_unknown"){
+      if(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl)){
+        unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
+      }
     }
   }
  }
@@ -93,7 +102,6 @@ res)@
 @unique@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
 @((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
-@((values == NULL)? "" : CODE.ValueVariableDefinition#(values))@
 @((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
 </code>
 
@@ -166,23 +174,24 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
    : ("(assert (! (and " res ") :named " p"_"tag"_value_"v"_is_matched))"))@
 </code>
 
-<code ValueVariableDefinition pars=(names : LIST(CODE.ValueVariable, "\n"))>
+<code ValueVariableDefinition pars=(source: ID, names : LIST(CODE.ValueVariable, "\n"))>
 @(vars=NULL;
 foreach cur=CODE.ValueVariable#(vartag=_,varname=_) \in names do
   vars = XFORM.AppendList(varname^_^vartag, vars);
 enddo;)@
 ; definition of values (data stored in memory cells)
-(declare-sort Value)
+;(declare-sort Value)
 @names@
-@CODE.ValueVariableDistinctAssert#(vars)@
+@CODE.ValueVariableDistinctAssert#(source, vars)@
 </code>
 
 <code ValueVariable pars=(tag : ID, name : ID)>
-(declare-const @name@_@tag@ Value)
+(declare-const @name@_@tag@ Int)
+(assert (memory_cell @name@_@tag@))
 </code>
 
-<code ValueVariableDistinctAssert pars=(names : LIST(ID," "))>
-(assert (! (distinct @names@) :named value_variables_are_distinct))
+<code ValueVariableDistinctAssert pars=(source: ID, names : LIST(ID," "))>
+(assert (! (distinct @names@) :named @source@_value_variables_are_distinct))
 </code>
 
 <code NewAllocBinding pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","))>
@@ -225,12 +234,10 @@ res)@
 for (p = anchors; p != NULL; p = cdr(p)) {
  anchor = car p;
  if(anchor : CODE.ParamAnchor){
-  <*
   CODE.ParamAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
   }
-  *>
   continue;
  }
  Anchor#(v1,v2) = anchor;
@@ -244,21 +251,24 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 @res1@
 </code>
 
-<code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
+<code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT, 
+                                    values :  LIST(CODE.ValueVariable, ""),
+                                    values_impl : LIST(CODE.ValueVariable, ""))>
 @(res = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
  anchor = car p;
  if(anchor : CODE.ParamAnchor){
+   CODE.ParamAnchor#(v1,v2) = anchor;
+   for (i = 0; i < n; i = i + 1) {
+    <*If function parameter is not a position, which is already declared*>
+    if(!Lookup(v2,values_impl)){
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2, i), res);
+    }
+   }
    continue;
  }
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
-    <*If function parameter is a position, which is already declared*>
-    <*
-    if(car(SPLIT(1,v1)) != "p"){
-      res = CODE.AnchorVariable#(v1, i) :: res;
-    }
-    *>
     if(!(v2:"UNMAPPED")){
       res = CODE.AnchorVariable#(v2, i) :: res;
     }
@@ -406,7 +416,7 @@ foreach h = CODE.HasValue \in rels do
   res1 = (CODE.HasValuePossible#(tag, h)) :: res1;
   res2 = (CODE.HasValueAssert#(tag, h)) :: res2;
 enddo;
-)@(define-fun has_value_@tag@ ((l Int) (r Value)) Bool
+)@(define-fun has_value_@tag@ ((l Int) (r Int)) Bool
     @((res1 : NULL|"")? "false"
    : (cdr(res1) : ""|NULL)? res1
    : ("(or " res1 ")"))@)
@@ -418,7 +428,7 @@ enddo;
 </code>
 
 <code HasValueAssert pars=(tag : ID, r : CODE.HasValue)>
-(assert (!(has_value_@tag@ @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@) :named has_value_@tag@_@r[HasValue.n1]@_@r[HasValue.n2]@))
+(assert (!(=> (has_value_@tag@ @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@) (= @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@)) :named has_value_@tag@_@r[HasValue.n1]@_@r[HasValue.n2]@))
 </code>
 
 <code AliasedPositionSameValueDefinition pars=(pos_variables : LIST(CODE.PositionVariableDefinition,","))>
@@ -438,7 +448,7 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 
 <code AliasedPositionSameValueAssert pars=(tag: ID)>
 (assert 
-  (! (forall ((c1 Int) (c2 Int) (v1 Value) (v2 Value))
+  (! (forall ((c1 Int) (c2 Int) (v1 Int) (v2 Int))
        (=> 
          (and (has_value_@tag@ c1 v1) 
               (has_value_@tag@ c2 v2) 
@@ -465,7 +475,7 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 
 <code PositionHasSingleValueAssert pars=(tag : ID)>
 (assert 
-  (! (forall ((c Int) (v1 Value) (v2 Value))
+  (! (forall ((c Int) (v1 Int) (v2 Int))
        (=> 
          (and (has_value_@tag@ c v1) 
               (has_value_@tag@ c v2))
