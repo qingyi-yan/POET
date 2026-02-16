@@ -81,28 +81,17 @@ for (p = names; p != NULL; p = cdr(p)) {
   continue;
  }
  res = CODE.PositionVariable#(car(p), tag) :: res;
- for(p1 = names; p1 != NULL; p1 = cdr(p1)){
-  if((car(p1)) : CODE.DeletedPosition|CODE.HasValue){
-    continue;
-  }
-  if(car(p) != car(p1)){
-    if(Lookup(car(p), new_pos) && !(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl))){
-      unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
-    }else if(Lookup(car(p), new_pos_impl) && !(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl))){
-      unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
-    }else if(car(SPLIT(9,car(p))) == "p_unknown"){
-      if(Lookup(car(p1), new_pos) || Lookup(car(p1), new_pos_impl)){
-        unique = CODE.UniquePosition#(tag, car(p), car(p1)) :: unique;
-      }
-    }
-  }
- }
+ unique = XFORM.AppendList(car(p)^"_"^tag, unique);
 }
 res)@
-@unique@
+@((unique == NULL)? "" : CODE.PositionVariableDistinctAssert#(unique, tag))@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
 @((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
 @((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
+</code>
+
+<code PositionVariableDistinctAssert pars=(names : LIST(ID," "), tag : ID)>
+(assert (! (distinct @names@) :named pos_variables_@tag@_are_distinct))
 </code>
 
 <code NewAllocDefinition pars=(tag:ID, new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","))>
