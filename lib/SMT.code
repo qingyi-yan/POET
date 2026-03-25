@@ -36,6 +36,7 @@ smt_spec@
 
 ; mapping function
 (declare-fun mapping (Int) Int)
+(assert (= 0 (mapping 0)))
 
 ; specification value variables
 @((values == NULL)? "" : CODE.ValueVariableDefinition#("spec", values))@
@@ -70,30 +71,94 @@ smt_spec@
 
 (check-sat)
 (get-model)
+@CODE.GetValue#(pos_variables, anchors, num_of_graphs)@
 (get-unsat-core)
 </code>
 
+<code GetValue pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","), anchors : LIST(CODE.Anchor,","), n : INT)>
+@(res2 = NULL;
+for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
+  CODE.PositionVariableDefinition#(tag=_,cur_pos=_,new_pos=_,new_pos_impl=_,alias=_) = car(pv_def);
+  foreach pos=ID \in cur_pos do
+    res2 = XFORM.AppendList[erase_replicate=TRUE](pos^"_"^tag, res2);
+    res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(pos^"_"^tag), res2);
+  enddo;
+}
+for (p = anchors; p != NULL; p = cdr(p)) {
+  anchor = car(p);
+  if(anchor : CODE.FieldAnchor){
+    continue;
+  }else if(anchor : CODE.ParamAnchor#(v1=_,v2=_)){
+    for (i = 0; i < n; i = i + 1) {
+      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"out"^i, res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"out"^i), res2);
+      if(!(v2 : "UNMAPPED")){
+        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"out"^i, res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"out"^i), res2);
+      }
+    }
+  }else{
+    CODE.Anchor#(v1=_,v2=_) = anchor;
+    for (i = 0; i < n; i = i + 1) {
+      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"in"^i, res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"in"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"out"^i, res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"out"^i), res2);
+      if(!(v2 : "UNMAPPED")){
+        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"in"^i, res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"in"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"out"^i, res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"out"^i), res2);
+      }
+    }
+  }
+})@
+(get-value (@CODE.SMTVarName#(res2)@))
+</code>
+
+<code SMTVarName pars=(v : LIST(ID, " "))>
+@v@
+</code>
+
 <code PositionVariableDefinition pars=(tag : ID, names : LIST(ID,","), new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","), cur_alias : LIST(CODE.Alias|CODE.NotAlias,"\n"))>
-@(res = NULL; unique = NULL; deleted_pos = NULL; values = NULL; p_val_pair = NULL; unique_impl = NULL;
+@(res = NULL; unique = NULL; deleted_pos = NULL; values = NULL; p_val_pair = NULL; unique_impl = NULL; not_null_pos = NULL; unique_mapped = NULL;
 for (p = names; p != NULL; p = cdr(p)) {
- if((car(p)) : CODE.DeletedPosition#(del_pos=_)){
+ if(car(p) : CODE.DeletedPosition#(del_pos=_)){
   deleted_pos = XFORM.AppendList[erase_replicate=TRUE](del_pos,deleted_pos);
   continue;
- }else if((car(p)) : CODE.HasValue#(pos=_,val=_)){
+ }else if(car(p) : CODE.HasValue#(pos=_,val=_)){
   p_val_pair = car(p) :: p_val_pair;
   continue;
  }
  res = CODE.PositionVariable#(car(p), tag) :: res;
- if(!XFORM.Lookup((car(p)), new_pos)){
-  unique_impl = XFORM.AppendList(car(p)^"_"^tag, unique_impl);
- }
- if(!XFORM.Lookup((car(p)), new_pos_impl)){
+ if(car(SPLIT(9,car(p))) != "p_unknown"){
+  not_null_pos = CODE.PositionVariableNotNull#(car(p), tag) :: not_null_pos;
   unique = XFORM.AppendList(car(p)^"_"^tag, unique);
+ }
+ if(XFORM.Lookup(car(p), new_pos)){
+  for(q = names; q != NULL; q = cdr(q)){
+    pos = car(q);
+    if(!(pos : CODE.DeletedPosition|CODE.HasValue)){
+      if(!XFORM.Lookup(pos, new_pos_impl) && !(car(p) : pos)){
+        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p)^"_"^tag), CODE.VariableMapping#(pos^"_"^tag)), unique_mapped);
+      }
+    }
+  }
+ }else if(XFORM.Lookup(car(p), new_pos_impl)){
+  for(q = names; q != NULL; q = cdr(q)){
+    pos = car(q);
+    if(!(pos : CODE.DeletedPosition|CODE.HasValue)){
+      if(!XFORM.Lookup(pos, new_pos) && !(car(p) : pos)){
+        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p)^"_"^tag), CODE.VariableMapping#(pos^"_"^tag)), unique_mapped);
+      }
+    }
+  }
  }
 }
 res)@
+@not_null_pos@
 @((unique == NULL)? "" : CODE.PositionVariableDistinctAssert#(unique, tag, "spec"))@
-@((unique_impl == NULL)? "" : CODE.PositionVariableDistinctAssert#(unique_impl, tag, "impl"))@
+@unique_mapped@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
 @((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
 @((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
@@ -106,14 +171,14 @@ res)@
 <code NewAllocDefinition pars=(tag:ID, new_pos : LIST(ID, ","), new_pos_impl : LIST(ID, ","))>
 @(def=NULL; assertions=NULL;
 for (p = new_pos; p != NULL; p = cdr(p)) {
-  if((car(p)) : CODE.DeletedPosition|CODE.HasValue){
+  if(car(p) : CODE.DeletedPosition|CODE.HasValue){
     continue;
   }
   def = CODE.NewAllocExpression#(tag,car(p)) :: def;
   assertions = CODE.NewAllocAssert#(tag,car(p)) :: assertions;
 }
 for (p = new_pos_impl; p != NULL; p = cdr(p)) {
-  if((car(p)) : CODE.DeletedPosition|CODE.HasValue){
+  if(car(p) : CODE.DeletedPosition|CODE.HasValue){
     continue;
   }
   def = CODE.NewAllocExpression#(tag,car(p)) :: def;
@@ -223,13 +288,16 @@ res)@
 (assert (! (deleted @name@_@tag@) :named @name@_@tag@_deleted))
 </code>
 
-<code UniquePosition pars=(tag : ID,v1 : ID, v2 : ID)>
-(assert (! (not (= @v1@_@tag@ @v2@_@tag@)) :named p_unique_@v1@_@v2@_@tag@))
+<code UniquePosition pars=(tag : ID,v1 : CODE.VariableMapping, v2 : CODE.VariableMapping)>
+(assert (! (not (= @v1@ @v2@)) :named p_unique_@v1[VariableMapping.v]@_@v2[VariableMapping.v]@_@tag@))
 </code>
 
 <code PositionVariable pars=(name : ID, tag : ID)>
 (declare-const @name@_@tag@ Int)
 (assert (memory_cell @name@_@tag@))
+</code>
+
+<code PositionVariableNotNull pars=(name: ID, tag : ID)>
 (assert (! (not (= @name@_@tag@ 0)) :named p_not_null_@name@_@tag@))
 (assert (! (not (= (mapping @name@_@tag@) (mapping 0))) :named p_mapping_not_null_@name@_@tag@))
 </code>
@@ -298,7 +366,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code BindingParams pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (= @v1@_@tag@ @v2@_@tag@) :named binding_@v1@_@v2@_@tag@))
+(assert (! (= (mapping @v1@_@tag@) (mapping @v2@_@tag@)) :named binding_@v1@_@v2@_@tag@))
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
@@ -315,7 +383,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code NextToPossible pars=(tag, r : CODE.NextTo) >
-(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@)  (not (= l r)))
+(and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@)  (not (= l r)) (not (= (mapping l) (mapping r))))
 </code>
 
 <code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
@@ -346,7 +414,7 @@ enddo;
 </code>
 
 <code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
-(and (= (mapping l) (mapping @r[ReachableTo.n1]@_@tag@))  (= (mapping r) (mapping @r[ReachableTo.n2]@_@tag@)) (<= l r))
+(and (= l @r[ReachableTo.n1]@_@tag@)  (= r @r[ReachableTo.n2]@_@tag@) (<= l r))
 </code>
 
 <code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
@@ -399,7 +467,8 @@ if (v1 == "null")  v1 = 0;
 else v1 = v1 ^ "_" ^ tag;
 if (v2 == "null")  v2 = 0;
 else v2 = v2 ^ "_" ^ tag;
-@(assert (! (= (mapping @v1@) (mapping @v2@)) :named alias_@v1@_@v2@))
+@(assert (! (= @v1@ @v2@) :named alias_@v1@_@v2@))
+(assert (! (= (mapping @v1@) (mapping @v2@)) :named alias_mapped_@v1@_@v2@))
 </code>
 
 <code NotAliasAssert pars=(tag:ID, r : CODE.NotAlias) p=NULL>
@@ -408,7 +477,8 @@ if (v1 == "null")  v1 = 0;
 else v1 = v1 ^ "_" ^ tag;
 if (v2 == "null")  v2 = 0;
 else v2 = v2 ^ "_" ^ tag;
-@(assert (! (not (= (mapping @v1@) (mapping @v2@))) :named notalias_@v1@_@v2@))
+@(assert (! (not (= @v1@ @v2@)) :named notalias_@v1@_@v2@))
+(assert (! (not (= (mapping @v1@) (mapping @v2@))) :named notalias_mapped_@v1@_@v2@))
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>

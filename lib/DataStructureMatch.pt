@@ -6,9 +6,13 @@ include utils.incl
   GraphSpec#(org_nodes_in, org_nextto_in, org_reach_in, org_alias_in) = org_in;
   new_pos = XFORM.DifferenceList(org_nodes_out, org_nodes_in);
   deleted_pos = XFORM.DifferenceList(org_nodes_in, org_nodes_out);
-
+  deleted_pos_code_templ = NULL;
+  foreach p=ID \in deleted_pos do
+    deleted_pos_code_templ = XFORM.AppendList[erase_replicate=TRUE](CODE.DeletedPosition#(p), deleted_pos_code_templ);
+  enddo;
   org_nodes = AppendList[erase_replicate=1](org_nodes_in, new_pos);
 
+  vars_to_declare = NULL;
   pos_variables = NULL;
   nextto_rels = reach_rels = alias_rels = NULL;
   index = 0;
@@ -31,15 +35,13 @@ include utils.incl
     <*cur_pos = AppendList[erase_replicate=1](org_nodes, g_nodes_out);*>
     org_nodes = AppendList[erase_replicate=1](org_nodes_out, deleted_pos);
     cur_pos = AppendList[erase_replicate=1](g_nodes_out,org_nodes);
+    cur_pos = AppendList[erase_replicate=1](deleted_pos_code_templ,cur_pos);
     cur_nextto = AppendList[erase_replicate=1](org_nextto_out, cur_nextto);
     cur_reach = AppendList[erase_replicate=1](org_reach_out, cur_reach);
     cur_alias = AppendList[erase_replicate=1](org_alias_out, cur_alias);
     nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
     reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
-    
-    GraphSpec#(g_nodes_in, cur_nextto, cur_reach, cur_alias) = g_in;
-    impl_pos_diff = XFORM.DifferenceList(g_nodes_out, org_nodes_in); <*Newly allocated nodes in implementation*>
 
     values = NULL;
     values_impl = NULL;
@@ -63,7 +65,9 @@ include utils.incl
         values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
       }
     }
-
+    
+    GraphSpec#(g_nodes_in, cur_nextto, cur_reach, cur_alias) = g_in;
+    impl_pos_diff = XFORM.DifferenceList(g_nodes_out, org_nodes_in); <*Newly allocated nodes in implementation*>
     new_pos_impl = NULL;
     <*Unknown nodes are not new allocations*>
     <*TODO: Remove p_unknowns from list of newly allocated nodes*>
@@ -75,8 +79,7 @@ include utils.incl
     new_pos_impl = XFORM.ReverseList(new_pos_impl);
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,new_pos_impl,cur_alias) :: pos_variables;
 
-    tag = "in" ^ index; 
-    <*cur_pos = AppendList[erase_replicate=1](org_nodes, g_nodes_in);*>
+    tag = "in" ^ index;
     cur_pos = AppendList[erase_replicate=1](g_nodes_in,org_nodes_in);
     cur_nextto = AppendList[erase_replicate=1](org_nextto_in, cur_nextto);
     cur_reach = AppendList[erase_replicate=1](org_reach_in, cur_reach);
@@ -89,8 +92,12 @@ include utils.incl
     index = index + 1;
   }
 
+DEBUG{pos_variables};
+
   <*
+  DEBUG{org_spec};
   DEBUG{pos_variables};
+  DEBUG{deleted_pos};
   DEBUG{new_pos};
   DEBUG{alias_rels};
   DEBUG{values};
