@@ -55,7 +55,9 @@ include utils.incl
 
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
-        values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
+        if(!(v2 : "UNMAPPED")){
+          values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
+        }
       }
     }
 
@@ -91,8 +93,6 @@ include utils.incl
 
     index = index + 1;
   }
-
-DEBUG{pos_variables};
 
   <*
   DEBUG{org_spec};

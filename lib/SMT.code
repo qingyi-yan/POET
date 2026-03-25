@@ -240,8 +240,10 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 <code ValueVariableDefinition pars=(source: ID, names : LIST(CODE.ValueVariable, "\n"))>
 @(vars=NULL; vars_mapped=NULL;
 foreach cur=CODE.ValueVariable#(vartag=_,varname=_) \in names do
-  vars = XFORM.AppendList(varname^_^vartag, vars);
-  vars_mapped = XFORM.AppendList(CODE.VariableMapping#(varname^_^vartag), vars_mapped);
+  if(!(varname : "UNMAPPED")){
+    vars = XFORM.AppendList(varname^_^vartag, vars);
+    vars_mapped = XFORM.AppendList(CODE.VariableMapping#(varname^_^vartag), vars_mapped);
+  }
 enddo;)@
 ; definition of values (data stored in memory cells)
 ;(declare-sort Value)
@@ -309,7 +311,9 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  if(anchor : CODE.ParamAnchor){
   CODE.ParamAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
-    res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
+    if(!(v2:"UNMAPPED")){
+      res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
+    }
   }
   continue;
  }else if(anchor : CODE.FieldAnchor){
@@ -336,7 +340,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
    CODE.ParamAnchor#(v1,v2) = anchor;
    for (i = 0; i < n; i = i + 1) {
     <*If function parameter is not a position, which is already declared*>
-    if(!Lookup(v2,values_impl)){
+    if(!Lookup(v2,values_impl) && !(v2:"UNMAPPED")){
       res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2, i), res);
     }
    }
