@@ -80,8 +80,8 @@ smt_spec@
 for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
   CODE.PositionVariableDefinition#(tag=_,cur_pos=_,new_pos=_,new_pos_impl=_,alias=_) = car(pv_def);
   foreach pos=ID \in cur_pos do
-    res2 = XFORM.AppendList[erase_replicate=TRUE](pos^"_"^tag, res2);
-    res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(pos^"_"^tag), res2);
+    res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(pos,tag), res2);
+    res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(pos,tag), res2);
   enddo;
 }
 for (p = anchors; p != NULL; p = cdr(p)) {
@@ -90,25 +90,31 @@ for (p = anchors; p != NULL; p = cdr(p)) {
     continue;
   }else if(anchor : CODE.ParamAnchor#(v1=_,v2=_)){
     for (i = 0; i < n; i = i + 1) {
-      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"out"^i, res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"out"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
       if(!(v2 : "UNMAPPED")){
-        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"out"^i, res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"out"^i), res2);
       }
     }
   }else{
     CODE.Anchor#(v1=_,v2=_) = anchor;
     for (i = 0; i < n; i = i + 1) {
-      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"in"^i, res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"in"^i), res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](v1^"_"^"out"^i, res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1^"_"^"out"^i), res2);
+      if(v2 : CODE.PtrAccess){
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"in"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"in"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"out"^i), res2);
+      }
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"in"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"in"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
       if(!(v2 : "UNMAPPED")){
-        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"in"^i, res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"in"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](v2^"_"^"out"^i, res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2^"_"^"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"in"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"in"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"out"^i), res2);
       }
     }
   }
@@ -140,7 +146,7 @@ for (p = names; p != NULL; p = cdr(p)) {
     pos = car(q);
     if(!(pos : CODE.DeletedPosition|CODE.HasValue)){
       if(!XFORM.Lookup(pos, new_pos_impl) && !(car(p) : pos)){
-        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p)^"_"^tag), CODE.VariableMapping#(pos^"_"^tag)), unique_mapped);
+        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p),tag), CODE.VariableMapping#(pos,tag)), unique_mapped);
       }
     }
   }
@@ -149,7 +155,7 @@ for (p = names; p != NULL; p = cdr(p)) {
     pos = car(q);
     if(!(pos : CODE.DeletedPosition|CODE.HasValue)){
       if(!XFORM.Lookup(pos, new_pos) && !(car(p) : pos)){
-        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p)^"_"^tag), CODE.VariableMapping#(pos^"_"^tag)), unique_mapped);
+        unique_mapped = XFORM.AppendList[erase_replicate=TRUE](CODE.UniquePosition#(tag, CODE.VariableMapping#(car(p),tag), CODE.VariableMapping#(pos,tag)), unique_mapped);
       }
     }
   }
@@ -242,7 +248,7 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 foreach cur=CODE.ValueVariable#(vartag=_,varname=_) \in names do
   if(!(varname : "UNMAPPED")){
     vars = XFORM.AppendList(varname^_^vartag, vars);
-    vars_mapped = XFORM.AppendList(CODE.VariableMapping#(varname^_^vartag), vars_mapped);
+    vars_mapped = XFORM.AppendList(CODE.VariableMapping#(varname,vartag), vars_mapped);
   }
 enddo;)@
 ; definition of values (data stored in memory cells)
@@ -350,10 +356,13 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  }
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
-    if(!(v2:"UNMAPPED")){
-      res = CODE.AnchorVariable#(v2, i) :: res;
+    if(v2 : CODE.PtrAccess){
+      res = XFORM.AppendList(CODE.AnchorVariable#(v2, i), res);
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2[PtrAccess.ptr], i), res);
+    }else if(!(v2:"UNMAPPED")){
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2, i), res);
     }
-    res = CODE.AnchorVariable#(v1, i) :: res;
+    res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v1, i), res);
  }
 } res)@
 </code>
@@ -394,14 +403,17 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
 </code>
 
-<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotReachableTo,"\n"))>
-@(res1 = res2 = res3 = NULL;
+<code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo|CODE.NotReachableTo,"\n"))>
+@(res1 = res2 = res3 = res4 = NULL;
 foreach n = CODE.ReachableTo \in rels do
   res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
   res2 = (CODE.ReachableToAssert#(tag,n)) :: res2;
 enddo
 foreach m = CODE.NotReachableTo \in rels do
   res3 = (CODE.NotReachableAssert#(tag,m)) :: res3;
+enddo;
+foreach o = CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo \in rels do
+  res4 = o :: res4;
 enddo;
 )@
 (define-fun-rec reachable_@tag@ ((l Int) (r Int)) Bool
@@ -415,10 +427,11 @@ enddo;
 )
 @res2@
 @res3@
+@CODE.NotCircleDefinition#(tag,res4)@
 </code>
 
 <code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
-(and (= l @r[ReachableTo.n1]@_@tag@)  (= r @r[ReachableTo.n2]@_@tag@) (<= l r))
+(and (= l @r[ReachableTo.n1]@_@tag@)  (= r @r[ReachableTo.n2]@_@tag@))
 </code>
 
 <code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
@@ -429,10 +442,13 @@ enddo;
 (assert (!(not (reachable_@tag@ @r[NotReachableTo.n1]@_@tag@ @r[NotReachableTo.n2]@_@tag@)) :named not_reach_@tag@_@r[NotReachableTo.n1]@_@r[NotReachableTo.n2]@))
 </code>
 
-<code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo,""))>
-@(res1 = NULL;
+<code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo,""))>
+@(res1 = res2 = NULL;
 foreach n = CODE.NonCircleReachableTo \in r do
   res1 = (CODE.NotCircleAssert#(tag,n)) :: res1;
+enddo
+foreach n = CODE.NotNonCircleReachableTo \in r do
+  res2 = (CODE.NotNotCircleAssert#(tag,n)) :: res2;
 enddo
 )@
 (define-fun non_empty_is_non_circle_@tag@ ((n Int) (m Int)) Bool
@@ -448,10 +464,15 @@ enddo
   )
 )
 @res1@
+@res2@
 </code>
 
 <code NotCircleAssert pars=(tag:ID, r: CODE.NonCircleReachableTo)>
 (assert (!(non_empty_is_non_circle_@tag@ @r[NonCircleReachableTo.n1]@_@tag@ @r[NonCircleReachableTo.n2]@_@tag@) :named non_empty_is_non_circle_@tag@_@r[NonCircleReachableTo.n1]@_@r[NonCircleReachableTo.n2]@))
+</code>
+
+<code NotNotCircleAssert pars=(tag:ID, r: CODE.NotNonCircleReachableTo)>
+(assert (!(not (non_empty_is_non_circle_@tag@ @r[NotNonCircleReachableTo.n1]@_@tag@ @r[NotNonCircleReachableTo.n2]@_@tag@)) :named not_non_empty_is_non_circle_@tag@_@r[NotNonCircleReachableTo.n1]@_@r[NotNonCircleReachableTo.n2]@))
 </code>
 
 <code AliasDefinition pars=(tag : ID, rels : LIST(CODE.Alias|CODE.NotAlias, "\n"))>
@@ -467,8 +488,13 @@ res)@
 
 <code AliasAssert pars=(tag:ID, r : CODE.Alias) p=NULL>
 @CODE.Alias#(v1,v2) = r; 
-if (v1 == "null")  v1 = 0;
-else v1 = v1 ^ "_" ^ tag;
+if(v1 == "null"){
+  v1 = 0;
+}else if(v1 : CODE.PtrAccess){
+  v1 = CODE.Variable#(v1,tag);
+}else{
+  v1 = v1 ^ "_" ^ tag
+}
 if (v2 == "null")  v2 = 0;
 else v2 = v2 ^ "_" ^ tag;
 @(assert (! (= @v1@ @v2@) :named alias_@v1@_@v2@))
@@ -568,6 +594,14 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 )
 </code>
 
-<code VariableMapping pars=(v:ID)>
-(mapping @v@)
+<code VariableMapping pars=(v:ID,tag:ID)>
+(mapping @v@_@tag@)
 </code>
+
+<code Variable pars=(v:ID,tag:ID)>
+@v@_@tag@
+</code>
+
+<code ObjAccess pars=(obj:EXP,fd:ID)> @obj@.@fd@ </code>
+
+<code PtrAccess pars=(ptr:EXP,fd:ID)> @ptr@->@fd@ </code>

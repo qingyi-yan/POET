@@ -6,6 +6,8 @@
 
 <code NonCircleReachableTo pars=(n1:ID, n2:ID)/>
 
+<code NotNonCircleReachableTo pars=(n1:ID, n2:ID)/>
+
 <code NotReachableTo pars=(n1:ID, n2:ID)/>
 
 <code Alias pars=(v1:ID, v2:ID)/>
@@ -26,3 +28,7 @@
 <code GraphSpec pars=(nodes, nextto, reach, alias)/>
 
 <xform GenDataMatchSpecification pars=(anchors, org_spec, impl_spec)/>
+
+<code ObjAccess pars=(obj:EXP,fd:ID)> @obj@.@fd@ </code>
+
+<code PtrAccess pars=(ptr:EXP,fd:ID)> @ptr@->@fd@ </code>
