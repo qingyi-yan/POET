@@ -383,12 +383,28 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code NextToDefinition pars=(tag:ID, rels : LIST(CODE.NextTo,"\n"))>
-@(res1 = res2 = NULL;
+@(res1 = res2 = fields = NULL;
  foreach n = CODE.NextTo \in rels do
-   res1 = (CODE.NextToPossible#(tag, n)) :: res1;
-   res2 = (CODE.NextToAssert#(tag,n)) :: res2;
- enddo
-)@(define-fun nextto_@tag@ ((l Int) (r Int)) Bool
+   fields = XFORM.AppendList[erase_replicate=TRUE](n[NextTo.type], fields);
+ enddo;
+ res_blocks = NULL;
+ foreach f = ID \in fields do
+  field_possibilities = NULL;
+  field_asserts = NULL;
+  foreach n = CODE.NextTo \in rels do
+    if(n[NextTo.type] == f){
+      field_possibilities = (CODE.NextToPossible#(tag, n)) :: field_possibilities;
+      field_asserts = (CODE.NextToAssert#(tag, n, f)) :: field_asserts;
+    }
+  enddo;
+  res_blocks = CODE.NextToBlock#(f,tag,field_possibilities,field_asserts) :: res_blocks;
+ enddo;
+)@
+@res_blocks@
+</code>
+
+<code NextToBlock pars=(field: ID, tag: ID, res1 : LIST(CODE.NextToPossible," "), res2 :  LIST(CODE.NextToAssert, " "))>
+(define-fun nextto_@field@_@tag@ ((l Int) (r Int)) Bool
   @((res1 : NULL|"")? "false"
    : (cdr(res1) : ""|NULL)? res1
    : ("(or " res1 ")"))@)
@@ -399,65 +415,81 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (and (= l @r[NextTo.n1]@_@tag@)  (= r @r[NextTo.n2]@_@tag@)  (not (= l r)) (not (= (mapping l) (mapping r))))
 </code>
 
-<code NextToAssert pars=(tag : ID, r : CODE.NextTo)>
-(assert (!(nextto_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
+<code NextToAssert pars=(tag : ID, r : CODE.NextTo, field : ID)>
+(assert (!(nextto_@field@_@tag@ @r[NextTo.n1]@_@tag@ @r[NextTo.n2]@_@tag@) :named nextto_@field@_@tag@_@r[NextTo.n1]@_@r[NextTo.n2]@))
 </code>
 
 <code ReachDefinition pars=(tag:ID, rels : LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo|CODE.NotReachableTo,"\n"))>
-@(res1 = res2 = res3 = res4 = NULL;
-foreach n = CODE.ReachableTo \in rels do
-  res1 = (CODE.ReachableToPossible#(tag,n)) :: res1;
-  res2 = (CODE.ReachableToAssert#(tag,n)) :: res2;
-enddo
-foreach m = CODE.NotReachableTo \in rels do
-  res3 = (CODE.NotReachableAssert#(tag,m)) :: res3;
-enddo;
-foreach o = CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo \in rels do
-  res4 = o :: res4;
+@(fields = NULL;
+for(n=rels; n != NULL; n=cdr(n)){
+  CODE.ReachableTo#(field=_,_,_)|CODE.NonCircleReachableTo#(field=_,_,_)|CODE.NotNonCircleReachableTo#(field=_,_,_)|CODE.NotReachableTo#(field=_,_,_) = car(n);
+  fields = XFORM.AppendList[erase_replicate=TRUE](field, fields);
+}
+res_blocks = NULL;
+foreach f=ID \in fields do
+  field_possibilities = NULL;
+  field_asserts = NULL;
+  res3 = NULL;
+  res4 = NULL;
+  for(n=rels; n != NULL; n=cdr(n)){
+    if(car(n) : CODE.ReachableTo#(f,_,_)){
+      field_possibilities = (CODE.ReachableToPossible#(tag, car(n))) :: field_possibilities;
+      field_asserts = (CODE.ReachableToAssert#(tag, car(n), f)) :: field_asserts;
+    }else if(car(n) : CODE.NotReachableTo#(f,_,_)){
+      res3 = (CODE.NotReachableAssert#(tag,car(n),f)) :: res3;
+    }else if(car(n) : CODE.NotNonCircleReachableTo#(f,_,_)|CODE.NonCircleReachableTo#(f,_,_)){
+      res4 = car(n) :: res4;
+    }
+  }
+  res_block = CODE.ReachableToBlock#(f, tag, field_possibilities, field_asserts, res3, res4);
 enddo;
 )@
-(define-fun-rec reachable_@tag@ ((l Int) (r Int)) Bool
+@res_blocks@
+</code>
+
+<code ReachableToBlock pars=(field: ID, tag: ID, res1 : LIST(CODE.ReachToPossible," "), res2 :  LIST(CODE.ReachToAssert, " "), res3 :  LIST(CODE.NotReachableAssert, " "), res4 :  LIST(CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo, " "))>
+(define-fun-rec reachable_@field@_@tag@ ((l Int) (r Int)) Bool
   (or
     @res1@
     (= l r)
-    (nextto_@tag@ l r)
-    (exists ((m Int)) (and (nextto_@tag@ l m) (reachable_@tag@ m r)))
-    (exists ((m Int)) (and (reachable_@tag@ l m) (nextto_@tag@ m r)))
+    (nextto_@field@_@tag@ l r)
+    (exists ((m Int)) (and (nextto_@field@_@tag@ l m) (reachable_@field@_@tag@ m r)))
+    (exists ((m Int)) (and (reachable_@field@_@tag@ l m) (nextto_@field@_@tag@ m r)))
   )
 )
 @res2@
 @res3@
-@CODE.NotCircleDefinition#(tag,res4)@
+@CODE.NotCircleDefinition#(tag,res4,field)@
 </code>
 
 <code ReachableToPossible pars=(tag : ID, r : CODE.ReachableTo)>
 (and (= l @r[ReachableTo.n1]@_@tag@)  (= r @r[ReachableTo.n2]@_@tag@))
 </code>
 
-<code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo)>
-(assert (!(reachable_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@) :named reach_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
+<code ReachableToAssert pars=(tag : ID, r : CODE.ReachableTo, field : ID)>
+(assert (!(reachable_@field@_@tag@ @r[ReachableTo.n1]@_@tag@ @r[ReachableTo.n2]@_@tag@) :named reach_@field@_@tag@_@r[ReachableTo.n1]@_@r[ReachableTo.n2]@))
 </code>
 
-<code NotReachableAssert pars=(tag : ID, r : CODE.NotReachableTo)>
-(assert (!(not (reachable_@tag@ @r[NotReachableTo.n1]@_@tag@ @r[NotReachableTo.n2]@_@tag@)) :named not_reach_@tag@_@r[NotReachableTo.n1]@_@r[NotReachableTo.n2]@))
+<code NotReachableAssert pars=(tag : ID, r : CODE.NotReachableTo, field : ID)>
+(assert (!(not (reachable_@field@_@tag@ @r[NotReachableTo.n1]@_@tag@ @r[NotReachableTo.n2]@_@tag@)) :named not_reach_@field@_@tag@_@r[NotReachableTo.n1]@_@r[NotReachableTo.n2]@))
 </code>
 
-<code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo,""))>
+<code NotCircleDefinition pars=(tag:ID, r: LIST(CODE.ReachableTo|CODE.NonCircleReachableTo|CODE.NotNonCircleReachableTo,""), field : ID)>
 @(res1 = res2 = NULL;
 foreach n = CODE.NonCircleReachableTo \in r do
-  res1 = (CODE.NotCircleAssert#(tag,n)) :: res1;
+  res1 = (CODE.NotCircleAssert#(tag,n,field)) :: res1;
 enddo
 foreach n = CODE.NotNonCircleReachableTo \in r do
-  res2 = (CODE.NotNotCircleAssert#(tag,n)) :: res2;
+  res2 = (CODE.NotNotCircleAssert#(tag,n,field)) :: res2;
 enddo
 )@
-(define-fun non_empty_is_non_circle_@tag@ ((n Int) (m Int)) Bool
+(define-fun non_empty_is_non_circle_@field@_@tag@ ((n Int) (m Int)) Bool
   (=> 
     (exists ((p1 Int) (p2 Int))
       (and 
-        (reachable_@tag@ n p1)
-        (nextto_@tag@ p1 p2)
-        (reachable_@tag@ p2 m)
+        (reachable_@field@_@tag@ n p1)
+        (nextto_@field@_@tag@ p1 p2)
+        (reachable_@field@_@tag@ p2 m)
       )
     )
     (not (= n m))
@@ -467,12 +499,12 @@ enddo
 @res2@
 </code>
 
-<code NotCircleAssert pars=(tag:ID, r: CODE.NonCircleReachableTo)>
-(assert (!(non_empty_is_non_circle_@tag@ @r[NonCircleReachableTo.n1]@_@tag@ @r[NonCircleReachableTo.n2]@_@tag@) :named non_empty_is_non_circle_@tag@_@r[NonCircleReachableTo.n1]@_@r[NonCircleReachableTo.n2]@))
+<code NotCircleAssert pars=(tag:ID, r: CODE.NonCircleReachableTo, field : ID)>
+(assert (!(non_empty_is_non_circle_@field@_@tag@ @r[NonCircleReachableTo.n1]@_@tag@ @r[NonCircleReachableTo.n2]@_@tag@) :named non_empty_is_non_circle_@field@_@tag@_@r[NonCircleReachableTo.n1]@_@r[NonCircleReachableTo.n2]@))
 </code>
 
-<code NotNotCircleAssert pars=(tag:ID, r: CODE.NotNonCircleReachableTo)>
-(assert (!(not (non_empty_is_non_circle_@tag@ @r[NotNonCircleReachableTo.n1]@_@tag@ @r[NotNonCircleReachableTo.n2]@_@tag@)) :named not_non_empty_is_non_circle_@tag@_@r[NotNonCircleReachableTo.n1]@_@r[NotNonCircleReachableTo.n2]@))
+<code NotNotCircleAssert pars=(tag:ID, r: CODE.NotNonCircleReachableTo, field : ID)>
+(assert (!(not (non_empty_is_non_circle_@field@_@tag@ @r[NotNonCircleReachableTo.n1]@_@tag@ @r[NotNonCircleReachableTo.n2]@_@tag@)) :named not_non_empty_is_non_circle_@field@_@tag@_@r[NotNonCircleReachableTo.n1]@_@r[NotNonCircleReachableTo.n2]@))
 </code>
 
 <code AliasDefinition pars=(tag : ID, rels : LIST(CODE.Alias|CODE.NotAlias, "\n"))>
