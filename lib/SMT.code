@@ -311,7 +311,7 @@ res)@
 </code>
 
 <code AnchorVariableBinding pars=(anchors : LIST(CODE.Anchor,","), n : INT)>
-@(res = NULL; res1 = NULL;
+@(res = NULL; res1 = NULL; res2 = NULL;
 for (p = anchors; p != NULL; p = cdr(p)) {
  anchor = car p;
  if(anchor : CODE.ParamAnchor){
@@ -321,19 +321,41 @@ for (p = anchors; p != NULL; p = cdr(p)) {
       res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
     }
   }
-  continue;
  }else if(anchor : CODE.FieldAnchor){
-  continue;
- }
- Anchor#(v1,v2) = anchor;
- for (i = 0; i < n; i = i + 1) {
-   if(!(v2:"UNMAPPED")){
-    res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
-    res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
-   }
+  CODE.FieldAnchor#(v1,v2) = anchor;
+  for (i = 0; i < n; i = i + 1) {
+    if(!(v2:"UNMAPPED")){
+      res2 = CODE.BindingField#(v1,v2,"out"^i) :: res2;
+    }
+  }
+ }else{
+  Anchor#(v1,v2) = anchor;
+  for (i = 0; i < n; i = i + 1) {
+    if(!(v2:"UNMAPPED")){
+      res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
+      res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
+    }
+  }
  }
 } res)@
 @res1@
+@CODE.FieldReferenceBinding#(res2)@
+</code>
+
+<code FieldReferenceBinding pars=(mappings : LIST(CODE.BindingField,"\n"))>
+@mappings@
+</code>
+
+<code BindingField pars=(spec_field:ID,impl_field:ID,tag:ID)>
+(assert 
+  (! (forall ((l Int) (r Int))
+       (and (=> (nextto_@spec_field@_@tag@ l r)
+           (nextto_@impl_field@_@tag@ (mapping l) (mapping r)))
+            (=> (reach_@spec_field@_@tag@ l r)
+           (reach_@impl_field@_@tag@ (mapping l) (mapping r)))
+        ))
+     :named verify_completeness_@spec_field@_to_@impl_field@_@tag@)
+)
 </code>
 
 <code AnchorVariableDefinition pars=(anchors : LIST(CODE.Anchor,","), n : INT, 
