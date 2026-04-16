@@ -4,6 +4,31 @@ include utils.incl
   CODE.OpSpec#(org_in, org_out) = org_spec;
   GraphSpec#(org_nodes_out, org_nextto_out, org_reach_out, org_alias_out) = org_out;
   GraphSpec#(org_nodes_in, org_nextto_in, org_reach_in, org_alias_in) = org_in;
+
+  <*Collect all fields to define*>
+  all_fields = NULL;
+  for(a = anchors; a != NULL; a = cdr(a)) {
+    if(car(a) : CODE.FieldAnchor#(f_spec, f_impl)) {
+      all_fields = XFORM.AppendList[erase_replicate=TRUE](f_spec, all_fields);
+      if(!(f_impl : "UNMAPPED")) all_fields = XFORM.AppendList[erase_replicate=TRUE](f_impl, all_fields);
+    }
+  }
+  foreach n = CODE.NextTo \in org_nextto_out do 
+    all_fields = XFORM.AppendList[erase_replicate=TRUE](n[NextTo.type], all_fields); 
+  enddo;
+  foreach n = CODE.NextTo \in org_nextto_in do 
+    all_fields = XFORM.AppendList[erase_replicate=TRUE](n[NextTo.type], all_fields); 
+  enddo;
+  for (pg_out = impl_spec; pg_out != NULL; pg_out = cdr(pg_out)) {
+    CODE.OpSpec#(g_in, g_out) = car(pg_out);
+    foreach n = CODE.NextTo \in g_in[GraphSpec.nextto] do 
+      all_fields = XFORM.AppendList[erase_replicate=TRUE](n[NextTo.type], all_fields); 
+    enddo;
+    foreach n = CODE.NextTo \in g_out[GraphSpec.nextto] do
+      all_fields = XFORM.AppendList[erase_replicate=TRUE](n[NextTo.type], all_fields); 
+    enddo;
+  }
+
   new_pos = XFORM.DifferenceList(org_nodes_out, org_nodes_in);
   deleted_pos = XFORM.DifferenceList(org_nodes_in, org_nodes_out);
   deleted_pos_code_templ = NULL;
@@ -39,9 +64,26 @@ include utils.incl
     cur_nextto = AppendList[erase_replicate=1](org_nextto_out, cur_nextto);
     cur_reach = AppendList[erase_replicate=1](org_reach_out, cur_reach);
     cur_alias = AppendList[erase_replicate=1](org_alias_out, cur_alias);
-    nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
-    reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;
+    <*nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
+    reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;*>
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
+
+    <*Generate NextTo and Reach definitions for all fields*>
+    foreach f=ID \in all_fields do
+      f_nextto = NULL;
+      foreach n = CODE.NextTo \in cur_nextto do
+        if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
+      enddo;
+      nextto_rels = CODE.NextToDefinition#(f, tag, f_nextto) :: nextto_rels;
+
+      f_reach = NULL;
+      for(r = cur_reach; r != NULL; r = cdr(r)){
+        node = car(r); target_f = "";
+        if(node : CODE.ReachableTo#(f1,_,_)|CODE.NonCircleReachableTo#(f1,_,_)|CODE.NotNonCircleReachableTo#(f1,_,_)|CODE.NotReachableTo#(f1,_,_)) { target_f = f1; }
+        if(target_f == f) f_reach = node :: f_reach;
+      }
+      reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
+    enddo;
 
     values = NULL;
     values_impl = NULL;
@@ -86,10 +128,29 @@ include utils.incl
     cur_nextto = AppendList[erase_replicate=1](org_nextto_in, cur_nextto);
     cur_reach = AppendList[erase_replicate=1](org_reach_in, cur_reach);
     cur_alias = AppendList[erase_replicate=1](org_alias_in, cur_alias);
+    <*
     nextto_rels = CODE.NextToDefinition#(tag, cur_nextto) :: nextto_rels;
     reach_rels = CODE.ReachDefinition#(tag, cur_reach) :: reach_rels;
+    *>
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,NULL,NULL,cur_alias) :: pos_variables;
+
+    <*Generate NextTo and Reach definitions for all fields*>
+    foreach f=ID \in all_fields do
+      f_nextto = NULL;
+      foreach n = CODE.NextTo \in cur_nextto do
+        if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
+      enddo;
+      nextto_rels = CODE.NextToDefinition#(f, tag, f_nextto) :: nextto_rels;
+
+      f_reach = NULL;
+      for(r = cur_reach; r != NULL; r = cdr(r)){
+        node = car(r); target_f = "";
+        if(node : CODE.ReachableTo#(f1,_,_)|CODE.NonCircleReachableTo#(f1,_,_)|CODE.NotNonCircleReachableTo#(f1,_,_)|CODE.NotReachableTo#(f1,_,_)) { target_f = f1; }
+        if(target_f == f) f_reach = node :: f_reach;
+      }
+      reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
+    enddo;
 
     index = index + 1;
   }
