@@ -18,7 +18,7 @@ smt_spec@
                              anchors : LIST(CODE.Anchor, ""), 
                              nextto_rels : LIST(CODE.NextToDefinition,"\n"),
                              reach_rels : LIST(CODE.ReachDefinition,"\n"),
-                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition|CODE.UnchangedVariable, "\n"),
+                             aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition, "\n"),
                              values :  LIST(CODE.ValueVariable, ""),
                              values_impl : LIST(CODE.ValueVariable, ""))>
 
@@ -616,10 +616,6 @@ else v2 = v2 ^ "_" ^ tag;
 </code>
 
 <code UnchangedPosition pars=(v : ID, tag1 : ID, tag2 : ID)>
-(assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
-</code>
-
-<code UnchangedVariable pars=(v : ID, tag1 : ID, tag2 : ID)>
 (assert (! (= @v@_@tag1@ @v@_@tag2@) :named unchanged_@v@_@tag1@_@tag2@))
 </code>
 
