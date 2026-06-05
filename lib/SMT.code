@@ -93,28 +93,24 @@ for (p = anchors; p != NULL; p = cdr(p)) {
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
       if(!(v2 : "UNMAPPED")){
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"out"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"eval"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"eval"^i), res2);
       }
     }
   }else{
     CODE.Anchor#(v1=_,v2=_) = anchor;
     for (i = 0; i < n; i = i + 1) {
       if(v2 : CODE.PtrAccess){
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"in"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"in"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"out"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"eval"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"eval"^i), res2);
       }
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"in"^i), res2);
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"in"^i), res2);
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
       res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
       if(!(v2 : "UNMAPPED")){
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"in"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"in"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"out"^i), res2);
-        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"out"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"eval"^i), res2);
+        res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"eval"^i), res2);
       }
     }
   }
@@ -318,7 +314,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
   CODE.ParamAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      res1 = CODE.BindingParams#(v1,v2,"out"^i) :: res1;
+      res1 = CODE.BindingParams#(v1,v2,"out"^i,"eval"^i) :: res1;
     }
   }
  }else if(anchor : CODE.FieldAnchor){
@@ -326,7 +322,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
   CODE.FieldAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      res2 = CODE.BindingField#(v1,v2,"out"^i) :: res2;
+      res2 = CODE.BindingField#(v1,v2,"out"^i,"eval"^i) :: res2;
     }
   }
   *>
@@ -334,8 +330,8 @@ for (p = anchors; p != NULL; p = cdr(p)) {
   Anchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      res = CODE.BindingAnchor#(v1,v2,"in"^i) :: res;
-      res = CODE.BindingAnchor#(v1,v2,"out"^i) :: res;
+      <*res = CODE.BindingAnchor#(v1,v2,"in"^i,"eval"^i) :: res;*>
+      res = CODE.BindingAnchor#(v1,v2,"out"^i,"eval"^i) :: res;
     }
   }
  }
@@ -348,15 +344,15 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 @mappings@
 </code>
 
-<code BindingField pars=(spec_field:ID,impl_field:ID,tag:ID)>
+<code BindingField pars=(spec_field:ID,impl_field:ID,tag1:ID,tag2:ID)>
 (assert 
   (! (forall ((l Int) (r Int))
-       (and (=> (nextto_@spec_field@_@tag@ l r)
-           (nextto_@impl_field@_@tag@ (mapping l) (mapping r)))
-            (=> (reach_@spec_field@_@tag@ l r)
-           (reach_@impl_field@_@tag@ (mapping l) (mapping r)))
+       (and (=> (nextto_@spec_field@_@tag1@ l r)
+           (nextto_@impl_field@_@tag2@ (mapping l) (mapping r)))
+            (=> (reach_@spec_field@_@tag1@ l r)
+           (reach_@impl_field@_@tag2@ (mapping l) (mapping r)))
         ))
-     :named verify_completeness_@spec_field@_to_@impl_field@_@tag@)
+     :named verify_completeness_@spec_field@_@tag1@_to_@impl_field@_@tag2@)
 )
 </code>
 
@@ -371,7 +367,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
    for (i = 0; i < n; i = i + 1) {
     <*If function parameter is not a position, which is already declared*>
     if(!Lookup(v2,values_impl) && !(v2:"UNMAPPED")){
-      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2, i), res);
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.ImplAnchorVariable#(v2, i), res);
     }
    }
    continue;
@@ -381,10 +377,10 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
     if(v2 : CODE.PtrAccess){
-      res = XFORM.AppendList(CODE.AnchorVariable#(v2, i), res);
-      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2[PtrAccess.ptr], i), res);
+      res = XFORM.AppendList(CODE.ImplAnchorVariable#(v2, i), res);
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.ImplAnchorVariable#(v2[PtrAccess.ptr], i), res);
     }else if(!(v2:"UNMAPPED")){
-      res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v2, i), res);
+      res = XFORM.AppendList[erase_replicate=TRUE](CODE.ImplAnchorVariable#(v2, i), res);
     }
     res = XFORM.AppendList[erase_replicate=TRUE](CODE.AnchorVariable#(v1, i), res);
  }
@@ -398,12 +394,17 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (memory_cell @name@_out@index@))
 </code>
 
-<code BindingAnchor pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (= (mapping @v1@_@tag@) (mapping @v2@_@tag@)) :named binding_@v1@_@v2@_@tag@))
+<code ImplAnchorVariable pars=(name : ID, index : INT)>
+(declare-const @name@_eval@index@ Int)
+(assert (memory_cell @name@_eval@index@))
 </code>
 
-<code BindingParams pars=(v1 : ID, v2 : ID, tag : ID)>
-(assert (! (= (mapping @v1@_@tag@) (mapping @v2@_@tag@)) :named binding_@v1@_@v2@_@tag@))
+<code BindingAnchor pars=(v1 : ID, v2 : ID, tag1 : ID, tag2: ID)>
+(assert (! (= (mapping @v1@_@tag1@) (mapping @v2@_@tag2@)) :named binding_@v1@_@tag1@_@v2@_@tag2@))
+</code>
+
+<code BindingParams pars=(v1 : ID, v2 : ID, tag1 : ID, tag2: ID)>
+(assert (! (= (mapping @v1@_@tag1@) (mapping @v2@_@tag2@)) :named binding_@v1@_@tag1@_@v2@_@tag2@))
 </code>
 
 <code NextToDefinition pars=(field: ID, tag: ID, rels: LIST(CODE.NextTo, "\n"))>
