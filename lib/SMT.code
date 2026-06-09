@@ -162,7 +162,7 @@ res)@
 @((unique == NULL)? "" : CODE.PositionVariableDistinctAssert#(unique, tag, "spec"))@
 @unique_mapped@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
-@((new_pos == NULL && new_pos_impl == NULL)? "" : CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
+@(CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
 @((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
 </code>
 
@@ -202,41 +202,39 @@ for (p = new_pos_impl; p != NULL; p = cdr(p)) {
 (assert (! (new_alloc_@tag@ @var@_@tag@) :named @var@_@tag@_is_new_alloc))
 </code>
 
-<code NewAllocMatch pars=(tag:ID, v1: ID|CODE.HasValue, cur_pos: LIST(ID,","))>
+<code NewAllocMatch pars=(tag1: ID, v1: CODE.HasValue, tag2: ID, cur_pos: LIST(ID|CODE.HasValue,""))>
 @(def=NULL; res=NULL;
 for (p = cur_pos; p != NULL; p = cdr(p)) {
-  if(car(p) : v1){
+  cur_p = car(p);
+  if(cur_p : CODE.DeletedPosition){
     continue;
-  }else if(car(p) : CODE.DeletedPosition){
-    continue;
-  }else if(v1 : CODE.HasValue && car(p) : CODE.HasValue){
-    res = CODE.PositionValueMatchPossible#(tag, v1, car(p)) :: res;
-    continue;
-  }else if(v1 : CODE.HasValue || car(p) : CODE.HasValue){
-    continue;
+  }else if(v1 : CODE.HasValue && cur_p : CODE.HasValue){
+    <*def = CODE.NewAllocMatchPossible#(tag1, v1[HasValue.n1], tag2, cur_p[HasValue.n1]) :: def;*>
+    res = CODE.PositionValueMatchPossible#(tag1, v1, tag2, cur_p) :: res;
+  }else{
+    def = CODE.NewAllocMatchPossible#(tag1, v1[HasValue.n1], tag2, cur_p) :: def;
   }
-  def = CODE.NewAllocMatchPossible#(tag, v1, car(p)) :: def;
 }
 )@
 @((def : NULL|"")? ""
-   : (cdr(def) : ""|NULL)? ("(assert (!" def ":named @v1@_@tag@_is_matched_to_new_alloc))")
-   : ("(assert (! (or " def ") :named " v1"_"tag"_is_matched_to_new_alloc))"))@
-@((res : NULL|"")? "" : CODE.PositionValueMatchAssert#(tag, v1, res))@
+   : (cdr(def) : ""|NULL)? ("(assert (! " def " :named " v1[HasValue.n1]"_"tag1"_is_matched_to_new_alloc))")
+   : ("(assert (! (or " def ") :named " v1[HasValue.n1]"_"tag1"_is_matched_to_new_alloc))"))@
+@((res : NULL|"")? "" : CODE.PositionValueMatchAssert#(tag1, v1, tag2, res))@
 </code>
 
-<code NewAllocMatchPossible pars=(tag : ID, v1: ID, v2: ID)>
-(and (new_alloc_@tag@ @v2@_@tag@) (= (mapping @v1@_@tag@) (mapping @v2@_@tag@)))
+<code NewAllocMatchPossible pars=(tag1 : ID, v1: ID, tag2 : ID, v2: ID)>
+(and (new_alloc_@tag1@ @v1@_@tag1@) (new_alloc_@tag2@ @v2@_@tag2@) (= (mapping @v1@_@tag1@) (mapping @v2@_@tag2@)))
 </code>
 
-<code PositionValueMatchPossible pars=(tag: ID, v1 : CODE.HasValue, v2: CODE.HasValue)>
-(=> (= @v1[HasValue.n1]@_@tag@ @v2[HasValue.n1]@_@tag@) (= @v1[HasValue.n2]@_@tag@ @v2[HasValue.n2]@_@tag@))
+<code PositionValueMatchPossible pars=(tag1: ID, v1 : CODE.HasValue, tag2 : ID, v2: CODE.HasValue)>
+(=> (= (mapping @v1[HasValue.n1]@_@tag1@) (mapping @v2[HasValue.n1]@_@tag2@)) (= (mapping @v1[HasValue.n2]@_@tag1@) (mapping @v2[HasValue.n2]@_@tag2@)))
 </code>
 
-<code PositionValueMatchAssert pars=(tag: ID, v1 : CODE.HasValue, res: LIST(CODE.PositionValueMatchPossible,","))>
+<code PositionValueMatchAssert pars=(tag1: ID, v1 : CODE.HasValue, tag2 : ID, res: LIST(CODE.PositionValueMatchPossible,","))>
 @(CODE.HasValue#(p,v) = v1;
 (res : NULL|"")? ""
-   : (cdr(res) : ""|NULL)? ("(assert (! " res " :named @p@_@tag@_value_@v@_is_matched))")
-   : ("(assert (! (and " res ") :named " p"_"tag"_value_"v"_is_matched))"))@
+   : (cdr(res) : NULL|"")? ("(assert (! " res " :named " p"_"tag1"_value_"v"_is_matched))")
+   : ("(assert (! (and " res ") :named " p"_"tag1"_value_"v"_is_matched))"))@
 </code>
 
 <code ValueVariableDefinition pars=(source: ID, names : LIST(CODE.ValueVariable, "\n"))>
@@ -268,11 +266,25 @@ enddo;)@
 </code>
 
 <code NewAllocBinding pars=(pos_variables:LIST(CODE.PositionVariableDefinition,","))>
-@(res2 = NULL;
+@(res2 = NULL; new_alloc_out = NULL; new_alloc_eval = NULL; out_tag = NULL; eval_tag = NULL;
+pos_out = NULL; pos_eval = NULL;
 for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
-  CODE.PositionVariableDefinition#(tag=_,cur_pos=_,new_pos=_,new_pos_impl=_,alias=_) = car(pv_def);
-  for(p1 = new_pos; p1 != NULL; p1 = cdr(p1)){
-    res2 = CODE.NewAllocMatch#(tag,car(p1),cur_pos) :: res2;
+  cur_pv = car(pv_def);
+  tag = cur_pv[PositionVariableDefinition.tag];
+  if(car(SPLIT(3,tag)) == "out"){
+    CODE.PositionVariableDefinition#(out_tag=_,pos_out=_,new_alloc_out=_,_,_) = car(pv_def);
+  }else if(car(SPLIT(4,tag)) == "eval"){
+    CODE.PositionVariableDefinition#(eval_tag=_,pos_eval=_,_,new_alloc_eval=_,_) = car(pv_def);
+  }
+}
+for(p1 = new_alloc_out; p1 != NULL; p1 = cdr(p1)){
+  if(car(p1) : CODE.HasValue){
+    res2 = CODE.NewAllocMatch#(out_tag, car(p1), eval_tag, pos_eval) :: res2;
+  }
+}
+for(p1 = new_alloc_eval; p1 != NULL; p1 = cdr(p1)){
+  if(car(p1) : CODE.HasValue){
+    res2 = CODE.NewAllocMatch#(eval_tag, car(p1), out_tag, pos_out) :: res2;
   }
 })@
 @((res2:NULL|"")? "" : res2)@
@@ -706,3 +718,5 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 <code ObjAccess pars=(obj:EXP,fd:ID)> @obj@.@fd@ </code>
 
 <code PtrAccess pars=(ptr:EXP,fd:ID)> @ptr@->@fd@ </code>
+
+<code HasValue pars=(n1:ID, n2:ID)/>
