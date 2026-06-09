@@ -68,7 +68,11 @@ include utils.incl
     alias_rels = CODE.AliasDefinition#(tag, org_alias_out) :: alias_rels;
 
     <*Generate NextTo and Reach definitions for all fields*>
-    foreach f=ID \in all_fields do
+    for(p = all_fields; p != NULL; p = cdr(p)){
+      f = car(p);
+      if(f : CODE.NextConstraint){
+        continue;
+      }
       f_nextto = NULL;
       foreach n = CODE.NextTo \in org_nextto_out do
         if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
@@ -82,7 +86,7 @@ include utils.incl
         if(target_f == f) f_reach = node :: f_reach;
       }
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
-    enddo;
+  }
 
     values = NULL;
     <*Collect specification value variables*>
@@ -101,7 +105,11 @@ include utils.incl
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
 
     <*Generate NextTo and Reach definitions for all fields*>
-    foreach f=ID \in all_fields do
+    for(p = all_fields; p != NULL; p = cdr(p)){
+      f = car(p);
+      if(f : CODE.NextConstraint){
+        continue;
+      }
       f_nextto = NULL;
       foreach n = CODE.NextTo \in cur_nextto do
         if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
@@ -115,7 +123,7 @@ include utils.incl
         if(target_f == f) f_reach = node :: f_reach;
       }
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
-    enddo;
+    }
 
     values_impl = NULL;
     <*Collect implementation value variables*>
@@ -152,7 +160,11 @@ include utils.incl
     pos_variables = CODE.PositionVariableDefinition#(tag,org_nodes_in,NULL,NULL,org_alias_in) :: pos_variables;
 
     <*Generate NextTo and Reach definitions for all fields*>
-    foreach f=ID \in all_fields do
+    for(p = all_fields; p != NULL; p = cdr(p)){
+      f = car(p);
+      if(f : CODE.NextConstraint){
+        continue;
+      }
       f_nextto = NULL;
       foreach n = CODE.NextTo \in org_nextto_in do
         if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
@@ -166,7 +178,7 @@ include utils.incl
         if(target_f == f) f_reach = node :: f_reach;
       }
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
-    enddo;
+    }
 
     index = index + 1;
   }
@@ -180,7 +192,6 @@ include utils.incl
   DEBUG{values};
   DEBUG{values_impl};
   *>
-  DEBUG{pos_variables};
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, values, values_impl);
 </xform>
