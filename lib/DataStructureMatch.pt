@@ -65,9 +65,39 @@ include utils.incl
     org_nodes = AppendList[erase_replicate=1](org_nodes_out, deleted_pos);
     <*cur_pos = AppendList[erase_replicate=1](g_nodes_out,org_nodes);*>
     cur_pos = AppendList[erase_replicate=1](deleted_pos_code_templ,org_nodes);
-    cur_nextto = AppendList[erase_replicate=1](org_nextto_out, cur_nextto);
-    cur_reach = AppendList[erase_replicate=1](org_reach_out, cur_reach);
-    cur_alias = AppendList[erase_replicate=1](org_alias_out, cur_alias);
+    alias_rels = CODE.AliasDefinition#(tag, org_alias_out) :: alias_rels;
+
+    <*Generate NextTo and Reach definitions for all fields*>
+    foreach f=ID \in all_fields do
+      f_nextto = NULL;
+      foreach n = CODE.NextTo \in org_nextto_out do
+        if(n[NextTo.type] == f) f_nextto = n :: f_nextto;
+      enddo;
+      nextto_rels = CODE.NextToDefinition#(f, tag, f_nextto) :: nextto_rels;
+
+      f_reach = NULL;
+      for(r = org_reach_out; r != NULL; r = cdr(r)){
+        node = car(r); target_f = "";
+        if(node : CODE.ReachableTo#(f1,_,_)|CODE.NonCircleReachableTo#(f1,_,_)|CODE.NotNonCircleReachableTo#(f1,_,_)|CODE.NotReachableTo#(f1,_,_)) { target_f = f1; }
+        if(target_f == f) f_reach = node :: f_reach;
+      }
+      reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
+    enddo;
+
+    values = NULL;
+    <*Collect specification value variables*>
+    for(p=org_nodes_out; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.HasValue#(v1=_,v2=_)){
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+      }
+    }
+    pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,NULL,org_alias_out) :: pos_variables;
+
+    <***
+      Shape analysis output graph constraints
+    ***>
+    tag = "eval" ^ index;
+    GraphSpec#(g_nodes_out, cur_nextto, cur_reach, cur_alias) = g_out;
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
 
     <*Generate NextTo and Reach definitions for all fields*>
@@ -86,20 +116,6 @@ include utils.incl
       }
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     enddo;
-
-    values = NULL;
-    <*Collect specification value variables*>
-    for(p=org_nodes_out; p != NULL; p = cdr(p)){
-      if(car(p) : CODE.HasValue#(v1=_,v2=_)){
-        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
-      }
-    }
-
-    <***
-      Shape analysis output graph constraints
-    ***>
-    tag = "eval" ^ index;
-    GraphSpec#(g_nodes_out, cur_nextto, cur_reach, cur_alias) = g_out;
 
     values_impl = NULL;
     <*Collect implementation value variables*>
@@ -121,12 +137,12 @@ include utils.incl
     <*Unknown nodes are not new allocations*>
     <*TODO: Remove p_unknowns from list of newly allocated nodes*>
     for(impl_p=impl_pos_diff; impl_p != NULL; impl_p = cdr(impl_p)){
-      if(car(SPLIT(9,car(impl_p))) != "p_unknown"){
+      if(car(SPLIT(9,car(impl_p))) != "p_unknown" && !(car(impl_p) : CODE.DeletedPosition)){
         new_pos_impl = car(impl_p) :: new_pos_impl;
       }
     }
     new_pos_impl = XFORM.ReverseList(new_pos_impl);
-    pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,new_pos_impl,cur_alias) :: pos_variables;
+    pos_variables = CODE.PositionVariableDefinition#(tag,g_nodes_out,NULL,new_pos_impl,cur_alias) :: pos_variables;
 
     <***
       Input specification graph constraints
@@ -164,6 +180,7 @@ include utils.incl
   DEBUG{values};
   DEBUG{values_impl};
   *>
+  DEBUG{pos_variables};
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, values, values_impl);
 </xform>
