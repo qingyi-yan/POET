@@ -32,9 +32,11 @@ include utils.incl
   new_pos = XFORM.DifferenceList(org_nodes_out, org_nodes_in);
   deleted_pos = XFORM.DifferenceList(org_nodes_in, org_nodes_out);
   deleted_pos_code_templ = NULL;
-  foreach p=ID \in deleted_pos do
-    deleted_pos_code_templ = XFORM.AppendList[erase_replicate=TRUE](CODE.DeletedPosition#(p), deleted_pos_code_templ);
-  enddo;
+  for(p = deleted_pos; p != NULL; p = cdr(p)){
+    if(car(p) : ID){
+      deleted_pos_code_templ = XFORM.AppendList[erase_replicate=TRUE](CODE.DeletedPosition#(car(p)), deleted_pos_code_templ);
+    }
+  }
   org_nodes = AppendList[erase_replicate=1](org_nodes_in, new_pos);
 
   vars_to_declare = NULL;
@@ -42,11 +44,14 @@ include utils.incl
   nextto_rels = reach_rels = alias_rels = NULL;
   index = 0;
   num_of_nodes = 0;
+  values = NULL; <*Collect specification value variables*>
 
   for(nodes_in = org_nodes_in; nodes_in != NULL; nodes_in = cdr(nodes_in)){
     node_in = car(nodes_in);
-    alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "out"^index) :: alias_rels; <*pos_in and pos_out are unchanged*>
-    alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "eval"^index) :: alias_rels; <*pos_in and pos_eval are unchanged*>
+    if(!(node_in : CODE.HasValue)){
+      alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "out"^index) :: alias_rels; <*pos_in and pos_out are unchanged*>
+      alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "eval"^index) :: alias_rels; <*pos_in and pos_eval are unchanged*>
+    }
   }
 
   for (pg_out = impl_spec; pg_out != NULL; pg_out = cdr(pg_out)) {
@@ -70,7 +75,7 @@ include utils.incl
     <*Generate NextTo and Reach definitions for all fields*>
     for(p = all_fields; p != NULL; p = cdr(p)){
       f = car(p);
-      if(f : CODE.NextConstraint){
+      if(f : CODE.NextConstraint|CODE.ReachesConstraint){
         continue;
       }
       f_nextto = NULL;
@@ -86,10 +91,9 @@ include utils.incl
         if(target_f == f) f_reach = node :: f_reach;
       }
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
-  }
+    }
 
-    values = NULL;
-    <*Collect specification value variables*>
+
     for(p=org_nodes_out; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
         values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
@@ -157,6 +161,11 @@ include utils.incl
     ***>
     tag = "in" ^ index;
     alias_rels = CODE.AliasDefinition#(tag, org_alias_in) :: alias_rels;
+    for(p=org_nodes_in; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.HasValue#(v1=_,v2=_)){
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+      }
+    }
     pos_variables = CODE.PositionVariableDefinition#(tag,org_nodes_in,NULL,NULL,org_alias_in) :: pos_variables;
 
     <*Generate NextTo and Reach definitions for all fields*>
@@ -180,6 +189,10 @@ include utils.incl
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     }
 
+    foreach v1=CODE.ValueVariable#(v1var=_,v1tag=_) \in values do
+      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("in0",v1tag), values);
+      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("out0",v1tag), values);
+    enddo;
     index = index + 1;
   }
 

@@ -238,18 +238,42 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 </code>
 
 <code ValueVariableDefinition pars=(source: ID, names : LIST(CODE.ValueVariable, "\n"))>
-@(vars=NULL; vars_mapped=NULL;
+@(vars=NULL; vars_mapped=NULL; diff_vars = NULL; diff_vars2 = NULL;
+foreach cur1=CODE.ValueVariable#(vartag1=_,varname1=_) \in names do
+  diff_vars = XFORM.AppendList(varname1^"_"^vartag1, diff_vars);
+  diff_vars2 = XFORM.AppendList(CODE.VariableMapping#(varname1,vartag1), diff_vars2);
+  foreach cur2=CODE.ValueVariable#(vartag2=_,varname2=_) \in names do
+    if(!(varname1 : varname2)){
+      diff_vars = XFORM.AppendList[erase_replicate=TRUE](varname2^"_"^vartag2, diff_vars);
+      diff_vars2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(varname2,vartag2),diff_vars2);
+    }
+  enddo;
+  if(cdr(diff_vars) : NULL){
+    diff_vars = NULL;
+    diff_vars2 = NULL;
+    continue;
+  }
+  vars = CODE.ValueVariableDistinctAssert#(varname1^"_"^vartag1, diff_vars) :: vars;
+  vars_mapped = XFORM.AppendList(CODE.ValueVariableMappingDistinctAssert#(varname1^"_"^vartag1, diff_vars2), vars_mapped);
+  diff_vars = NULL;
+  diff_vars2 = NULL;
+enddo;
+
+<*
 foreach cur=CODE.ValueVariable#(vartag=_,varname=_) \in names do
   if(!(varname : "UNMAPPED")){
     vars = XFORM.AppendList(varname^_^vartag, vars);
     vars_mapped = XFORM.AppendList(CODE.VariableMapping#(varname,vartag), vars_mapped);
   }
-enddo;)@
+enddo;
+*>
+
+)@
 ; definition of values (data stored in memory cells)
 ;(declare-sort Value)
 @names@
-@CODE.ValueVariableDistinctAssert#(source, vars)@
-@CODE.ValueVariableMappingDistinctAssert#(source, vars_mapped)@
+@vars@
+@vars_mapped@
 </code>
 
 <code ValueVariable pars=(tag : ID, name : ID)>
@@ -720,3 +744,7 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 <code PtrAccess pars=(ptr:EXP,fd:ID)> @ptr@->@fd@ </code>
 
 <code HasValue pars=(n1:ID, n2:ID)/>
+
+<code NullData>
+null
+</code>
