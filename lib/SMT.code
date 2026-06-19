@@ -90,8 +90,8 @@ for (p = anchors; p != NULL; p = cdr(p)) {
     continue;
   }else if(anchor : CODE.ParamAnchor#(v1=_,v2=_)){
     for (i = 0; i < n; i = i + 1) {
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"post"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"post"^i), res2);
       if(!(v2 : "UNMAPPED")){
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"eval"^i), res2);
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"eval"^i), res2);
@@ -104,10 +104,10 @@ for (p = anchors; p != NULL; p = cdr(p)) {
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2[PtrAccess.ptr],"eval"^i), res2);
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2[PtrAccess.ptr],"eval"^i), res2);
       }
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"in"^i), res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"in"^i), res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"out"^i), res2);
-      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"out"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"pre"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"pre"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v1,"post"^i), res2);
+      res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v1,"post"^i), res2);
       if(!(v2 : "UNMAPPED")){
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.Variable#(v2,"eval"^i), res2);
         res2 = XFORM.AppendList[erase_replicate=TRUE](CODE.VariableMapping#(v2,"eval"^i), res2);
@@ -227,7 +227,7 @@ for (p = cur_pos; p != NULL; p = cdr(p)) {
 </code>
 
 <code PositionValueMatchPossible pars=(tag1: ID, v1 : CODE.HasValue, tag2 : ID, v2: CODE.HasValue)>
-(=> (= (mapping @v1[HasValue.n1]@_@tag1@) (mapping @v2[HasValue.n1]@_@tag2@)) (= (mapping @v1[HasValue.n2]@_@tag1@) (mapping @v2[HasValue.n2]@_@tag2@)))
+(= (mapping @v1[HasValue.n1]@_@tag1@) (mapping @v2[HasValue.n1]@_@tag2@))
 </code>
 
 <code PositionValueMatchAssert pars=(tag1: ID, v1 : CODE.HasValue, tag2 : ID, res: LIST(CODE.PositionValueMatchPossible,","))>
@@ -295,7 +295,7 @@ pos_out = NULL; pos_eval = NULL;
 for(pv_def = pos_variables; pv_def != NULL; pv_def = cdr(pv_def)){
   cur_pv = car(pv_def);
   tag = cur_pv[PositionVariableDefinition.tag];
-  if(car(SPLIT(3,tag)) == "out"){
+  if(car(SPLIT(4,tag)) == "post"){
     CODE.PositionVariableDefinition#(out_tag=_,pos_out=_,new_alloc_out=_,_,_) = car(pv_def);
   }else if(car(SPLIT(4,tag)) == "eval"){
     CODE.PositionVariableDefinition#(eval_tag=_,pos_eval=_,_,new_alloc_eval=_,_) = car(pv_def);
@@ -317,7 +317,7 @@ for(p1 = new_alloc_eval; p1 != NULL; p1 = cdr(p1)){
 <code PositionDeletedDefinition pars=(tag:ID, deleted_pos:LIST(ID,""))>
 @(res=NULL;
   for (p = deleted_pos; p != NULL; p = cdr(p)) {
-    if(car(SPLIT(2,tag)) != "in"){
+    if(car(SPLIT(3,tag)) != "pre"){
       res = CODE.PositionDeletedAssert#(car(p), tag) :: res;
     }
   }
@@ -347,18 +347,20 @@ res)@
 for (p = anchors; p != NULL; p = cdr(p)) {
  anchor = car p;
  if(anchor : CODE.ParamAnchor){
+  <*
   CODE.ParamAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      res1 = CODE.BindingParams#(v1,v2,"out"^i,"eval"^i) :: res1;
+      res1 = CODE.BindingParams#(v1,v2,"post"^i,"eval"^i) :: res1;
     }
   }
+  *>
  }else if(anchor : CODE.FieldAnchor){
   <*
   CODE.FieldAnchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      res2 = CODE.BindingField#(v1,v2,"out"^i,"eval"^i) :: res2;
+      res2 = CODE.BindingField#(v1,v2,"post"^i,"eval"^i) :: res2;
     }
   }
   *>
@@ -366,8 +368,8 @@ for (p = anchors; p != NULL; p = cdr(p)) {
   Anchor#(v1,v2) = anchor;
   for (i = 0; i < n; i = i + 1) {
     if(!(v2:"UNMAPPED")){
-      <*res = CODE.BindingAnchor#(v1,v2,"in"^i,"eval"^i) :: res;*>
-      res = CODE.BindingAnchor#(v1,v2,"out"^i,"eval"^i) :: res;
+      <*res = CODE.BindingAnchor#(v1,v2,"pre"^i,"eval"^i) :: res;*>
+      res = CODE.BindingAnchor#(v1,v2,"post"^i,"eval"^i) :: res;
     }
   }
  }
@@ -424,10 +426,10 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 </code>
 
 <code AnchorVariable pars=(name : ID, index : INT)>
-(declare-const @name@_in@index@ Int)
-(assert (memory_cell @name@_in@index@))
-(declare-const @name@_out@index@ Int)
-(assert (memory_cell @name@_out@index@))
+(declare-const @name@_pre@index@ Int)
+(assert (memory_cell @name@_pre@index@))
+(declare-const @name@_post@index@ Int)
+(assert (memory_cell @name@_post@index@))
 </code>
 
 <code ImplAnchorVariable pars=(name : ID, index : INT)>
@@ -674,7 +676,7 @@ enddo;
 </code>
 
 <code HasValueAssert pars=(tag : ID, r : CODE.HasValue)>
-(assert (!(=> (has_value_@tag@ @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@) (= @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@)) :named has_value_@tag@_@r[HasValue.n1]@_@r[HasValue.n2]@))
+(assert (! (has_value_@tag@ @r[HasValue.n1]@_@tag@ @r[HasValue.n2]@_@tag@) :named has_value_@tag@_@r[HasValue.n1]@_@r[HasValue.n2]@))
 </code>
 
 <code AliasedPositionSameValueDefinition pars=(pos_variables : LIST(CODE.PositionVariableDefinition,","))>
@@ -695,12 +697,12 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 <code AliasedPositionSameValueAssert pars=(tag: ID)>
 (assert 
   (! (forall ((c1 Int) (c2 Int) (v1 Int) (v2 Int))
-       (=> 
-         (and (not (= c1 c2))
-              (has_value_@tag@ c1 v1) 
-              (has_value_@tag@ c2 v2) 
+         (=>(and (not (= c1 c2))
+              (has_value_post0 c1 v1) 
+              (has_value_eval0 c2 v2) 
               (= (mapping c1) (mapping c2)))
-         (= (mapping v1) (mapping v2))))
+         (= (mapping v1) (mapping v2)))
+      )
      :named aliased_positions_@tag@_hold_same_value)
 )
 </code>

@@ -49,8 +49,8 @@ include utils.incl
   for(nodes_in = org_nodes_in; nodes_in != NULL; nodes_in = cdr(nodes_in)){
     node_in = car(nodes_in);
     if(!(node_in : CODE.HasValue)){
-      alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "out"^index) :: alias_rels; <*pos_in and pos_out are unchanged*>
-      alias_rels = CODE.UnchangedPosition#(node_in, "in"^index, "eval"^index) :: alias_rels; <*pos_in and pos_eval are unchanged*>
+      alias_rels = CODE.UnchangedPosition#(node_in, "pre"^index, "post"^index) :: alias_rels; <*pos_in and pos_out are unchanged*>
+      alias_rels = CODE.UnchangedPosition#(node_in, "pre"^index, "eval"^index) :: alias_rels; <*pos_in and pos_eval are unchanged*>
     }
   }
 
@@ -61,7 +61,7 @@ include utils.incl
     <***
       Output specification graph constraints
     ***>
-    tag = "out" ^ index; 
+    tag = "post" ^ index; 
     GraphSpec#(g_nodes_out, cur_nextto, cur_reach, cur_alias) = g_out;
     num_of_nodes = num_of_nodes + LEN(nodes_in) + LEN(g_nodes_out);
     <*NOTE: Fix added 1/14/25, don't create newly created position with _in tag'*>
@@ -97,6 +97,13 @@ include utils.incl
     for(p=org_nodes_out; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
         values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+      }
+    }
+    for(p=anchors; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
+        if(!(v2 : "UNMAPPED")){
+          values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+        }
       }
     }
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,NULL,org_alias_out) :: pos_variables;
@@ -136,7 +143,6 @@ include utils.incl
         values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
       }
     }
-
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
         if(!(v2 : "UNMAPPED")){
@@ -159,7 +165,7 @@ include utils.incl
     <***
       Input specification graph constraints
     ***>
-    tag = "in" ^ index;
+    tag = "pre" ^ index;
     alias_rels = CODE.AliasDefinition#(tag, org_alias_in) :: alias_rels;
     for(p=org_nodes_in; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
@@ -167,6 +173,12 @@ include utils.incl
       }
     }
     pos_variables = CODE.PositionVariableDefinition#(tag,org_nodes_in,NULL,NULL,org_alias_in) :: pos_variables;
+
+    for(p=anchors; p != NULL; p = cdr(p)){
+      if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag,v1), values);
+      }
+    }
 
     <*Generate NextTo and Reach definitions for all fields*>
     for(p = all_fields; p != NULL; p = cdr(p)){
@@ -189,10 +201,13 @@ include utils.incl
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     }
 
+    <*
     foreach v1=CODE.ValueVariable#(v1var=_,v1tag=_) \in values do
-      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("in0",v1tag), values);
-      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("out0",v1tag), values);
+      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("pre0",v1tag), values);
+      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("post0",v1tag), values);
     enddo;
+    *>
+
     index = index + 1;
   }
 
@@ -205,6 +220,8 @@ include utils.incl
   DEBUG{values};
   DEBUG{values_impl};
   *>
+  DEBUG{values};
+  DEBUG{values_impl};
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, values, values_impl);
 </xform>
