@@ -93,16 +93,20 @@ include utils.incl
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     }
 
-
+    has_value_rels = NULL;
+    f_has_value = NULL;
     for(p=org_nodes_out; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
-        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+        f_has_value = car(p) :: f_has_value;
+        <*values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);*>
       }
     }
+    has_value_rels = CODE.HasValueDefinition#(tag,f_has_value) :: has_value_rels;
+
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
         if(!(v2 : "UNMAPPED")){
-          values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
+          values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v1), values);
         }
       }
     }
@@ -138,11 +142,14 @@ include utils.incl
 
     values_impl = NULL;
     <*Collect implementation value variables*>
+    f_has_value = NULL;
     for(p=g_nodes_out; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
-        values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
+        f_has_value = car(p) :: f_has_value;
+        <*values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);*>
       }
     }
+    has_value_rels = CODE.HasValueDefinition#(tag,f_has_value) :: has_value_rels;
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
         if(!(v2 : "UNMAPPED")){
@@ -167,11 +174,14 @@ include utils.incl
     ***>
     tag = "pre" ^ index;
     alias_rels = CODE.AliasDefinition#(tag, org_alias_in) :: alias_rels;
+    f_has_value = NULL;
     for(p=org_nodes_in; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
+        f_has_value = car(p) :: f_has_value;
         values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values);
       }
     }
+    has_value_rels = CODE.HasValueDefinition#(tag,f_has_value) :: has_value_rels;
     pos_variables = CODE.PositionVariableDefinition#(tag,org_nodes_in,NULL,NULL,org_alias_in) :: pos_variables;
 
     for(p=anchors; p != NULL; p = cdr(p)){
@@ -219,9 +229,8 @@ include utils.incl
   DEBUG{alias_rels};
   DEBUG{values};
   DEBUG{values_impl};
+  DEBUG{has_value_rels};
   *>
-  DEBUG{values};
-  DEBUG{values_impl};
 
-  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, values, values_impl);
+  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, has_value_rels, values, values_impl);
 </xform>

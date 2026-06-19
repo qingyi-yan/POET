@@ -19,6 +19,7 @@ smt_spec@
                              nextto_rels : LIST(CODE.NextToDefinition,"\n"),
                              reach_rels : LIST(CODE.ReachDefinition,"\n"),
                              aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition, "\n"),
+                             has_value_rels : LIST(CODE.HasValueDefinition,"\n"),
                              values :  LIST(CODE.ValueVariable, ""),
                              values_impl : LIST(CODE.ValueVariable, ""))>
 
@@ -58,6 +59,9 @@ smt_spec@
 
 ; aliases
 @((aliases == NULL)? "" : aliases)@
+
+; has-value relations
+@((has_value_rels == NULL)? "" : has_value_rels)@
 
 ; binding of newly allocated positions
 @CODE.NewAllocBinding#(pos_variables)@
@@ -163,7 +167,6 @@ res)@
 @unique_mapped@
 @((deleted_pos == NULL)? "" : CODE.PositionDeletedDefinition#(tag,deleted_pos))@
 @(CODE.NewAllocDefinition#(tag, new_pos, new_pos_impl))@
-@((p_val_pair == NULL)? "" : CODE.HasValueDefinition#(tag, p_val_pair))@
 </code>
 
 <code PositionVariableDistinctAssert pars=(names : LIST(ID," "), tag : ID, source: ID)>
