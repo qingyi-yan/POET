@@ -93,6 +93,7 @@ include utils.incl
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     }
 
+    other_rels = NULL;
     has_value_rels = NULL;
     f_has_value = NULL;
     for(p=org_nodes_out; p != NULL; p = cdr(p)){
@@ -111,11 +112,14 @@ include utils.incl
       }
     }
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,NULL,org_alias_out) :: pos_variables;
+    other_rels = CODE.PositionHasSingleValueAssert#(tag) :: other_rels;
 
     <***
       Shape analysis output graph constraints
     ***>
+    tag1 = tag;
     tag = "eval" ^ index;
+    other_rels = CODE.AliasedPositionSameValueAssert#(tag1,tag) :: other_rels;
     GraphSpec#(g_nodes_out, cur_nextto, cur_reach, cur_alias) = g_out;
     alias_rels = CODE.AliasDefinition#(tag, cur_alias) :: alias_rels;
 
@@ -168,6 +172,7 @@ include utils.incl
     }
     new_pos_impl = XFORM.ReverseList(new_pos_impl);
     pos_variables = CODE.PositionVariableDefinition#(tag,g_nodes_out,NULL,new_pos_impl,cur_alias) :: pos_variables;
+    other_rels = CODE.PositionHasSingleValueAssert#(tag) :: other_rels;
 
     <***
       Input specification graph constraints
@@ -183,6 +188,7 @@ include utils.incl
     }
     has_value_rels = CODE.HasValueDefinition#(tag,f_has_value) :: has_value_rels;
     pos_variables = CODE.PositionVariableDefinition#(tag,org_nodes_in,NULL,NULL,org_alias_in) :: pos_variables;
+    other_rels = CODE.PositionHasSingleValueAssert#(tag) :: other_rels;
 
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
@@ -230,7 +236,8 @@ include utils.incl
   DEBUG{values};
   DEBUG{values_impl};
   DEBUG{has_value_rels};
+  DEBUG{other_rels};
   *>
 
-  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, has_value_rels, values, values_impl);
+  return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, has_value_rels, other_rels, values, values_impl);
 </xform>

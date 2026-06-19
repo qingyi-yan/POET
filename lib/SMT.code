@@ -20,6 +20,7 @@ smt_spec@
                              reach_rels : LIST(CODE.ReachDefinition,"\n"),
                              aliases : LIST(CODE.AliasDefinition|CODE.UnchangedPosition, "\n"),
                              has_value_rels : LIST(CODE.HasValueDefinition,"\n"),
+                             other_rels : LIST(CODE.AliasedPositionSameValueAssert|CODE.PositionHasSingleValueAssert,"\n"),
                              values :  LIST(CODE.ValueVariable, ""),
                              values_impl : LIST(CODE.ValueVariable, ""))>
 
@@ -70,8 +71,7 @@ smt_spec@
 @CODE.AnchorVariableBinding#(anchors, num_of_graphs)@
 
 ; general consistency rules
-@CODE.AliasedPositionSameValueDefinition#(pos_variables)@
-@CODE.PositionHasSingleValueDefinition#(pos_variables)@
+@((other_rels == NULL)? "" : other_rels)@
 
 (check-sat)
 (get-model)
@@ -697,16 +697,16 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 @res@
 </code>
 
-<code AliasedPositionSameValueAssert pars=(tag: ID)>
+<code AliasedPositionSameValueAssert pars=(tag1: ID, tag2 : ID)>
 (assert 
   (! (forall ((c1 Int) (c2 Int) (v1 Int) (v2 Int))
          (=>(and (not (= c1 c2))
-              (has_value_post0 c1 v1) 
-              (has_value_eval0 c2 v2) 
+              (has_value_@tag1@ c1 v1) 
+              (has_value_@tag2@ c2 v2) 
               (= (mapping c1) (mapping c2)))
          (= (mapping v1) (mapping v2)))
       )
-     :named aliased_positions_@tag@_hold_same_value)
+     :named aliased_positions_@tag1@_@tag2@_hold_same_value)
 )
 </code>
 

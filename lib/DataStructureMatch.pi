@@ -21,7 +21,7 @@
 <code SMTSpecification pars=(num_of_nodes, num_of_graphs, new_pos,
                              pos_variables, anchors,
                              nextto_rels, reach_rels, aliases,
-                             has_value_rels,
+                             has_value_rels, other_rels,
                              values, values_impl)/>
 
 <code OpSpec pars=(graph_in, graph_out)/>
