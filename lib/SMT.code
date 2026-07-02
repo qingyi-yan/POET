@@ -418,6 +418,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
  Anchor#(v1,v2) = anchor;
  for (i = 0; i < n; i = i + 1) {
     if(v2 : CODE.PtrAccess){
+      <*res = XFORM.AppendList(CODE.ImplAnchorVariable#("memref_"^v2[PtrAccess.ptr]^"_"^v2[PtrAccess.fd], i), res);*>
       res = XFORM.AppendList(CODE.ImplAnchorVariable#(v2, i), res);
       res = XFORM.AppendList[erase_replicate=TRUE](CODE.ImplAnchorVariable#(v2[PtrAccess.ptr], i), res);
     }else if(!(v2:"UNMAPPED")){
@@ -435,7 +436,7 @@ for (p = anchors; p != NULL; p = cdr(p)) {
 (assert (memory_cell @name@_post@index@))
 </code>
 
-<code ImplAnchorVariable pars=(name : ID, index : INT)>
+<code ImplAnchorVariable pars=(name : ID|CODE.PtrAccess|CODE.ObjAccess, index : INT)>
 (declare-const @name@_eval@index@ Int)
 (assert (memory_cell @name@_eval@index@))
 </code>
@@ -740,7 +741,7 @@ for(q = pos_variables; q != NULL; q = cdr(q)){
 (mapping @v@_@tag@)
 </code>
 
-<code Variable pars=(v:ID,tag:ID)>
+<code Variable pars=(v:ID|CODE.PtrAccess|CODE.ObjAccess,tag:ID)>
 @v@_@tag@
 </code>
 

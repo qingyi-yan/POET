@@ -126,7 +126,7 @@ include utils.incl
     <*Generate NextTo and Reach definitions for all fields*>
     for(p = all_fields; p != NULL; p = cdr(p)){
       f = car(p);
-      if(f : CODE.NextConstraint){
+      if(f : CODE.NextConstraint|CODE.ReachesConstraint){
         continue;
       }
       f_nextto = NULL;
@@ -199,7 +199,7 @@ include utils.incl
     <*Generate NextTo and Reach definitions for all fields*>
     for(p = all_fields; p != NULL; p = cdr(p)){
       f = car(p);
-      if(f : CODE.NextConstraint){
+      if(f : CODE.NextConstraint|CODE.ReachesConstraint){
         continue;
       }
       f_nextto = NULL;
@@ -238,6 +238,7 @@ include utils.incl
   DEBUG{has_value_rels};
   DEBUG{other_rels};
   *>
+  
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, has_value_rels, other_rels, values, values_impl);
 </xform>
