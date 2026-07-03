@@ -106,9 +106,13 @@ include utils.incl
 
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
-        if(!(v2 : "UNMAPPED")){
-          values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v1), values);
+        if(v2 : "UNMAPPED"){
+          continue;
         }
+        if(XFORM.GetVariableType(v1) == "Positions"){
+          continue;
+        }
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v1), values);
       }
     }
     pos_variables = CODE.PositionVariableDefinition#(tag,cur_pos,new_pos,NULL,org_alias_out) :: pos_variables;
@@ -150,7 +154,7 @@ include utils.incl
     for(p=g_nodes_out; p != NULL; p = cdr(p)){
       if(car(p) : CODE.HasValue#(v1=_,v2=_)){
         f_has_value = car(p) :: f_has_value;
-        <*values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);*>
+        values_impl = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v2), values_impl);
       }
     }
     has_value_rels = CODE.HasValueDefinition#(tag,f_has_value) :: has_value_rels;
@@ -171,6 +175,13 @@ include utils.incl
       }
     }
     new_pos_impl = XFORM.ReverseList(new_pos_impl);
+
+    <*Add positions in "pre" and label them with "eval" so that we can make sure we can call p_pre == p_eval without unknown constant p_eval errors*>
+    for(p=org_nodes_in; p != NULL; p = cdr(p)){
+      if(!(car(p) : CODE.HasValue)){
+        g_nodes_out = XFORM.AppendList[erase_replicate=TRUE](car(p),g_nodes_out);
+      }
+    }
     pos_variables = CODE.PositionVariableDefinition#(tag,g_nodes_out,NULL,new_pos_impl,cur_alias) :: pos_variables;
     other_rels = CODE.PositionHasSingleValueAssert#(tag) :: other_rels;
 
@@ -192,7 +203,13 @@ include utils.incl
 
     for(p=anchors; p != NULL; p = cdr(p)){
       if(car(p) : CODE.ParamAnchor#(v1=_,v2=_)){
-        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag,v1), values);
+        if(v2 : "UNMAPPED"){
+          continue;
+        }
+        if(XFORM.GetVariableType(v1) == "Positions"){
+          continue;
+        }
+        values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#(tag, v1), values);
       }
     }
 
@@ -217,13 +234,6 @@ include utils.incl
       reach_rels = CODE.ReachDefinition#(f, tag, f_reach) :: reach_rels;
     }
 
-    <*
-    foreach v1=CODE.ValueVariable#(v1var=_,v1tag=_) \in values do
-      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("pre0",v1tag), values);
-      values = XFORM.AppendList[erase_replicate=TRUE](CODE.ValueVariable#("post0",v1tag), values);
-    enddo;
-    *>
-
     index = index + 1;
   }
 
@@ -238,7 +248,6 @@ include utils.incl
   DEBUG{has_value_rels};
   DEBUG{other_rels};
   *>
-  
 
   return SMTSpecification#(num_of_nodes, index, new_pos, pos_variables, anchors, nextto_rels, reach_rels, alias_rels, has_value_rels, other_rels, values, values_impl);
 </xform>
