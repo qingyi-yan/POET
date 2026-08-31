@@ -5,3 +5,6 @@ src/pcg
 **/*Makefile.in
 configure
 aclocal.m4
+compile
+src/poet_yacc.h
+
