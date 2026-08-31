@@ -1098,23 +1098,37 @@ class ApplyTokenOperator : public ReplInfoVisitor
   virtual void defaultVisit(POETCode* s) { res = s; }
   virtual void visitList(POETList* l)
    { 
-     POETCode* first = apply(l->get_first());
-     assert(first != 0);
-     POETCode* rest = l->get_rest();
-     if (rest != 0) { rest = apply(rest); assert(rest != 0); }
-
-     POETInputList * r = dynamic_cast<POETInputList*>(l);
-     if (r != 0) {
-       if (first != r->get_first()) r->reset_first(first);
-       POETInputList* r2 = dynamic_cast<POETInputList*>(rest);
-       if (r2 == 0) r2 = new POETInputList(rest);
-       if (rest != r->get_rest()) r->reset_next(r2);
-       res = apply_tokens(r);
+     // Saves the result of operating on each item in the list.
+     std::vector<POETCode*> save1;
+     std::vector<POETList*> save2;
+     save2.push_back(l);
+     for (POETList* p = l; p != 0 && p->get_enum() == SRC_LIST; p = p->get_rest()) {
+         POETInputList * r2 = dynamic_cast<POETInputList*>(p);
+         POETCode* first = apply(p->get_first());
+         assert(first != 0);
+         save1.push_back(first); 
+         save2.push_back(p->get_rest());
      }
-     else {
-         if (first != l->get_first() || rest != l->get_rest()) 
-           l = ASTFactory::inst()->new_list(first,rest);
-         res = apply_tokens(l);
+     res = 0;
+     int index = save1.size();
+     for (auto p = save2.rbegin(); p != save2.rend(); p++, index--) {
+         POETList* cur = *p;
+         if (res != 0)  {
+           auto* first = save1[index];
+           if (cur->get_first() != first || cur->get_rest() != res) 
+           { // Need to make a new list if needed 
+              POETInputList * r = dynamic_cast<POETInputList*>(cur);
+              if (r != 0) {
+                 POETInputList * r2 = dynamic_cast<POETInputList*>(res);
+                 if (r2 == 0) r2 = new POETInputList(res);
+                 r->reset_next(r2); r->reset_first(first);
+                 cur = r;
+              } else {
+                cur = ASTFactory::inst()->new_list(first,res);
+              }
+            }
+         }
+         res = apply_tokens(cur);
      }
      if (res == 0) res = EMPTY;
    }
