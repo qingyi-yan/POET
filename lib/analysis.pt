@@ -327,7 +327,7 @@ switch (vars)
 <xform global_modread pars=(op) local_vars="" output=(_mod,_read) >
   switch (op) {
     case CODE.FunctionDecl#(cur_name,params, rtype, body): global_modread(body)
-    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.While#(s) :
+    case CODE.StmtBlock#s | CODE.ExpStmt#s | CODE.Return#s | CODE.If#(s) | CODE.Else#(CODE.If#(s=_),_) | CODE.While#(s) :
          global_modread(s);
     case (first rest) | CODE.Nest#(first,rest) | CODE.For#(first,rest,_) | CODE.Loop#(_,first,rest,_) | CODE.Loop_r#(_,first,rest,_):
         local_vars = AppendList[erase_replicate=1](local_vars,collect_local_vars(first));
@@ -335,7 +335,7 @@ switch (vars)
         if (rest != NULL) (m2=_,r2=_)=global_modread(rest);
         else m2=r2=NULL;
         (AppendList[erase_replicate=1](m1,m2),AppendList[erase_replicate=1](r1,r2))
-    case CODE.Else|CODE.TypeDef|CODE.ExternDecl|"" : (NULL,NULL)
+    case CODE.Else|CODE.TypeDef|CODE.ExternDecl|Macro|"" : (NULL,NULL)
     case CODE.impl_variant#(_,_,s) : global_modread(car s)
     default: (collect_mod(op),collect_global_read[local_vars=local_vars](op))
   }
