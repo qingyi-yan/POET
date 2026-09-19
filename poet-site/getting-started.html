@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>Parameterized Optimizations for Empirical Tuning</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Main -->
+					<div id="main">
+						<div class="inner">
+
+							<!-- Header -->
+								<header id="header">
+									<a href="index.html" class="logo"><strong>POET (Parameterized Optimizations for Empirical Tuning)</strong></a>
+								</header>
+
+							<!-- Content -->
+              <section>
+                <header class="main">
+                  <h1>Getting started</h1>
+                </header>
+
+                <h3>Install from repository</h3>
+                <ol>
+                  <li>Download to your local machine: <code>git clone git@github.com:qingyi-yan/POET.git</code></li>
+                  <li>Change the working directory to the downloaded POET folder: <code>cd POET</code></li>
+                  <li>Generate needed files and configuration script: <pre><code>aclocal
+automake -a
+autoconf
+./configure</code></pre></li>
+                  <li>Compile and build POET: <code>make</code></li>
+                  <li>Verify POET was correctly built by running tests: <code>make check</code></li>
+                </ol>
+
+                <h3>Directory structure of POET source distribution</h3>
+
+                <ul>
+                  <li>The <em>src</em> directory, which contains the C/C++/YACC/LEX code used to implement POET.</li>
+                  <li>The <em>lib</em> directory, which contains libraries implemented using POET.</li>
+                  <li>The <em>test</em> directory, which contains POET scripts used to test POET releases.</li>
+                  <li>The <em>examples</em> directory, which contains examples used in various POET tutorials.</li>
+                  <li>The <em>doc</em> directory, which contains the manual and tutorials for POET.</li>
+                  <li>The <em>bin</em> directory, which contains the language interpreter <em>pcg</em>.</li>
+                </ul>
+
+                <h3>Using POET</h3>
+
+                
+
+                <pre><code>Usage: pcg [-bhv] {-L&ltdir&gt} {-p&ltname&gt=&ltval&gt} &ltpoet_file1&gt ... &ltpoet_filen&gt 
+options:
+  -h: print out help info
+  -v: print out version info
+  -c&lti&gt: verify the first i conditions only (exit without evaluating the program)
+  -L&ltdir&gt: search for POET libraries in the specified directory
+  -p&ltname&gt=&ltval&gt: set POET parameter &ltname> to have value &ltval&gt
+  -dp: print out debugging info for parsing operations
+  -dl: print out debugging info for lexical analysis
+  -dx: print out debugging info for xform routines
+  -dm: print out debugging info for pattern matching
+  -md: allow global names to be multiply-defined (overwritte)
+  -dt: print out timing information for various components of the POET interpreter
+  -dy: print out debugging info from yacc parsing
+                </code></pre>
+
+              </section>
+
+						</div>
+					</div>
+
+				<!-- Sidebar -->
+				<!-- Sidebar -->
+        <div id="sidebar">
+          <div class="inner">
+
+            <!-- Menu -->
+              <nav id="menu">
+                <header class="major">
+                  <a href="index.html"><img src="images/POET_icon.png" alt="POET logo"/></a>
+                </header>
+                <ul>
+                  <li><a href="getting-started.html">Get started</a></li>
+                  <li><a href="tutorial.html">Documentation</a></li>
+                  <li><a href="downloads.html">Downloads</a></li>
+                  <li><a href="publications.html">Publications</a></li>
+                  <li><a href="people.html">People</a></li>
+                </ul>
+              </nav>
+
+            <!-- Section -->
+              <section>
+                <header class="major">
+                  <h2>Get in touch</h2>
+                </header>
+                <p>We would greatly appreciate it if you could share how you’re using POET or any suggestions you have for improving the project.</p>
+                <ul class="contact">
+                  <li class="icon solid fa-envelope"><a href="mailto:qyi@uccs.edu">qyi@uccs.edu</a></li>
+                </ul>
+              </section>
+
+              <section>
+                <header class="major">
+                  <h2>Acknowledgment</h2>
+                </header>
+                <p>This research has been funded by the National Science Foundation under Grant No. 1261778 (0833203 before 9/2012) and No. 1261811 (0747357 before 9/2012) and by the Department of Energy under Grant No. DE-SC001770.</p>
+              </section>
+
+            <!-- Footer -->
+              <footer id="footer">
+                <p class="copyright">&copy; 2025 POET: Parameterized Optimizations for Empirical Tuning</p>
+                <p class="copyright">Design adapted from <a href="https://html5up.net">HTML5 UP</a></p>
+              </footer>
+
+          </div>
+        </div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
